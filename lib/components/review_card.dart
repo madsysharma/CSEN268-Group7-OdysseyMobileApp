@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+//Card for user reviews
 class ReviewCard extends StatelessWidget{
   final String pageName;
   const ReviewCard({super.key, required this.pageName});

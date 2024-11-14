@@ -3,12 +3,16 @@ import 'package:odyssey/components/connect_search_bar.dart';
 import '../pages/connect_local.dart';
 import '../pages/connect_friends.dart';
 import '../pages/connect_you.dart';
+
+//The Connect page of the Odyssey App
 class Connect extends StatefulWidget{
   const Connect({super.key});
 
   @override
   State<Connect> createState() => _ConnectState();
 }
+
+
 class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin{
   static const List<Tab> connectTabs = <Tab>[
     Tab(text: 'Local'),
