@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'pages/connect.dart';
+import 'package:go_router/go_router.dart';
+import 'package:odyssey/bloc/auth/auth_bloc.dart';
+import 'package:odyssey/components/shell_bottom_nav_bar.dart';
+import 'package:odyssey/pages/login.dart';
+import 'package:odyssey/pages/profile.dart';
+import 'package:odyssey/paths.dart';
+
 void main() {
-  runApp(const MyApp());
+  runApp(MultiBlocProvider(
+    providers: [
+      BlocProvider(create: (context) => AuthBloc()),
+    ],
+    child: const MyApp(),
+  ));
 }
 
 class MyApp extends StatelessWidget {
@@ -10,14 +22,78 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF006A68)),
-        fontFamily: GoogleFonts.lato().fontFamily,
-        useMaterial3: true,
-      ),
-      home: const Connect(),
-    );
+    
+    final GoRouter router = GoRouter(
+            initialLocation: Paths.login,
+            routes: [
+              ShellRoute(
+                  builder: (context, state, child) =>
+                      ShellBottomNavBar(child: child),
+                  routes: [
+                    GoRoute(
+                      path: Paths.home,
+                      builder: (context, state) =>
+                          Center(child: const Text("Home")),
+                    ),
+                    GoRoute(
+                      path: Paths.connect,
+                      builder: (context, state) =>
+                          Center(child: const Text("connect")),
+                    ),
+                    GoRoute(
+                      path: Paths.maps,
+                      builder: (context, state) =>
+                          Center(child: const Text('maps')),
+                    ),
+                    GoRoute(
+                      path: Paths.safety,
+                      builder: (context, state) =>
+                          Center(child: const Text('safety')),
+                    ),
+                    GoRoute(
+                      path: Paths.profile,
+                      builder: (context, state) =>
+                          ProfileScreen(),
+                    )
+                  ]),
+                    GoRoute(
+                      path: Paths.login,
+                      builder: (context, state) => LoginScreen(),
+                    )
+            ],
+            redirect: (context, state) {
+              var loggedIn = context.read<AuthBloc>().state is LoggedIn;
+              var tryingToLogin = state.fullPath == Paths.login;
+              if (loggedIn &&  tryingToLogin) {
+                return Paths.home;
+              }
+              if (!loggedIn && !tryingToLogin) {
+                return Paths.login;
+              }
+              if (state.fullPath == "/") {
+                return Paths.home;
+              }
+              return null;
+            },
+          );
+  
+    return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (previous, current) => previous != current,
+      listener: (context, state) {
+        if (state is LoggedIn) {
+          router.go(Paths.home);
+        } else if (state is LoggedOut) {
+          router.go(Paths.login);
+        }
+      },
+      child: MaterialApp.router(
+          title: 'Odyssey',
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF006A68)),
+            fontFamily: GoogleFonts.lato().fontFamily,
+            useMaterial3: true,
+          ),
+          routerConfig: router
+    ));
   }
 }
