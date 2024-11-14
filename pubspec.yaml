@@ -63,6 +63,8 @@ flutter:
   assets:
    - assets/icons8-bell-96.png
    - assets/icons8-add-user-male-96.png
+   - assets/circle-profile-pic.jpg
+   - assets/photo-1528543606781-2f6e6857f318.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:odyssey/components/review_card.dart';
 
-class ConnectLocal extends StatelessWidget{
-  const ConnectLocal({super.key});
+class ConnectFriends extends StatelessWidget{
+  const ConnectFriends({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -13,11 +13,11 @@ class ConnectLocal extends StatelessWidget{
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ReviewCard(pageName:"ConnectLocal"),
+            ReviewCard(pageName:"ConnectFriends"),
             Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
-            ReviewCard(pageName:"ConnectLocal"),
+            ReviewCard(pageName:"ConnectFriends"),
             Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
-            ReviewCard(pageName:"ConnectLocal"),
+            ReviewCard(pageName:"ConnectFriends"),
           ]
         )
       ),
