@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+//Search bar for the Connect Page
 class ConnectSearchBar extends StatelessWidget implements PreferredSizeWidget{
   const ConnectSearchBar({super.key});
 
