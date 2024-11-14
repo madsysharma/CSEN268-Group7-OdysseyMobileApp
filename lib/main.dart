@@ -4,16 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:odyssey/bloc/auth/auth_bloc.dart';
 import 'package:odyssey/components/shell_bottom_nav_bar.dart';
-import 'package:odyssey/pages/edit_profile.dart';
+import 'package:odyssey/mockdata/locations.dart';
+import 'package:odyssey/model/location.dart';
+import 'package:odyssey/pages/home.dart';
+import 'package:odyssey/pages/location_details.dart';
 import 'package:odyssey/pages/login.dart';
-import 'package:odyssey/pages/map_page.dart';
 import 'package:odyssey/pages/profile.dart';
-import 'package:odyssey/pages/profile_page.dart';
-import 'package:odyssey/pages/safety.dart';
-import 'package:odyssey/pages/safety_checkin.dart';
-import 'package:odyssey/pages/safety_emer.dart';
-import 'package:odyssey/pages/safety_tips.dart';
-import 'package:odyssey/pages/connect.dart';
 import 'package:odyssey/utils/paths.dart';
 
 void main() {
@@ -34,56 +30,41 @@ class MyApp extends StatelessWidget {
       initialLocation: Paths.login,
       routes: [
         ShellRoute(
-          builder: (context, state, child) => ShellBottomNavBar(child: child),
-          routes: [
-            GoRoute(
-              path: Paths.home,
-              builder: (context, state) => Center(child: const Text("Home")),
-            ),
-            GoRoute(
-              path: Paths.connect,
-              builder: (context, state) => Connect(),
-            ),
-            GoRoute(
-              path: Paths.maps,
-              builder: (context, state) => MapPage(),
-            ),
-            GoRoute(
-              path: Paths.safety,
-              builder: (context, state) => Safety(),
-              routes: [
-                GoRoute(
-                  path: 'location-checkin',
-                  builder: (context, state) => SafetyCheckin(),
-                ),
-                GoRoute(
-                  path: 'emergency-contact',
-                  builder: (context, state) => ContactsPage(),
-                ),
-                GoRoute(
-                  path: 'travel-tips',
-                  builder: (context, state) => SafetyTips(),
-                ),
-              ],
-            ),
-            GoRoute(
-              path: Paths.profile,
-              builder: (context, state) => ProfileScreen(),
-            ),
-            GoRoute(
-              path: Paths.profilePage,
-              builder: (context, state) => ProfilePage(),
-            ),
-            GoRoute(
-              path: Paths.editProfile,
-              builder: (context, state) => EditProfilePage(),
-            ),
-          ],
-        ),
+            builder: (context, state, child) => ShellBottomNavBar(child: child),
+            routes: [
+              GoRoute(
+                path: Paths.home,
+                builder: (context, state) => HomeScreen(),
+              ),
+              GoRoute(
+                path: Paths.connect,
+                builder: (context, state) =>
+                    Center(child: const Text("connect")),
+              ),
+              GoRoute(
+                path: Paths.maps,
+                builder: (context, state) => Center(child: const Text('maps')),
+              ),
+              GoRoute(
+                path: Paths.safety,
+                builder: (context, state) =>
+                    Center(child: const Text('safety')),
+              ),
+              GoRoute(
+                path: Paths.profile,
+                builder: (context, state) => ProfileScreen(),
+              ),
+              GoRoute(
+                  path: Paths.locationDetails,
+                  builder: (context, state) {
+                    var location = state.extra as LocationDetails;
+                    return LocationDetailsPage(location: location);
+                  })
+            ]),
         GoRoute(
           path: Paths.login,
           builder: (context, state) => LoginScreen(),
-        ),
+        )
       ],
       redirect: (context, state) {
         var loggedIn = context.read<AuthBloc>().state is LoggedIn;
@@ -102,23 +83,23 @@ class MyApp extends StatelessWidget {
     );
 
     return BlocListener<AuthBloc, AuthState>(
-      listenWhen: (previous, current) => previous != current,
-      listener: (context, state) {
-        if (state is LoggedIn) {
-          router.go(Paths.home);
-        } else if (state is LoggedOut) {
-          router.go(Paths.login);
-        }
-      },
-      child: MaterialApp.router(
-        title: 'Odyssey',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF006A68)),
-          fontFamily: GoogleFonts.lato().fontFamily,
-          useMaterial3: true,
-        ),
-        routerConfig: router,
-      ),
-    );
+        listenWhen: (previous, current) => previous != current,
+        listener: (context, state) {
+          if (state is LoggedIn) {
+            router.go(Paths.home);
+          } else if (state is LoggedOut) {
+            router.go(Paths.login);
+          }
+        },
+        child: SafeArea(
+          child: MaterialApp.router(
+              title: 'Odyssey',
+              theme: ThemeData(
+                colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF006A68)),
+                fontFamily: GoogleFonts.lato().fontFamily,
+                useMaterial3: true,
+              ),
+              routerConfig: router),
+        ));
   }
 }
