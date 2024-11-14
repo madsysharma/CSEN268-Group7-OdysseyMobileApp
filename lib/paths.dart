@@ -6,4 +6,5 @@ class Paths {
   static const String safety = "/safety";
   static const String profile = "/profile";
   static const String login = "/login";
+  static const String locationCheckin = "/safety/location-checkin";
 }
