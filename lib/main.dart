@@ -7,6 +7,7 @@ import 'package:odyssey/components/shell_bottom_nav_bar.dart';
 import 'package:odyssey/pages/login.dart';
 import 'package:odyssey/pages/profile.dart';
 import 'package:odyssey/paths.dart';
+import 'package:odyssey/pages/connect.dart';
 
 void main() {
   runApp(MultiBlocProvider(
@@ -38,7 +39,7 @@ class MyApp extends StatelessWidget {
                     GoRoute(
                       path: Paths.connect,
                       builder: (context, state) =>
-                          Center(child: const Text("connect")),
+                          Connect(),
                     ),
                     GoRoute(
                       path: Paths.maps,
