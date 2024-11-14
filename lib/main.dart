@@ -9,7 +9,7 @@ import 'package:odyssey/pages/map_page.dart';
 import 'package:odyssey/pages/profile.dart';
 import 'package:odyssey/pages/safety.dart';
 import 'package:odyssey/pages/safety_checkin.dart';
-import 'package:odyssey/paths.dart';
+import 'package:odyssey/utils/paths.dart';
 import 'package:odyssey/pages/connect.dart';
 
 void main() {

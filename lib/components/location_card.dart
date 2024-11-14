@@ -7,7 +7,7 @@ class LocationCard extends StatelessWidget {
   final bool isChecked;
   final ValueChanged<bool?>? onChecked;
 
-  LocationCard({
+  const LocationCard({super.key, 
     required this.imageUrl,
     required this.title,
     required this.subtitle,

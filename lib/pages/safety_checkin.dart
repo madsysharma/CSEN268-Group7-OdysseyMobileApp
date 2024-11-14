@@ -3,6 +3,8 @@ import 'package:odyssey/components/location_card.dart';
 
 
 class SafetyCheckin extends StatefulWidget {
+  const SafetyCheckin({super.key});
+
   @override
   _SafetyCheckinState createState() => _SafetyCheckinState();
 }
