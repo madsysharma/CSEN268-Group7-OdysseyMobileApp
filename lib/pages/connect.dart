@@ -46,7 +46,7 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin{
               controller: _tabController,
               children: connectTabs.map((Tab t){
                   final String label = t.text!;
-                  final String className = "Connect"+label;
+                  final String className = "Connect$label";
                   switch (className) {
                     case 'ConnectFriends':
                       return ConnectFriends();
