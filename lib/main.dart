@@ -7,6 +7,7 @@ import 'package:odyssey/components/shell_bottom_nav_bar.dart';
 import 'package:odyssey/pages/login.dart';
 import 'package:odyssey/pages/map_page.dart';
 import 'package:odyssey/pages/profile.dart';
+import 'package:odyssey/pages/safety.dart';
 import 'package:odyssey/paths.dart';
 import 'package:odyssey/pages/connect.dart';
 
@@ -44,7 +45,7 @@ class MyApp extends StatelessWidget {
             ),
             GoRoute(
               path: Paths.safety,
-              builder: (context, state) => Center(child: const Text("Safety")),
+              builder: (context, state) => Safety(),
             ),
             GoRoute(
               path: Paths.profile,
