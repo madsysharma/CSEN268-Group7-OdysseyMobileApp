@@ -9,7 +9,9 @@ import 'package:odyssey/pages/map_page.dart';
 import 'package:odyssey/pages/profile.dart';
 import 'package:odyssey/pages/safety.dart';
 import 'package:odyssey/pages/safety_checkin.dart';
-import 'package:odyssey/utils/paths.dart';
+import 'package:odyssey/pages/safety_emer.dart';
+import 'package:odyssey/pages/safety_tips.dart';
+import 'package:odyssey/paths.dart';
 import 'package:odyssey/pages/connect.dart';
 
 void main() {
@@ -49,9 +51,18 @@ class MyApp extends StatelessWidget {
               builder: (context, state) => Safety(),
               routes: [
                 GoRoute(
-                  path: 'location-checkin', // Relative path
+                  path: 'location-checkin',
                   builder: (context, state) => SafetyCheckin(),
                 ),
+                GoRoute(
+                  path: 'emergency-contact',
+                  builder: (context, state) => ContactsPage(),
+                ),
+                GoRoute(
+                  path: 'travel-tips',
+                  builder: (context, state) => SafetyTips(),
+                ),
+                
               ],
             ),
             GoRoute(

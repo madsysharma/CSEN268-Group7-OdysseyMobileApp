@@ -7,4 +7,6 @@ class Paths {
   static const String profile = "/profile";
   static const String login = "/login";
   static const String locationCheckin = "/safety/location-checkin";
+  static const String emergencyContact = "/safety/emergency-contact";
+  static const String travelTips = "/safety/travel-tips";
 }

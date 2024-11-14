@@ -43,11 +43,11 @@ class Safety extends StatelessWidget{
             }, buttonWidth),
             SizedBox(height: 20),
             buildButton("Emergency Contact", () {
-              
+              context.go(Paths.emergencyContact); // Navigates to safety/location-checkin
             }, buttonWidth),
             SizedBox(height: 20),
-            buildButton("Solo Safety Tips", () {
-              
+            buildButton("Solo Travel Tips", () {
+              context.go(Paths.travelTips); // Navigates to safety/location-checkin
             }, buttonWidth),
             SizedBox(height: 20),
             buildButton("Live Sharing", () {

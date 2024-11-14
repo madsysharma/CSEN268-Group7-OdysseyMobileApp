@@ -30,7 +30,11 @@ class _SafetyCheckinState extends State<SafetyCheckin> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Location Check-in')),
+      appBar: AppBar(
+        backgroundColor: Color.fromARGB(255, 189, 220, 204),
+        title: Text("Location Check-in"),
+        centerTitle: true,
+      ),
       body: ListView.builder(
         itemCount: locations.length,
         itemBuilder: (context, index) {
