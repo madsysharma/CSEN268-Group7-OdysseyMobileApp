@@ -11,8 +11,8 @@ import 'package:odyssey/pages/safety.dart';
 import 'package:odyssey/pages/safety_checkin.dart';
 import 'package:odyssey/pages/safety_emer.dart';
 import 'package:odyssey/pages/safety_tips.dart';
-import 'package:odyssey/paths.dart';
 import 'package:odyssey/pages/connect.dart';
+import 'package:odyssey/utils/paths.dart';
 
 void main() {
   runApp(MultiBlocProvider(
