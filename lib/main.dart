@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
             ),
             GoRoute(
               path: Paths.connect,
-              builder: (context, state) => Center(child: const Text("Connect")),
+              builder: (context, state) => Connect(),
             ),
             GoRoute(
               path: Paths.maps,
