@@ -60,5 +60,5 @@ void showOverlay(BuildContext context) {
 
 
     // Insert the overlay into the Overlay widget
-    Overlay.of(context)!.insert(overlayEntry);
+    Overlay.of(context).insert(overlayEntry);
   }

@@ -29,7 +29,7 @@ class ReviewCard extends StatelessWidget{
                         child: Align(
                           alignment: Alignment.topLeft,
                           child: Text(
-                            this.pageName=="ConnectLocal"?"Name":"Friend Name",
+                            pageName=="ConnectLocal"?"Name":"Friend Name",
                             style: Theme.of(context).textTheme.titleLarge,
                           )
                         ),

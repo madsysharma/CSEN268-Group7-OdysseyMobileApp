@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:odyssey/paths.dart';
+import 'package:odyssey/utils/paths.dart';
 
 class ShellBottomNavBar extends StatefulWidget {
   final Widget child;
