@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:odyssey/pages/safety_checkin.dart';
 import 'package:odyssey/pages/safety_sos.dart';
+import 'package:odyssey/paths.dart';
 
 class Safety extends StatelessWidget{
   const Safety({super.key});
@@ -37,7 +40,7 @@ class Safety extends StatelessWidget{
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             buildButton("Location Checkin", () {
-              
+              context.go(Paths.locationCheckin); // Navigates to safety/location-checkin
             }, buttonWidth),
             SizedBox(height: 20),
             buildButton("Emergency Contact", () {
