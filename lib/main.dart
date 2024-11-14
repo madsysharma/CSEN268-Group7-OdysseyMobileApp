@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
+import 'package:odyssey/bloc/auth/auth_bloc.dart';
+import 'package:odyssey/components/shell_bottom_nav_bar.dart';
+import 'package:odyssey/pages/login.dart';
+import 'package:odyssey/pages/profile.dart';
+import 'package:odyssey/paths.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MultiBlocProvider(
+    providers: [
+      BlocProvider(create: (context) => AuthBloc()),
+    ],
+    child: const MyApp(),
+  ));
 }
 
 class MyApp extends StatelessWidget {
@@ -10,93 +22,78 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF006A68)),
-        fontFamily: GoogleFonts.lato().fontFamily,
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
+    
+    final GoRouter router = GoRouter(
+            initialLocation: Paths.login,
+            routes: [
+              ShellRoute(
+                  builder: (context, state, child) =>
+                      ShellBottomNavBar(child: child),
+                  routes: [
+                    GoRoute(
+                      path: Paths.home,
+                      builder: (context, state) =>
+                          Center(child: const Text("Home")),
+                    ),
+                    GoRoute(
+                      path: Paths.connect,
+                      builder: (context, state) =>
+                          Center(child: const Text("connect")),
+                    ),
+                    GoRoute(
+                      path: Paths.maps,
+                      builder: (context, state) =>
+                          Center(child: const Text('maps')),
+                    ),
+                    GoRoute(
+                      path: Paths.safety,
+                      builder: (context, state) =>
+                          Center(child: const Text('safety')),
+                    ),
+                    GoRoute(
+                      path: Paths.profile,
+                      builder: (context, state) =>
+                          ProfileScreen(),
+                    )
+                  ]),
+                    GoRoute(
+                      path: Paths.login,
+                      builder: (context, state) => LoginScreen(),
+                    )
+            ],
+            redirect: (context, state) {
+              var loggedIn = context.read<AuthBloc>().state is LoggedIn;
+              var tryingToLogin = state.fullPath == Paths.login;
+              if (loggedIn &&  tryingToLogin) {
+                return Paths.home;
+              }
+              if (!loggedIn && !tryingToLogin) {
+                return Paths.login;
+              }
+              if (state.fullPath == "/") {
+                return Paths.home;
+              }
+              return null;
+            },
+          );
+  
+    return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (previous, current) => previous != current,
+      listener: (context, state) {
+        if (state is LoggedIn) {
+          router.go(Paths.home);
+        } else if (state is LoggedOut) {
+          router.go(Paths.login);
+        }
+      },
+      child: MaterialApp.router(
+          title: 'Odyssey',
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF006A68)),
+            fontFamily: GoogleFonts.lato().fontFamily,
+            useMaterial3: true,
+          ),
+          routerConfig: router
+    ));
   }
 }
