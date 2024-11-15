@@ -28,6 +28,11 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<!-- <key>NSSpeechRecognitionUsageDescription</key> -->
+	<!-- <string>Permission required to record audio for speech </string> -->
+	<!-- <key>NSMicrophoneUsageDescription</key> -->
+	<!-- <string>Permission required to record audio for speech </string> -->
+
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
