@@ -9,21 +9,22 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return AppBar(
-      backgroundColor: colorScheme.secondaryContainer,
-      foregroundColor: colorScheme.onSecondaryContainer,
+      backgroundColor: colorScheme.primary,
+      foregroundColor: colorScheme.onPrimary,
+      centerTitle: true,
       title: Text(
         title,
         style: TextStyle(
-          color: colorScheme.onSecondaryContainer,
+          color: colorScheme.onPrimary,
         ),
       ),
       leading: IconButton(
         icon: Icon(
           Icons.arrow_back,
-          color: colorScheme.onSecondaryContainer,
+          color: colorScheme.onPrimary,
         ),
         onPressed: () {
-          Navigator.pop(context);
+          
         },
       ),
     );

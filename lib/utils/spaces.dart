@@ -19,3 +19,5 @@ const largeHorizontal = SizedBox(width: 50);
 
 //Padding
 const smallPadding = EdgeInsets.symmetric(horizontal: 20, vertical: 10);
+const mediumPadding = EdgeInsets.symmetric(horizontal: 20, vertical: 15);
+
