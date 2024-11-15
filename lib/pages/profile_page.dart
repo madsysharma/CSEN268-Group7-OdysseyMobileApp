@@ -28,12 +28,10 @@ class ProfilePageState extends State<ProfilePage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? imagePath = prefs.getString('profile_image_path');
 
-    if (imagePath != null) {
-      setState(() {
-        _profileImage = File(imagePath);
-      });
+    setState(() {
+      _profileImage = File(imagePath!);
+    });
     }
-  }
 
   @override
   Widget build(BuildContext context) {
