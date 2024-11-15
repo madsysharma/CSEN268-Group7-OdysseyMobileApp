@@ -4,9 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:odyssey/bloc/auth/auth_bloc.dart';
 import 'package:odyssey/components/shell_bottom_nav_bar.dart';
+import 'package:odyssey/pages/edit_profile.dart';
 import 'package:odyssey/pages/login.dart';
 import 'package:odyssey/pages/map_page.dart';
 import 'package:odyssey/pages/profile.dart';
+import 'package:odyssey/pages/profile_page.dart';
 import 'package:odyssey/pages/safety.dart';
 import 'package:odyssey/pages/safety_checkin.dart';
 import 'package:odyssey/pages/safety_emer.dart';
@@ -62,12 +64,19 @@ class MyApp extends StatelessWidget {
                   path: 'travel-tips',
                   builder: (context, state) => SafetyTips(),
                 ),
-                
               ],
             ),
             GoRoute(
               path: Paths.profile,
               builder: (context, state) => ProfileScreen(),
+            ),
+            GoRoute(
+              path: Paths.profilePage,
+              builder: (context, state) => ProfilePage(),
+            ),
+            GoRoute(
+              path: Paths.editProfile,
+              builder: (context, state) => EditProfilePage(),
             ),
           ],
         ),

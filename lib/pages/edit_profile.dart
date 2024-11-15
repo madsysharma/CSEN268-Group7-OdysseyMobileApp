@@ -1,8 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:odyssey/components/alerts/alert_dialog.dart';
+import 'package:odyssey/components/alerts/snack_bar.dart';
 import 'package:odyssey/components/forms/input.dart';
 import 'package:odyssey/components/navigation/app_bar.dart';
-import 'package:odyssey/components/navigation/bottom_bar.dart';
 import 'package:odyssey/utils/spaces.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -27,6 +32,7 @@ class EditProfilePageState extends State<EditProfilePage> {
   final FocusNode numberFocus = FocusNode();
   final FocusNode locationFocus = FocusNode();
   final FocusNode passwordFocus = FocusNode();
+    Key avatarKey = UniqueKey();
 
   @override
   void initState() {
@@ -34,9 +40,22 @@ class EditProfilePageState extends State<EditProfilePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(firstNameFocus);
     });
+  _loadSavedImage();
   }
 
-  @override
+Future<void> _loadSavedImage() async {
+  final directory = await getApplicationDocumentsDirectory();
+  final imagePath = '${directory.path}/profile_image.png';
+
+  final savedImage = File(imagePath);
+
+  if (await savedImage.exists()) {
+    setState(() {
+      _image = savedImage;
+    });
+  }
+}
+
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
@@ -53,8 +72,92 @@ class EditProfilePageState extends State<EditProfilePage> {
     super.dispose();
   }
 
+  File? _image;
+
+  Future<void> _pickImage(ImageSource source) async {
+  try {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+
+    if (pickedFile != null) {
+      print("Picked file path: ${pickedFile.path}"); // Debug print
+      File tempImage = File(pickedFile.path);
+      final savedImage = await _saveImage(tempImage);
+
+      setState(() {
+        _image = savedImage;
+        avatarKey = UniqueKey(); // Force reload of avatar
+      });
+
+      PaintingBinding.instance.imageCache.clear();
+    } else {
+      showMessageSnackBar(context, "No image was selected");
+    }
+  } catch (e) {
+    showMessageSnackBar(context, "Error loading image");
+  }
+}
+
+
+ Future<File> _saveImage(File image) async {
+  try {
+    final directory = await getApplicationDocumentsDirectory();
+    final imagePath = '${directory.path}/profile_image.png';
+    final savedImage = await image.copy(imagePath);
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('profile_image_path', imagePath);
+    return savedImage;
+  } catch (e) {
+    showMessageSnackBar(context, "Error saving image");
+    rethrow;
+  }
+}
+
+  void _showImageSourceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => MyAlertDialog(
+        title: 'Pick an Option',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.camera_alt),
+              title: Text('Camera'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library),
+              title: Text('Photo Library'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
         appBar: MyAppBar(title: "Profile"),
         body: SingleChildScrollView(
@@ -66,8 +169,19 @@ class EditProfilePageState extends State<EditProfilePage> {
                   alignment: Alignment.center,
                   children: [
                     CircleAvatar(
-                      radius: 50.0,
-                      backgroundImage: AssetImage('assets/profile.png'),
+                      key: avatarKey,
+                      radius: 50,
+                      backgroundColor: Colors.grey[300],
+                      backgroundImage: _image != null
+                          ? FileImage(_image!) as ImageProvider
+                          : null,
+                      child: _image == null
+                          ? Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Colors.white,
+                            )
+                          : null,
                     ),
                     Container(
                       width: 100.0,
@@ -77,6 +191,8 @@ class EditProfilePageState extends State<EditProfilePage> {
                         color: Colors.black.withOpacity(0.65),
                         shape: BoxShape.circle,
                       ),
+                      child:  TextButton(
+                      onPressed: _showImageSourceDialog,
                       child: Text(
                         'Edit',
                         style: TextStyle(
@@ -85,6 +201,7 @@ class EditProfilePageState extends State<EditProfilePage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                    ),
                     ),
                   ],
                 ),
@@ -167,28 +284,25 @@ class EditProfilePageState extends State<EditProfilePage> {
                         },
                       ),
                     ],
-                    
                   )),
-                  smallVertical,
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      FloatingActionButton.extended(
-                        onPressed: () {
-                          final isValid = _formKey.currentState!.validate();
-                          if (isValid == true) {
-                            
-                          }
-                        },
-                        label: const Text("Save"),
-                      ),
-                      mediumHorizontal
-                    ],
+              smallVertical,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  FloatingActionButton.extended(
+                    backgroundColor: colorScheme.primary,
+                    onPressed: () {
+                      final isValid = _formKey.currentState!.validate();
+                      if (isValid == true) {}
+                    },
+                    label: Text("Save" , style: TextStyle(color: colorScheme.onPrimary)),
                   ),
-                  smallVertical
+                  mediumHorizontal
+                ],
+              ),
+              smallVertical
             ],
           ),
-        ),
-        bottomNavigationBar: MyBottomAppBar());
+        ));
   }
 }

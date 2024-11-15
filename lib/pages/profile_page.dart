@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:odyssey/bloc/auth/auth_bloc.dart';
 import 'package:odyssey/components/navigation/app_bar.dart';
-import 'package:odyssey/components/navigation/bottom_bar.dart';
+import 'package:odyssey/utils/paths.dart';
 import 'package:odyssey/utils/spaces.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -11,75 +16,106 @@ class ProfilePage extends StatefulWidget {
 }
 
 class ProfilePageState extends State<ProfilePage> {
+  File? _profileImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileImage();
+  }
+
+  Future<void> _loadProfileImage() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? imagePath = prefs.getString('profile_image_path');
+
+    if (imagePath != null) {
+      setState(() {
+        _profileImage = File(imagePath);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: MyAppBar(title: "Profile"),
-        body: Column(
-          children: [
-            SizedBox(
-              height: 200,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 50.0,
-                    backgroundImage: AssetImage('assets/profile.png'),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      extraLargeVertical,
-                      Text("Profile Name"),
-                      extraSmallVertical,
-                      Text("Profile Location")
-                    ],
-                  )
-                ],
+      appBar: MyAppBar(title: "Profile"),
+      body: Column(
+        children: [
+          Column(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              largeVertical,
+              Center(
+                child: _profileImage != null
+                    ? CircleAvatar(
+                        radius: 50,
+                        backgroundImage: FileImage(_profileImage!),
+                      )
+                    : Icon(
+                        Icons.person,
+                        size: 50,
+                        color: Colors.grey,
+                      ),
               ),
-            ),
-            ListView(
-              shrinkWrap: true,
-              children: [
-                ListTile(
-                  title: Text('Edit profile'),
-                  onTap: () {
-                    // Handle navigation or functionality
-                  },
+              mediumVertical,
+              Text("Profile Name",
+                  style: Theme.of(context).textTheme.headlineLarge),
+              extraSmallVertical,
+              Text("Profile Location",
+                  style: Theme.of(context).textTheme.headlineSmall)
+            ],
+          ),
+          mediumVertical,
+          ListView(
+            shrinkWrap: true,
+            padding: smallPadding,
+            children: [
+              ListTile(
+                minVerticalPadding: 10,
+                title: Text('Edit profile'),
+                onTap: () {
+                  GoRouter.of(context).go(Paths.editProfile);
+                },
+              ),
+              Divider(),
+              ListTile(
+                minVerticalPadding: 10,
+                title: Text('Saved locations'),
+                onTap: () {
+                  // Handle navigation or functionality
+                },
+              ),
+              Divider(),
+              ListTile(
+                minVerticalPadding: 10,
+                title: Text('Maps download network'),
+                onTap: () {
+                  // Handle navigation or functionality
+                },
+              ),
+              Divider(),
+              ListTile(
+                minVerticalPadding: 10,
+                title: Text('Manage membership'),
+                onTap: () {
+                  // Handle navigation or functionality
+                },
+              ),
+              Divider(),
+              ListTile(
+                minVerticalPadding: 10,
+                title: Text(
+                  'Logout',
                 ),
-                Divider(),
-                ListTile(
-                  title: Text('Saved locations'),
-                  onTap: () {
-                    // Handle navigation or functionality
-                  },
-                ),
-                Divider(),
-                ListTile(
-                  title: Text('Maps download network'),
-                  onTap: () {
-                    // Handle navigation or functionality
-                  },
-                ),
-                Divider(),
-                ListTile(
-                  title: Text('Manage membership'),
-                  onTap: () {
-                    // Handle navigation or functionality
-                  },
-                ),
-                Divider(),
-                ListTile(
-                  title: Text('Logout'),
-                  onTap: () {
-                    // Handle logout functionality
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-        bottomNavigationBar: MyBottomAppBar());
+                onTap: () {
+                  context.read<AuthBloc>().add(LogOutEvent());
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
