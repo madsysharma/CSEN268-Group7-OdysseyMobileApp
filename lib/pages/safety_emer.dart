@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/model/contact.dart';
 
 class ContactsPage extends StatefulWidget {
@@ -9,17 +11,140 @@ class ContactsPage extends StatefulWidget {
 }
 
 class _ContactsPageState extends State<ContactsPage> {
-  List<Contact> contacts = [
-    Contact(name: 'John Doe', number: '123-456-7890', avatarUrl: ''),
-    Contact(name: 'Jane Smith', number: '987-654-3210', avatarUrl: ''),
-  ];
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  void _addContact() {
-    // Implement add contact functionality
+  List<Contact> contacts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContacts();
   }
 
-  void _editContact(Contact contact) {
-    // Implement edit contact functionality
+  Future<void> _loadContacts() async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return;
+
+    final snapshot = await _firestore
+        .collection('Users')
+        .doc(userId)
+        .collection('Contacts')
+        .get();
+
+    setState(() {
+      contacts = snapshot.docs
+          .map((doc) => Contact(
+                id: doc.id,
+                name: doc['name'],
+                number: doc['number'],
+                avatarUrl: doc['avatarUrl'],
+              ))
+          .toList();
+    });
+  }
+
+  Future<void> _addContact(Contact newContact) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return;
+
+    final docRef = await _firestore
+        .collection('Users')
+        .doc(userId)
+        .collection('Contacts')
+        .add(newContact.toMap());
+
+    setState(() {
+      contacts.add(newContact.copyWith(id: docRef.id));
+    });
+  }
+
+  Future<void> _editContact(Contact updatedContact) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null || updatedContact.id == null) return;
+
+    await _firestore
+        .collection('Users')
+        .doc(userId)
+        .collection('Contacts')
+        .doc(updatedContact.id)
+        .update(updatedContact.toMap());
+
+    setState(() {
+      final index =
+          contacts.indexWhere((contact) => contact.id == updatedContact.id);
+      if (index != -1) {
+        contacts[index] = updatedContact;
+      }
+    });
+  }
+
+  Future<void> _deleteContact(Contact contactToDelete) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null || contactToDelete.id == null) return;
+
+    await _firestore
+        .collection('Users')
+        .doc(userId)
+        .collection('Contacts')
+        .doc(contactToDelete.id)
+        .delete();
+
+    setState(() {
+      contacts.removeWhere((contact) => contact.id == contactToDelete.id);
+    });
+  }
+
+  void _showContactDialog({Contact? contact}) {
+    final nameController = TextEditingController(text: contact?.name ?? '');
+    final numberController = TextEditingController(text: contact?.number ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(contact == null ? 'Add Contact' : 'Edit Contact'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(labelText: 'Name'),
+            ),
+            TextField(
+              controller: numberController,
+              decoration: InputDecoration(labelText: 'Number'),
+              keyboardType: TextInputType.phone,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final newContact = Contact(
+                // do not edit id
+                id: contact?.id,
+                name: nameController.text,
+                number: numberController.text,
+                avatarUrl: contact?.avatarUrl ?? '',
+              );
+
+              if (contact == null) {
+                _addContact(newContact);
+              } else {
+                _editContact(newContact);
+              }
+
+              Navigator.of(context).pop();
+            },
+            child: Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -35,13 +160,15 @@ class _ContactsPageState extends State<ContactsPage> {
         itemBuilder: (context, index) {
           return ContactItem(
             contact: contacts[index],
-            onEdit: () => _editContact(contacts[index]),
+            onEdit: () => _showContactDialog(contact: contacts[index]),
+            onDelete: () => _deleteContact(contacts[index]),
           );
         },
-        separatorBuilder: (context, index) => SizedBox(height: 10), // Adjust height for spacing
+        separatorBuilder: (context, index) =>
+            const SizedBox(height: 10),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addContact,
+        onPressed: () => _showContactDialog(),
         child: Icon(Icons.add),
       ),
     );
@@ -51,8 +178,14 @@ class _ContactsPageState extends State<ContactsPage> {
 class ContactItem extends StatelessWidget {
   final Contact contact;
   final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
-  const ContactItem({super.key, required this.contact, required this.onEdit});
+  const ContactItem({
+    super.key,
+    required this.contact,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -72,14 +205,20 @@ class ContactItem extends StatelessWidget {
         ),
         title: Text(contact.name, style: TextStyle(color: Colors.black)),
         subtitle: Text(contact.number, style: TextStyle(color: Colors.black87)),
-        trailing: IconButton(
-          icon: Icon(Icons.edit, color: Colors.black54),
-          onPressed: onEdit,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(Icons.edit, color: Colors.black54),
+              onPressed: onEdit,
+            ),
+            IconButton(
+              icon: Icon(Icons.delete, color: Colors.red),
+              onPressed: onDelete,
+            ),
+          ],
         ),
       ),
     );
   }
 }
-
-
-
