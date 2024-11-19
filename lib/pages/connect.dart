@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:odyssey/components/connect_search_bar.dart';
 import '../pages/connect_local.dart';
 import '../pages/connect_friends.dart';
@@ -6,7 +7,9 @@ import '../pages/connect_you.dart';
 
 //The Connect page of the Odyssey App
 class Connect extends StatefulWidget{
-  const Connect({super.key});
+  final String? tab;
+
+  const Connect({super.key, this.tab});
 
   @override
   State<Connect> createState() => _ConnectState();
@@ -21,11 +24,23 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin{
   ];
 
   late TabController _tabController;
+  final List<String> _tabRoutes = ['local', 'friends', 'you'];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(vsync: this, length: connectTabs.length);
+    
+    int initIndex = _tabRoutes.indexOf(widget.tab ?? 'local');
+    if(initIndex == -1){
+      initIndex = 0;
+    }
+    _tabController = TabController(vsync: this, length: _tabRoutes.length, initialIndex: initIndex);
+
+    _tabController.addListener((){
+      if(_tabController.indexIsChanging){
+        context.go('/connect/${_tabRoutes[_tabController.index]}');
+      }
+    });
   }
 
   @override
@@ -48,21 +63,11 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin{
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: connectTabs.map((Tab t){
-                  final String label = t.text!;
-                  final String className = "Connect$label";
-                  switch (className) {
-                    case 'ConnectFriends':
-                      return ConnectFriends();
-                    case 'ConnectYou':
-                      return ConnectYou();
-                    case 'ConnectLocal':
-                      return ConnectLocal();
-                    default:
-                      return ConnectLocal();
-                  }
-                }
-              ).toList(),
+              children: [
+                ConnectLocal(),
+                ConnectFriends(),
+                ConnectYou()
+              ],
             ),
           )
         ],
