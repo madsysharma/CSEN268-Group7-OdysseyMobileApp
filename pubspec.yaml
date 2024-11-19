@@ -40,7 +40,7 @@ dependencies:
   bloc: ^8.1.4
   meta: ^1.15.0
   flutter_bloc: ^8.1.6
-  google_maps_flutter: ^2.9.0
+  google_maps_flutter: ^2.3.0
   image_picker: ^1.1.2
   path_provider: ^2.1.5
   shared_preferences: ^2.3.3
@@ -52,6 +52,14 @@ dependencies:
   cloud_firestore: ^5.5.0
 
 
+  location: ^5.0.0
+  flutter_polyline_points: ^2.1.0
+  # speech_to_text: ^5.4.0
+  
+  http: ^1.2.2
+  
+  
+  
 
 dev_dependencies:
   flutter_test:
