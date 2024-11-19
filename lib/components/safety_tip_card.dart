@@ -4,7 +4,7 @@ class SafetyTipCard extends StatelessWidget {
   final String title;
   final String content;
 
-  SafetyTipCard({required this.title, required this.content});
+  const SafetyTipCard({super.key, required this.title, required this.content});
 
   @override
   Widget build(BuildContext context) {

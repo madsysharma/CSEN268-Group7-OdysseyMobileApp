@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:odyssey/bloc/auth/auth_bloc.dart';
+import 'package:odyssey/components/alerts/alert_dialog.dart';
 import 'package:odyssey/components/navigation/app_bar.dart';
 import 'package:odyssey/utils/paths.dart';
 import 'package:odyssey/utils/spaces.dart';
@@ -31,7 +32,35 @@ class ProfilePageState extends State<ProfilePage> {
     setState(() {
       _profileImage = File(imagePath!);
     });
-    }
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => MyAlertDialog(
+        title: 'Logout',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Are you sure you want to logout?",
+                style: Theme.of(context).textTheme.headlineSmall),
+            mediumVertical,
+            ElevatedButton(
+                onPressed: () {
+                  context.read<AuthBloc>().add(LogOutEvent());
+                },
+                child: Text("Yes, Logout")),
+            smallVertical,
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text("Cancel"))
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +110,7 @@ class ProfilePageState extends State<ProfilePage> {
                 minVerticalPadding: 10,
                 title: Text('Saved locations'),
                 onTap: () {
-                  // Handle navigation or functionality
+                  GoRouter.of(context).go(Paths.savedLocations);
                 },
               ),
               Divider(),
@@ -89,7 +118,7 @@ class ProfilePageState extends State<ProfilePage> {
                 minVerticalPadding: 10,
                 title: Text('Maps download network'),
                 onTap: () {
-                  // Handle navigation or functionality
+                  GoRouter.of(context).go(Paths.downloadNetwork);
                 },
               ),
               Divider(),
@@ -97,7 +126,7 @@ class ProfilePageState extends State<ProfilePage> {
                 minVerticalPadding: 10,
                 title: Text('Manage membership'),
                 onTap: () {
-                  // Handle navigation or functionality
+                  GoRouter.of(context).go(Paths.manageMembership);
                 },
               ),
               Divider(),
@@ -107,7 +136,7 @@ class ProfilePageState extends State<ProfilePage> {
                   'Logout',
                 ),
                 onTap: () {
-                  context.read<AuthBloc>().add(LogOutEvent());
+                  _showLogoutDialog();
                 },
               ),
             ],

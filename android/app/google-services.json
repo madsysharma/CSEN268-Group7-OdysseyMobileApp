@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "749175602340",
+    "project_id": "csen268-f24-g7-dcfb7",
+    "storage_bucket": "csen268-f24-g7-dcfb7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:749175602340:android:0304317e6a811d86377a31",
+        "android_client_info": {
+          "package_name": "com.csen268.f24.g7"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAODiKMeJha5QDPmxlL77CauNvVrUNOSgE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:749175602340:android:a646ae0a75cf99da377a31",
+        "android_client_info": {
+          "package_name": "com.example.odyssey"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAODiKMeJha5QDPmxlL77CauNvVrUNOSgE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
