@@ -4,6 +4,8 @@ class Location {
   String img;
 
   Location({required this.name, required this.city, required this.img});
+
+  getLocation() {}
 }
 
 class LocationDetails {
