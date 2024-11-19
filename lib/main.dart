@@ -54,6 +54,20 @@ class MyApp extends StatelessWidget {
               GoRoute(
                 path: Paths.connect,
                 builder: (context, state) => Connect(),
+                routes: [
+                  GoRoute(
+                    path: 'local',
+                    builder: (context, state) => Connect(tab: 'local',)
+                  ),
+                  GoRoute(
+                    path: 'friends',
+                    builder: (context, state) => Connect(tab: 'friends',)
+                  ),
+                  GoRoute(
+                    path: 'you',
+                    builder: (context, state) => Connect(tab: 'you',)
+                  ),
+                ]
               ),
               GoRoute(
                 path: Paths.maps,
