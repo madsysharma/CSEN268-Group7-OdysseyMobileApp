@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:location/location.dart';
 import 'package:http/http.dart' as http;
+import 'package:odyssey/model/location.dart';
 import 'dart:convert';
 import 'search_page.dart'; // Import the SearchPage for place search
 
@@ -14,7 +14,7 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   late GoogleMapController mapController;
   LatLng _center = const LatLng(37.7749, -122.4194); // Default location (San Francisco)
-  Location _location = Location();
+  Location _location = Location(name: '', city: '', img: '');
   late BitmapDescriptor customMarkerIcon;
   final Set<Marker> _markers = {};
   bool isLoading = false;
