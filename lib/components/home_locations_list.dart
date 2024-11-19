@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:odyssey/mockdata/locations.dart';
+import 'package:odyssey/bloc/locations/locations_bloc.dart';
 import 'package:odyssey/model/location.dart';
 import 'package:odyssey/utils/paths.dart';
 
@@ -9,15 +10,29 @@ class HomeLocationsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: ListView.builder(
-        scrollDirection: Axis.vertical,
-        itemCount: locations.length,
-        itemBuilder: (context, index) {
-          final location = locations[index];
-          return LocationCard(location: location);
-        },
-      ),
+    return BlocBuilder<LocationsBloc, LocationsState>(
+      builder: (context, state) {
+        return Expanded(
+          child: state is LocationsSuccess
+              ? ListView.builder(
+                  scrollDirection: Axis.vertical,
+                  itemCount: state.locations.length,
+                  itemBuilder: (context, index) {
+                    final location = state.locations[index];
+                    return LocationCard(location: location);
+                  },
+                )
+              : state is LocationsLoading
+                  ? Center(
+                      child: CircularProgressIndicator(),
+                    )
+                  : state is LocationsError
+                      ? Center(
+                          child: Text("Error fetching locations"),
+                        )
+                      : Container(),
+        );
+      },
     );
   }
 }
@@ -31,7 +46,7 @@ class LocationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
         onTap: () {
-          context.push(Paths.locationDetails, extra: location);
+          context.push(Paths.locationDetails, extra: location.id!);
         },
         child: Card(
           margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -45,7 +60,7 @@ class LocationCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
-                    location.img,
+                    location.images.first,
                     height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
