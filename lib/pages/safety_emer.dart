@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:odyssey/model/contact.dart';
 
 class ContactsPage extends StatefulWidget {
+  const ContactsPage({super.key});
+
   @override
   _ContactsPageState createState() => _ContactsPageState();
 }
@@ -50,7 +52,7 @@ class ContactItem extends StatelessWidget {
   final Contact contact;
   final VoidCallback onEdit;
 
-  ContactItem({required this.contact, required this.onEdit});
+  const ContactItem({super.key, required this.contact, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:odyssey/components/alerts/alert_dialog.dart';
 import 'package:odyssey/components/alerts/snack_bar.dart';
 import 'package:odyssey/components/forms/input.dart';
@@ -18,6 +20,7 @@ class EditProfilePage extends StatefulWidget {
 
 class EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
+  PhoneNumber? _phoneNumber;
 
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
@@ -32,7 +35,7 @@ class EditProfilePageState extends State<EditProfilePage> {
   final FocusNode numberFocus = FocusNode();
   final FocusNode locationFocus = FocusNode();
   final FocusNode passwordFocus = FocusNode();
-    Key avatarKey = UniqueKey();
+  Key avatarKey = UniqueKey();
 
   @override
   void initState() {
@@ -40,22 +43,23 @@ class EditProfilePageState extends State<EditProfilePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FocusScope.of(context).requestFocus(firstNameFocus);
     });
-  _loadSavedImage();
+    _loadSavedImage();
   }
 
-Future<void> _loadSavedImage() async {
-  final directory = await getApplicationDocumentsDirectory();
-  final imagePath = '${directory.path}/profile_image.png';
+  Future<void> _loadSavedImage() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final imagePath = '${directory.path}/profile_image.png';
 
-  final savedImage = File(imagePath);
+    final savedImage = File(imagePath);
 
-  if (await savedImage.exists()) {
-    setState(() {
-      _image = savedImage;
-    });
+    if (await savedImage.exists()) {
+      setState(() {
+        _image = savedImage;
+      });
+    }
   }
-}
 
+  @override
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
@@ -75,44 +79,72 @@ Future<void> _loadSavedImage() async {
   File? _image;
 
   Future<void> _pickImage(ImageSource source) async {
-  try {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: source);
 
-    if (pickedFile != null) {
-      print("Picked file path: ${pickedFile.path}"); // Debug print
-      File tempImage = File(pickedFile.path);
-      final savedImage = await _saveImage(tempImage);
+      if (pickedFile != null) {
+        print("Picked file path: ${pickedFile.path}");
+        File tempImage = File(pickedFile.path);
+        final savedImage = await _saveImage(tempImage);
 
-      setState(() {
-        _image = savedImage;
-        avatarKey = UniqueKey(); // Force reload of avatar
-      });
+        setState(() {
+          _image = savedImage;
+          avatarKey = UniqueKey();
+        });
 
-      PaintingBinding.instance.imageCache.clear();
-    } else {
-      showMessageSnackBar(context, "No image was selected");
+        PaintingBinding.instance.imageCache.clear();
+      } else {
+        showMessageSnackBar(context, "No image was selected");
+      }
+    } catch (e) {
+      showMessageSnackBar(context, "Error loading image");
     }
-  } catch (e) {
-    showMessageSnackBar(context, "Error loading image");
   }
-}
 
+  Future<File> _saveImage(File image) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final imagePath = '${directory.path}/profile_image.png';
+      final savedImage = await image.copy(imagePath);
 
- Future<File> _saveImage(File image) async {
-  try {
-    final directory = await getApplicationDocumentsDirectory();
-    final imagePath = '${directory.path}/profile_image.png';
-    final savedImage = await image.copy(imagePath);
-
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('profile_image_path', imagePath);
-    return savedImage;
-  } catch (e) {
-    showMessageSnackBar(context, "Error saving image");
-    rethrow;
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('profile_image_path', imagePath);
+      showMessageSnackBar(context, "New profile picture set");
+      return savedImage;
+    } catch (e) {
+      showMessageSnackBar(context, "Error saving image");
+      rethrow;
+    }
   }
-}
+
+  final List<String> _bayAreaAreaCodes = ['408', '415', '510', '650', '925'];
+
+  String? validatePhoneNumber(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Phone number is required';
+    }
+
+    // Prepend +1 if missing
+    String formattedValue = value.startsWith('+1') ? value : '+1$value';
+
+    // Remove all non-digit characters for validation
+    String digitsOnly = formattedValue.replaceAll(RegExp(r'\D'), '');
+
+    // Check for valid USA phone number length
+    if (!digitsOnly.startsWith('1') || digitsOnly.length != 11) {
+      return 'Enter a valid 10-digit USA phone number';
+    }
+
+    // Additional check for Bay Area area codes
+    List<String> bayAreaAreaCodes = ['408', '415', '510', '650', '925', '669'];
+    String areaCode = digitsOnly.substring(1, 4);
+    if (!bayAreaAreaCodes.contains(areaCode)) {
+      return 'Phone number must be from the Bay Area';
+    }
+
+    return null;
+  }
 
   void _showImageSourceDialog() {
     showDialog(
@@ -191,17 +223,17 @@ Future<void> _loadSavedImage() async {
                         color: Colors.black.withOpacity(0.65),
                         shape: BoxShape.circle,
                       ),
-                      child:  TextButton(
-                      onPressed: _showImageSourceDialog,
-                      child: Text(
-                        'Edit',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      child: TextButton(
+                        onPressed: _showImageSourceDialog,
+                        child: Text(
+                          'Edit',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
                     ),
                   ],
                 ),
@@ -244,20 +276,46 @@ Future<void> _loadSavedImage() async {
                           if (value == null || value.isEmpty) {
                             return 'Email is required';
                           }
-                          return null;
-                        },
-                      ),
-                      MyTextField(
-                        label: 'Phone Number',
-                        controller: _numberController,
-                        focusNode: numberFocus,
-                        nextFocusNode: locationFocus,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Phone number is required';
+                          if (EmailValidator.validate(_emailController.text) ==
+                              false) {
+                            return "Invalid email address";
                           }
                           return null;
                         },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 20),
+                        child: Focus(
+                          focusNode: numberFocus,
+                          child: InternationalPhoneNumberInput(
+                            onInputChanged: (PhoneNumber number) {
+                              setState(() {
+                                _phoneNumber = number;
+                              });
+                            },
+                            selectorConfig: const SelectorConfig(
+                              selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+                              showFlags: false,
+                            ),
+                            ignoreBlank: false,
+                            autoValidateMode: AutovalidateMode.disabled,
+                            initialValue:
+                                PhoneNumber(isoCode: 'US', dialCode: '+1'),
+                            countries: const ['US'],
+                            textFieldController: _numberController,
+                            formatInput: true,
+                            inputDecoration: InputDecoration(
+                              border: const OutlineInputBorder(),
+                              hintText: 'Enter phone number',
+                              labelText: 'Phone Number',
+                            ),
+                            validator: validatePhoneNumber,
+                            onFieldSubmitted: (_) {
+                              // Move focus to the email field
+                              FocusScope.of(context).requestFocus(locationFocus);
+                            },
+                          ),
+                        ),
                       ),
                       MyTextField(
                         label: 'Location',
@@ -295,7 +353,8 @@ Future<void> _loadSavedImage() async {
                       final isValid = _formKey.currentState!.validate();
                       if (isValid == true) {}
                     },
-                    label: Text("Save" , style: TextStyle(color: colorScheme.onPrimary)),
+                    label: Text("Save",
+                        style: TextStyle(color: colorScheme.onPrimary)),
                   ),
                   mediumHorizontal
                 ],
