@@ -24,10 +24,15 @@ import 'package:odyssey/pages/safety_tips.dart';
 import 'package:odyssey/pages/connect.dart';
 import 'package:odyssey/utils/paths.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Initialize Firebase before the app runs
+  // Initialize Firebase before the app runs
+  // await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(MultiBlocProvider(
     providers: [
       BlocProvider(create: (context) => AuthBloc()),
