@@ -5,6 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:odyssey/bloc/auth/auth_bloc.dart';
+import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
+import 'package:odyssey/bloc/locations/locations_bloc.dart';
 import 'package:odyssey/components/navigation/shell_bottom_nav_bar.dart';
 import 'package:odyssey/model/location.dart';
 import 'package:odyssey/pages/profile/download_network.dart';
@@ -40,6 +42,8 @@ void main() async {
   runApp(MultiBlocProvider(
     providers: [
       BlocProvider(create: (context) => AuthBloc()),
+      BlocProvider(create: (context) => LocationsBloc()),
+      BlocProvider(create: (context) => LocationDetailsBloc())
     ],
     child: const MyApp(),
   ));
@@ -143,8 +147,8 @@ class MyApp extends StatelessWidget {
           GoRoute(
               path: Paths.locationDetails,
               builder: (context, state) {
-                var location = state.extra as LocationDetails;
-                return LocationDetailsPage(location: location);
+                var location = state.extra as String;
+                return LocationDetailsPage(locationId: location);
               }),
           GoRoute(
             path: Paths.loginPage,
@@ -157,12 +161,14 @@ class MyApp extends StatelessWidget {
           var tryingToSignup = state.fullPath == Paths.signupPage;
           var tryingToUpdatePassword = state.fullPath == Paths.forgotPassword;
 
-          if (loggedIn && (tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
+          if (loggedIn &&
+              (tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
             // Redirect logged-in users away from login/signup pages to the home page
             return Paths.home;
           }
 
-          if (!loggedIn && !(tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
+          if (!loggedIn &&
+              !(tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
             // Redirect unauthenticated users to login if they are accessing a protected page
             return Paths.loginPage;
           }
