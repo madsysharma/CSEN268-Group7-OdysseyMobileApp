@@ -13,7 +13,8 @@ class MapPage extends StatefulWidget {
 
 class _MapPageState extends State<MapPage> {
   late GoogleMapController mapController;
-  LatLng _center = const LatLng(37.7749, -122.4194); // Default location (San Francisco)
+  LatLng _center =
+      const LatLng(37.7749, -122.4194); // Default location (San Francisco)
   Location _location = Location(name: '', city: '', img: '');
   late BitmapDescriptor customMarkerIcon;
   final Set<Marker> _markers = {};

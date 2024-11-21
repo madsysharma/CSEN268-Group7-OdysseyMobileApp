@@ -1,3 +1,7 @@
+import 'package:json_annotation/json_annotation.dart';
+
+part 'location.g.dart';
+
 class Location {
   String name;
   String city;
@@ -8,21 +12,45 @@ class Location {
   getLocation() {}
 }
 
+@JsonSerializable()
 class LocationDetails {
+  String? id;
   String name;
   String city;
-  String img;
+  List<String> images;
+  GeoCoordinates coordinates;
   String description;
-  Reviews reviews;
+  // populated only in details
+  Reviews? reviews;
 
   LocationDetails(
-      {required this.name,
+      {this.id,
+      required this.name,
       required this.city,
-      required this.img,
+      required this.images,
       required this.description,
-      required this.reviews});
+      this.reviews,
+      required this.coordinates});
+
+  static LocationDetails fromJson(Map<String, dynamic> json) =>
+      _$LocationDetailsFromJson(json);
+
+  Map<String, dynamic> toJson() => _$LocationDetailsToJson(this);
 }
 
+@JsonSerializable()
+class Reviews {
+  RatingsOverview? overview;
+  List<Review> reviews;
+
+  Reviews({this.overview, required this.reviews});
+
+  static Reviews fromJson(Map<String, dynamic> json) => _$ReviewsFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ReviewsToJson(this);
+}
+
+@JsonSerializable()
 class RatingsOverview {
   int oneStar;
   int twoStar;
@@ -37,23 +65,48 @@ class RatingsOverview {
     required this.fourStar,
     required this.fiveStar,
   });
+
+  static RatingsOverview fromJson(Map<String, dynamic> json) =>
+      _$RatingsOverviewFromJson(json);
+
+  Map<String, dynamic> toJson() => _$RatingsOverviewToJson(this);
 }
 
-class Reviews {
-  RatingsOverview overview;
-  List<Review> reviews;
-
-  Reviews({required this.overview, required this.reviews});
-}
-
+@JsonSerializable()
 class Review {
-  String userId;
+  String? id;
+  String userEmail;
   String review;
   int rating;
 
   Review({
-    required this.userId,
+    this.id,
+    required this.userEmail,
     required this.review,
     required this.rating,
   });
+
+  static Review fromJson(Map<String, dynamic> json) {
+    return _$ReviewFromJson(json);
+  }
+
+  Map<String, dynamic> toJson() => _$ReviewToJson(this);
+}
+
+@JsonSerializable()
+class GeoCoordinates {
+  final double latitude;
+  final double longitude;
+
+  GeoCoordinates({required this.latitude, required this.longitude});
+
+  @override
+  String toString() {
+    return 'Latitude: $latitude, Longitude: $longitude';
+  }
+
+  static GeoCoordinates fromJson(Map<String, dynamic> json) =>
+      _$GeoCoordinatesFromJson(json);
+
+  Map<String, dynamic> toJson() => _$GeoCoordinatesToJson(this);
 }
