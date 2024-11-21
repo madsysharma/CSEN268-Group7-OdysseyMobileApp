@@ -1,6 +1,6 @@
 // SafetyTipsList Page
 import 'package:flutter/material.dart';
-import 'package:odyssey/components/safety_tip_card.dart';
+import 'package:odyssey/components/cards/safety_tip_card.dart';
 
 class SafetyTips extends StatelessWidget {
   const SafetyTips({super.key});

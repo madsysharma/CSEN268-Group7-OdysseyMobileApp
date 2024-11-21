@@ -57,6 +57,7 @@ dependencies:
   # speech_to_text: ^5.4.0
   
   http: ^1.2.2
+  flutter_rating: ^2.0.2
   
   
   
@@ -95,6 +96,8 @@ flutter:
   - assets/icons8-add-user-male-96.png
   - assets/circle-profile-pic.jpg
   - assets/photo-1528543606781-2f6e6857f318.jpeg
+  - assets/icons8-friends-100.png
+  - assets/icons8-passport-100.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

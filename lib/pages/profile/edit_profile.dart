@@ -8,6 +8,7 @@ import 'package:odyssey/components/alerts/snack_bar.dart';
 import 'package:odyssey/components/forms/input.dart';
 import 'package:odyssey/components/navigation/app_bar.dart';
 import 'package:odyssey/utils/spaces.dart';
+import 'package:odyssey/utils/image_picker_utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -54,7 +55,7 @@ class EditProfilePageState extends State<EditProfilePage> {
 
     if (await savedImage.exists()) {
       setState(() {
-        _image = savedImage;
+        image = savedImage;
       });
     }
   }
@@ -76,10 +77,10 @@ class EditProfilePageState extends State<EditProfilePage> {
     super.dispose();
   }
 
-  File? _image;
+  File? image;
 
   Future<void> _pickImage(ImageSource source) async {
-    try {
+    /*try {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(source: source);
 
@@ -89,7 +90,7 @@ class EditProfilePageState extends State<EditProfilePage> {
         final savedImage = await _saveImage(tempImage);
 
         setState(() {
-          _image = savedImage;
+          image = savedImage;
           avatarKey = UniqueKey();
         });
 
@@ -99,22 +100,20 @@ class EditProfilePageState extends State<EditProfilePage> {
       }
     } catch (e) {
       showMessageSnackBar(context, "Error loading image");
-    }
-  }
-
-  Future<File> _saveImage(File image) async {
+    }*/
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      final imagePath = '${directory.path}/profile_image.png';
-      final savedImage = await image.copy(imagePath);
-
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('profile_image_path', imagePath);
-      showMessageSnackBar(context, "New profile picture set");
-      return savedImage;
+      final File? imageSaved = await pickImage(context, source);
+      if(imageSaved != null){
+        setState((){
+          image = imageSaved as File?;
+          avatarKey = UniqueKey();
+        });
+        PaintingBinding.instance.imageCache.clear();
+      } else {
+        showMessageSnackBar(context, "No image was selected");
+      }
     } catch (e) {
-      showMessageSnackBar(context, "Error saving image");
-      rethrow;
+      showMessageSnackBar(context, "Error loading image");
     }
   }
 
@@ -204,10 +203,10 @@ class EditProfilePageState extends State<EditProfilePage> {
                       key: avatarKey,
                       radius: 50,
                       backgroundColor: Colors.grey[300],
-                      backgroundImage: _image != null
-                          ? FileImage(_image!) as ImageProvider
+                      backgroundImage: image != null
+                          ? FileImage(image!) as ImageProvider
                           : null,
-                      child: _image == null
+                      child: image == null
                           ? Icon(
                               Icons.person,
                               size: 50,
