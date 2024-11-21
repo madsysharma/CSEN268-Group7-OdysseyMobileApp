@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,10 +23,12 @@ import 'package:odyssey/pages/safety.dart';
 import 'package:odyssey/pages/safety_checkin.dart';
 import 'package:odyssey/pages/safety_emer.dart';
 import 'package:odyssey/pages/safety_tips.dart';
-import 'package:odyssey/pages/connect.dart';
+import 'package:odyssey/pages/connect/connect.dart';
 import 'package:odyssey/utils/paths.dart';
+import 'package:odyssey/pages/connect/upload_post.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,7 +74,13 @@ class MyApp extends StatelessWidget {
                   ),
                   GoRoute(
                     path: 'you',
-                    builder: (context, state) => Connect(tab: 'you',)
+                    builder: (context, state) => Connect(tab: 'you',),
+                    routes: [
+                      GoRoute(
+                        path: Paths.post,
+                        builder: (context, state) => UploadPost(auth: FirebaseAuth.instance, firestore: FirebaseFirestore.instance,),
+                      )
+                    ]
                   ),
                 ]
               ),

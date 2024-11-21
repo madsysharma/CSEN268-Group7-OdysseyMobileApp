@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:odyssey/components/location_card.dart';
+import 'package:odyssey/components/cards/location_card.dart';
 
 
 class SafetyCheckin extends StatefulWidget {

@@ -3,10 +3,20 @@ import 'package:flutter/material.dart';
 //Card for user reviews
 class ReviewCard extends StatelessWidget{
   final String pageName;
-  const ReviewCard({super.key, required this.pageName});
+  final List<String> imgUrls;
+  const ReviewCard({super.key, required this.pageName, required this.imgUrls});
 
   @override
   Widget build(BuildContext context) {
+    String cardTitle="";
+    switch(this.pageName){
+      case "ConnectLocal":
+        cardTitle = "Name";
+      case "ConnectFriends":
+        cardTitle = "Friend Name";
+      case "ConnectYou":
+        cardTitle = "You";
+    }
     return Container(
       padding: EdgeInsets.only(left:20.0,right:20.0,top:10.0,bottom:10.0),
       child: Column(
@@ -29,7 +39,7 @@ class ReviewCard extends StatelessWidget{
                         child: Align(
                           alignment: Alignment.topLeft,
                           child: Text(
-                            pageName=="ConnectLocal"?"Name":"Friend Name",
+                            cardTitle,
                             style: Theme.of(context).textTheme.titleLarge,
                           )
                         ),
@@ -56,7 +66,33 @@ class ReviewCard extends StatelessWidget{
             children: [
               Align(
                 alignment: Alignment.topLeft,
-                child: Image(image: AssetImage("assets/photo-1528543606781-2f6e6857f318.jpeg")),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Expanded(
+                    child: ListView.builder(
+                      itemBuilder: (context, index){
+                        var newImage = Image.network(
+                        this.imgUrls[index],
+                        loadingBuilder: (context, child, loadingProgress){
+                          if(loadingProgress==null){
+                            return child;
+                          } else {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded/loadingProgress.expectedTotalBytes! : null,
+                              ),
+                            );
+                          }
+                        },
+                        errorBuilder: (context, error, stackTrace){
+                          return Text("Failed to load image");
+                        },);
+                        return newImage;
+                      },
+                      itemCount: this.imgUrls.length,
+                    ),
+                  ),
+                )
               ),
               SizedBox(height: 15.0,),
               Align(

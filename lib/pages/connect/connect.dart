@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:odyssey/components/connect_search_bar.dart';
-import '../pages/connect_local.dart';
-import '../pages/connect_friends.dart';
-import '../pages/connect_you.dart';
-
+import 'package:odyssey/components/searchbars/connect_search_bar.dart';
+import 'connect_local.dart';
+import 'connect_friends.dart';
+import 'connect_you.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 //The Connect page of the Odyssey App
 class Connect extends StatefulWidget{
   final String? tab;
@@ -25,6 +26,9 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin{
 
   late TabController _tabController;
   final List<String> _tabRoutes = ['local', 'friends', 'you'];
+  FirebaseAuth auth = FirebaseAuth.instance;
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
 
   @override
   void initState() {
@@ -64,9 +68,9 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin{
             child: TabBarView(
               controller: _tabController,
               children: [
-                ConnectLocal(),
-                ConnectFriends(),
-                ConnectYou()
+                ConnectLocal(auth: auth, firestore: firestore,),
+                ConnectFriends(auth: auth, firestore: firestore),
+                ConnectYou(auth: auth, firestore: firestore,)
               ],
             ),
           )
