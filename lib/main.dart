@@ -28,7 +28,6 @@ import 'package:odyssey/pages/connect/upload_post.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Initialize Firebase before the app runs
@@ -62,29 +61,31 @@ class MyApp extends StatelessWidget {
                 builder: (context, state) => HomeScreen(),
               ),
               GoRoute(
-                path: Paths.connect,
-                builder: (context, state) => Connect(tab: 'local'),
-                routes: [
-                  GoRoute(
-                    path: 'local',
-                    builder: (context, state) => Connect(tab: 'local',)
-                  ),
-                  GoRoute(
-                    path: 'friends',
-                    builder: (context, state) => Connect(tab: 'friends',)
-                  ),
-                  GoRoute(
-                    path: 'you',
-                    builder: (context, state) => Connect(tab: 'you',),
-                    routes: [
-                      GoRoute(
-                        path: Paths.post,
-                        builder: (context, state) => UploadPost(),
-                      )
-                    ]
-                  ),
-                ]
-              ),
+                  path: Paths.connect,
+                  builder: (context, state) => Connect(tab: 'local'),
+                  routes: [
+                    GoRoute(
+                        path: 'local',
+                        builder: (context, state) => Connect(
+                              tab: 'local',
+                            )),
+                    GoRoute(
+                        path: 'friends',
+                        builder: (context, state) => Connect(
+                              tab: 'friends',
+                            )),
+                    GoRoute(
+                        path: 'you',
+                        builder: (context, state) => Connect(
+                              tab: 'you',
+                            ),
+                        routes: [
+                          GoRoute(
+                            path: Paths.post,
+                            builder: (context, state) => UploadPost(),
+                          )
+                        ]),
+                  ]),
               GoRoute(
                 path: Paths.maps,
                 builder: (context, state) => MapPage(),
@@ -178,8 +179,11 @@ class MyApp extends StatelessWidget {
       listenWhen: (previous, current) => previous != current,
       listener: (context, state) {
         if (state is LoggedIn) {
+          // User is logged in, print their email
+          print("User is logged in with email: ${state.user?.email}");
           router.go(Paths.home);
         } else if (state is LoggedOut) {
+          // User is logged out
           router.go(Paths.loginPage);
         }
       },
