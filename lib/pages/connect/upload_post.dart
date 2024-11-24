@@ -7,206 +7,219 @@ import 'package:odyssey/components/alerts/snack_bar.dart';
 import 'package:odyssey/components/searchbars/location_list_bar.dart';
 import 'package:odyssey/utils/image_picker_utils.dart';
 import 'dart:io';
-import 'package:odyssey/mockdata/locations.dart';
 
-class UploadPost extends StatelessWidget{
-  final List<String>? labels;
-  final FirebaseAuth auth;
-  final FirebaseFirestore firestore;
-  const UploadPost({super.key, required this.auth, required this.firestore, this.labels});
+class UploadPost extends StatefulWidget{
+  const UploadPost({super.key});
 
+  @override
+  State<UploadPost> createState() => _UploadPostState();
+
+}
+
+class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMixin{
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   static List<String> filterSetOne = ["Arts", "Culture", "Food"];
   static List<String> filterSetTwo = ["History", "Nature", "Safe Spot"];
   static List<String> filterSetThree = ["Hidden Gem", "Pet-friendly", "Avoid"];
-
+  List<String>? labels;
+  String? reviewText = "";
+  List<File?> images = [];
+  int starRating = 0;
   @override
   Widget build(BuildContext context) {
-    String? reviewText = "";
-    List<File?> images = [];
-    int starRating = 0;
+    super.build(context);
     GlobalKey<LocationListBarState>? listBarKey = GlobalKey<LocationListBarState>();
     late OverlayEntry beforeUploadOverlay;
     late OverlayEntry afterUploadOverlay;
     late OverlayEntry imageSourceOverlay;
     return Scaffold(
       appBar: AppBar(title: Text("New Post"),),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 44.0, horizontal: 37.0),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: Expanded(
-            child: Column(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            //Location search section
+            LocationListBar(key: listBarKey,),
+            SizedBox(height: 28.0,),
+            //Photo upload section
+            Column(
               children: [
-                //Location search section
-                LocationListBar(key: listBarKey,),
-                SizedBox(height: 28.0,),
-                //Photo upload section
-                Column(
-                  children: [
-                    Text("Photo (allowed formats are JPG, JPEG and PNG):", ),
-                    SizedBox(height: 25.0,),
-                    ElevatedButton(
-                      onPressed: (){
-                        imageSourceOverlay = OverlayEntry(
-                          builder: (context) => SimpleDialog(
-                            children: [
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ListTile(
-                                    leading: Icon(Icons.camera_alt),
-                                    title: Text("Take Photo"),
-                                    onTap: () async{
-                                      Navigator.of(context).pop();
-                                      try {
-                                        File? image = await pickImage(context, ImageSource.camera);
-                                        if(image == null){
-                                          showMessageSnackBar(context, "No image was selected");
-                                        } else {
-                                          images.add(image);
-                                        }
-                                      } catch (e) {
-                                        showMessageSnackBar(context, "Error loading image");
-                                      }
-                                    }
-                                  ),
-                                  ListTile(
-                                    leading: Icon(Icons.photo_library),
-                                    title: Text("Choose Photo from Gallery"),
-                                    onTap: () async{
-                                      Navigator.of(context).pop();
-                                      try {
-                                        File? image = await pickImage(context, ImageSource.gallery);
-                                        if(image == null){
-                                          showMessageSnackBar(context, "No image was selected");
-                                        } else {
-                                          images.add(image);
-                                        }
-                                      } catch (e) {
-                                        showMessageSnackBar(context, "Error loading image");
-                                      }
-                                    },
-                                  ),
-                                ],
-                              )
-                            ],
-                          )
-                        );
-                        Overlay.of(context).insert(imageSourceOverlay);
-                      },
-                      child: Text("Upload photo", style: Theme.of(context).textTheme.headlineSmall,)
-                    )
-                  ],
-                ),
-                SizedBox(height: 28.0,),
-                Text("Select one or more tags:", style: Theme.of(context).textTheme.headlineSmall),
-                SizedBox(height: 28.0,),
-                //Tag selection section
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: filterSetOne.map((item){
-                        String filter = item;
-                        int index = filterSetOne.indexOf(item);
-                        return Padding(
-                          padding: EdgeInsets.only(right: index==2 ? 0.0 : 15.0),
-                          child: FilterChip(
-                            label: Text(item),
-                            onSelected: (bool selected){
-                              if(selected==true){
-                                labels?.add(filter);
-                              }else{
-                                labels?.remove(filter);
-                              }
-                          }),
-                        );
-                      }).toList()
-                    ),
-                    SizedBox(height: 24.0,),
-                    Row(
-                      children: filterSetTwo.map((item){
-                        String filter = item;
-                        int index = filterSetTwo.indexOf(item);
-                        return Padding(
-                          padding: EdgeInsets.only(right: index==2 ? 0.0 : 15.0),
-                          child: FilterChip(
-                            label: Text(item),
-                            onSelected: (bool selected){
-                              if(selected==true){
-                                labels?.add(filter);
-                              }else{
-                                labels?.remove(filter);
-                              }
-                          }),
-                        );
-                      }).toList()
-                    ),
-                    SizedBox(height: 24.0,),
-                    Row(
-                      children: filterSetThree.map((item){
-                        String filter = item;
-                        int index = filterSetThree.indexOf(item);
-                        return Padding(
-                          padding: EdgeInsets.only(right: index==2 ? 0.0 : 15.0),
-                          child: FilterChip(
-                            label: Text(item),
-                            onSelected: (bool selected){
-                              if(selected==true){
-                                labels?.add(filter);
-                              }else{
-                                labels?.remove(filter);
-                              }
-                          }),
-                        );
-                      }).toList()
-                    )
-                  ],
-                ),
-                SizedBox(height: 28.0),
-                //Star rating section
-                Align(
-                  child: Text("Rate this location:")
-                ),
-                Align(
-                  child: StarRating(
-                    allowHalfRating: false,
-                    onRatingChanged: (rating){
-                      starRating = rating as int;
-                    },
-                  ),
-                ),
-                SizedBox(height: 28.0,),
-                //Review field section
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text("Review: ", style: Theme.of(context).textTheme.headlineSmall,),
-                    SizedBox(height: 24.0,),
-                    TextField(
-                      enabled: true,
-                      onChanged: (value){
-                        reviewText = value;
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(height: 28.0,),
+                Text("Photo (allowed formats are JPG, JPEG and PNG):", ),
+                SizedBox(height: 25.0,),
                 ElevatedButton(
                   onPressed: (){
-                    beforeUploadOverlay = OverlayEntry(
+                    imageSourceOverlay = OverlayEntry(
                       builder: (context) => SimpleDialog(
-                        title: Text("Good to go?", style: Theme.of(context).textTheme.headlineSmall),
                         children: [
-                          Padding(
-                            padding: EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0, bottom: 0.0),
-                            child: Text("If you want to continue editing your post, click \"No\"; otherwise click \"Yes\" and spread the word!", style: Theme.of(context).textTheme.bodyMedium)
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8.0, right: 24.0, top: 24.0, bottom: 24.0),
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ListTile(
+                                  leading: Icon(Icons.camera_alt),
+                                  title: Text("Take Photo"),
+                                  onTap: () async{
+                                    Navigator.of(context).pop();
+                                    try {
+                                      File? image = await pickImage(context, ImageSource.camera);
+                                      if(image == null){
+                                        showMessageSnackBar(context, "No image was selected");
+                                      } else {
+                                        setState(() {
+                                          images.add(image);
+                                        });
+                                      }
+                                    } catch (e) {
+                                      showMessageSnackBar(context, "Error loading image");
+                                    }
+                                  }
+                                ),
+                                ListTile(
+                                  leading: Icon(Icons.photo_library),
+                                  title: Text("Choose Photo from Gallery"),
+                                  onTap: () async{
+                                    Navigator.of(context).pop();
+                                    try {
+                                      File? image = await pickImage(context, ImageSource.gallery);
+                                      if(image == null){
+                                        showMessageSnackBar(context, "No image was selected");
+                                      } else {
+                                        setState(() {
+                                          images.add(image);
+                                        });
+                                      }
+                                    } catch (e) {
+                                      showMessageSnackBar(context, "Error loading image");
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          )
+                        ],
+                      )
+                    );
+                    Overlay.of(context).insert(imageSourceOverlay);
+                  },
+                  child: Text("Upload photo", style: Theme.of(context).textTheme.headlineSmall,)
+                )
+              ],
+            ),
+            SizedBox(height: 13.0,),
+            SizedBox(
+              height: 100.0,
+              child: ListView.builder(
+                shrinkWrap: true,
+                scrollDirection: Axis.horizontal,
+                itemBuilder: (context, index){
+                  return OutlinedButton.icon(
+                    icon: Icon(Icons.delete),
+                    onPressed: (){
+                      setState(() {
+                        images.remove(images[index]);
+                      });
+                    },
+                    label: Text(images[index]?.path.split('/').last ?? "")
+                  );
+                }
+              ),
+            ),
+            SizedBox(height: 28.0,),
+            Text("Select one or more tags:", style: Theme.of(context).textTheme.headlineSmall),
+            SizedBox(height: 28.0,),
+            //Tag selection section
+            Wrap(
+              spacing: 15.0,
+              runSpacing: 15.0,
+              children:
+                filterSetOne.map((item) {
+                  return FilterChip(
+                  label: Text(item),
+                  onSelected: (selected) {
+                    setState(() {
+                      selected ? labels?.add(item) : labels?.remove(item);
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            Wrap(
+              spacing: 15.0,
+              runSpacing: 15.0,
+              children:
+                filterSetTwo.map((item) {
+                  return FilterChip(
+                  label: Text(item),
+                  onSelected: (selected) {
+                    setState(() {
+                      selected ? labels?.add(item) : labels?.remove(item);
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            Wrap(
+              spacing: 15.0,
+              runSpacing: 15.0,
+              children:
+                filterSetThree.map((item) {
+                  return FilterChip(
+                  label: Text(item),
+                  onSelected: (selected) {
+                    setState(() {
+                      selected ? labels?.add(item) : labels?.remove(item);
+                    });
+                  },
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 28.0),
+            //Star rating section
+            Center(
+              child: Text("Rate this location:")
+            ),
+            Center(
+              child: StarRating(
+                allowHalfRating: false,
+                onRatingChanged: (rating){
+                  setState(() {
+                    starRating = rating as int;
+                  });
+                },
+              ),
+            ),
+            SizedBox(height: 28.0,),
+            //Review field section
+            Text("Review: ", style: Theme.of(context).textTheme.headlineSmall,),
+            SizedBox(height: 24.0,),
+            TextField(
+              enabled: true,
+              onChanged: (value){
+                setState(() {
+                  reviewText = value;
+                });
+              },
+            ),
+            SizedBox(height: 28.0,),
+            ElevatedButton(
+              onPressed: (){
+                beforeUploadOverlay = OverlayEntry(
+                  builder: (context) => SimpleDialog(
+                    title: Text("Good to go?", style: Theme.of(context).textTheme.headlineSmall),
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0, bottom: 0.0),
+                        child: Text("If you want to continue editing your post, click \"No\"; otherwise click \"Yes\" and spread the word!", style: Theme.of(context).textTheme.bodyMedium)
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8.0, right: 24.0, top: 24.0, bottom: 24.0),
+                              child: Expanded(
                                 child: Row(
                                   children: [
                                     SimpleDialogOption(
@@ -268,20 +281,23 @@ class UploadPost extends StatelessWidget{
                                   ],
                                 ),
                               ),
-                            ],
-                          )
-                        ],
+                            ),
+                          ],
+                        ),
                       )
-                    );
-                    Overlay.of(context).insert(beforeUploadOverlay);
-                  },
-                  child: Text("Upload your post", style: Theme.of(context).textTheme.headlineSmall)
-                )
-              ],
-            ),
-          ),
+                    ],
+                  )
+                );
+                Overlay.of(context).insert(beforeUploadOverlay);
+              },
+              child: Text("Upload your post", style: Theme.of(context).textTheme.headlineSmall)
+            )
+          ],
         ),
       ),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
