@@ -128,14 +128,17 @@ class LoginPageState extends State<LoginPage> {
                           Flexible(
                             child: FloatingActionButton.extended(
                               onPressed: () {
-                                context.read<AuthBloc>().add(LogInEvent());
-                                // final isValid =
-                                //     formKey.currentState!.validate();
-                                // if (isValid) {
-                                //   context.read<AuthBloc>().add(
-                                //         LogInEvent(),
-                                //       );
-                                // }
+                                // Validate the form
+                                final isValid =
+                                    formKey.currentState!.validate();
+                                if (isValid) {
+                                  // Pass email and password to the LogInEvent
+                                  final email = _emailController.text.trim();
+                                  final password =
+                                      _passwordController.text.trim();
+                                  context.read<AuthBloc>().add(LogInEvent(
+                                      email: email, password: password));
+                                }
                               },
                               label: const Text("Login"),
                             ),
@@ -154,10 +157,9 @@ class LoginPageState extends State<LoginPage> {
                   ),
                 ),
               );
-            
             }
-            // Fallback for unexpected states
-            return const Center(child: Text("Unexpected state"));
+            // unexpected state page
+            return const Center(child: Text("Unexpected state of logging in"));
           },
         ),
       ),

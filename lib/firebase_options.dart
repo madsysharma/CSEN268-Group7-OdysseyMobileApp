@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'csen268-f24-g7-dcfb7.firebasestorage.app',
     measurementId: 'G-RFP3CYYFRY',
   );
+
 }
