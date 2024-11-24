@@ -23,6 +23,7 @@ import 'package:odyssey/pages/safety_checkin.dart';
 import 'package:odyssey/pages/safety_emer.dart';
 import 'package:odyssey/pages/safety_tips.dart';
 import 'package:odyssey/pages/connect/connect.dart';
+import 'package:odyssey/pages/connect/friend_request.dart';
 import 'package:odyssey/utils/paths.dart';
 import 'package:odyssey/pages/connect/upload_post.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -67,11 +68,23 @@ class MyApp extends StatelessWidget {
                 routes: [
                   GoRoute(
                     path: 'local',
-                    builder: (context, state) => Connect(tab: 'local',)
+                    builder: (context, state) => Connect(tab: 'local',),
+                    routes: [
+                      GoRoute(
+                        path: Paths.friendReq,
+                        builder: (context, state) => FriendRequest(),
+                      ),
+                    ]
                   ),
                   GoRoute(
                     path: 'friends',
-                    builder: (context, state) => Connect(tab: 'friends',)
+                    builder: (context, state) => Connect(tab: 'friends',),
+                    routes: [
+                      GoRoute(
+                        path: Paths.friendReq,
+                        builder: (context, state) => FriendRequest(),
+                      ),
+                    ]
                   ),
                   GoRoute(
                     path: 'you',
@@ -80,7 +93,11 @@ class MyApp extends StatelessWidget {
                       GoRoute(
                         path: Paths.post,
                         builder: (context, state) => UploadPost(),
-                      )
+                      ),
+                      GoRoute(
+                        path: Paths.friendReq,
+                        builder: (context, state) => FriendRequest(),
+                      ),
                     ]
                   ),
                 ]

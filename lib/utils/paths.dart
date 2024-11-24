@@ -3,6 +3,7 @@ class Paths {
   static const String locationDetails = "/locationdetails/:id";
   static const String connect = "/connect";
   static const String post = "/post";
+  static const String friendReq = '/friendreq';
   static const String maps = "/maps";
   static const String safety = "/safety";
   static const String profile = "/profile";

@@ -19,9 +19,15 @@ class ConnectSearchBar extends StatelessWidget implements PreferredSizeWidget{
             ),
           ),
           SizedBox(width: 10.0,),
-          IconButton(onPressed: (){}, icon: Image.asset("assets/icons8-bell-96.png"), constraints: BoxConstraints(minHeight: 50.0, maxHeight: 50.0, minWidth: 50.0, maxWidth: 50.0),),
+          IconButton(
+            onPressed: (){},
+            icon: Image.asset("assets/icons8-bell-96.png"), constraints: BoxConstraints(minHeight: 50.0, maxHeight: 50.0, minWidth: 50.0, maxWidth: 50.0),
+          ),
           SizedBox(width: 10.0,),
-          IconButton(onPressed: (){}, icon: Image.asset("assets/icons8-add-user-male-96.png"), constraints: BoxConstraints(minHeight: 50.0, maxHeight: 50.0, minWidth: 50.0, maxWidth: 50.0))
+          IconButton(
+            onPressed: (){},
+            icon: Image.asset("assets/icons8-add-user-male-96.png"), constraints: BoxConstraints(minHeight: 50.0, maxHeight: 50.0, minWidth: 50.0, maxWidth: 50.0)
+          )
         ],
       )
     );
