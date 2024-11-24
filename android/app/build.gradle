@@ -14,11 +14,17 @@ java {
     }
 }
 
+dependencies {
+    // AndroidX dependencies
+    implementation 'androidx.core:core:1.12.0'
+    implementation 'androidx.annotation:annotation:1.6.0'
+    implementation "androidx.appcompat:appcompat:1.7.0"
+}
+
 android {
     ndkVersion = "25.1.8937393"
     namespace = "com.example.odyssey"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -27,6 +33,10 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8
+    }
+
+    lint {
+        baseline = file("lint-baseline.xml")
     }
 
     defaultConfig {
@@ -45,6 +55,13 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.debug
+        }
+    }
+
+    buildscript {
+        dependencies {
+            classpath 'com.android.tools.build:gradle:8.5.0' // Use the latest compatible version
+            classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20'
         }
     }
 }

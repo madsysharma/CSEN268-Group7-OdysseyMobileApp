@@ -10,7 +10,6 @@ import 'package:odyssey/components/navigation/app_bar.dart';
 import 'package:odyssey/utils/spaces.dart';
 import 'package:odyssey/utils/image_picker_utils.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});

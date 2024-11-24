@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,7 +6,6 @@ import 'package:odyssey/bloc/auth/auth_bloc.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
 import 'package:odyssey/bloc/locations/locations_bloc.dart';
 import 'package:odyssey/components/navigation/shell_bottom_nav_bar.dart';
-import 'package:odyssey/model/location.dart';
 import 'package:odyssey/pages/profile/download_network.dart';
 import 'package:odyssey/pages/profile/edit_profile.dart';
 import 'package:odyssey/pages/home.dart';
@@ -66,7 +63,7 @@ class MyApp extends StatelessWidget {
               ),
               GoRoute(
                 path: Paths.connect,
-                builder: (context, state) => Connect(),
+                builder: (context, state) => Connect(tab: 'local'),
                 routes: [
                   GoRoute(
                     path: 'local',
@@ -82,7 +79,7 @@ class MyApp extends StatelessWidget {
                     routes: [
                       GoRoute(
                         path: Paths.post,
-                        builder: (context, state) => UploadPost(auth: FirebaseAuth.instance, firestore: FirebaseFirestore.instance,),
+                        builder: (context, state) => UploadPost(),
                       )
                     ]
                   ),

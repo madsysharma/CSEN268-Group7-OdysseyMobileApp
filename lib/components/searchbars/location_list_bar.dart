@@ -12,6 +12,7 @@ class LocationListBar extends StatefulWidget{
 class LocationListBarState extends State<LocationListBar> {
   List<LocationDetails> searchResults = [];
   String selectedLoc = "";
+
   void onQueryChange(String q){
     setState(() {
       if(q.isEmpty){
@@ -26,32 +27,35 @@ class LocationListBarState extends State<LocationListBar> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SearchBar(
-            leading: Icon(Icons.search),
-            hintText: "Search for location to review",
-            onChanged: onQueryChange,
-          ),
-          Expanded(
-            child: ListView.builder(
+      child: Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SearchBar(
+              leading: Icon(Icons.search),
+              hintText: "Search for location to review",
+              onChanged: onQueryChange,
+            ),
+            ListView.builder(
+              shrinkWrap: true,
               itemCount: searchResults.length,
               itemBuilder: (context, index){
                 return ListTile(
+                  tileColor: Theme.of(context).listTileTheme.tileColor,
                   title: searchResults.length>0 ? Text(searchResults[index].name) : Text("No locations found"),
                   onTap: (){
                     if(searchResults.length>0){
                       setState(() {
                         selectedLoc = searchResults[index].name;
+                        searchResults.clear();
                       });
                     }
                   },
                 );
               }
             )
-          )
-        ],
+          ],
+        ),
       ),
     );
   }

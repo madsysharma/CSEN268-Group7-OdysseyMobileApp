@@ -4,8 +4,6 @@ import 'package:odyssey/components/searchbars/connect_search_bar.dart';
 import 'connect_local.dart';
 import 'connect_friends.dart';
 import 'connect_you.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 //The Connect page of the Odyssey App
 class Connect extends StatefulWidget{
   final String? tab;
@@ -26,18 +24,13 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin{
 
   late TabController _tabController;
   final List<String> _tabRoutes = ['local', 'friends', 'you'];
-  FirebaseAuth auth = FirebaseAuth.instance;
-  FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 
   @override
   void initState() {
     super.initState();
     
-    int initIndex = _tabRoutes.indexOf(widget.tab ?? 'local');
-    if(initIndex == -1){
-      initIndex = 0;
-    }
+    final int initIndex = _tabRoutes.indexOf(widget.tab ?? 'local').clamp(0, _tabRoutes.length - 1);
     _tabController = TabController(vsync: this, length: _tabRoutes.length, initialIndex: initIndex);
 
     _tabController.addListener((){
@@ -68,9 +61,9 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin{
             child: TabBarView(
               controller: _tabController,
               children: [
-                ConnectLocal(auth: auth, firestore: firestore,),
-                ConnectFriends(auth: auth, firestore: firestore),
-                ConnectYou(auth: auth, firestore: firestore,)
+                ConnectLocal(),
+                ConnectFriends(),
+                ConnectYou()
               ],
             ),
           )
