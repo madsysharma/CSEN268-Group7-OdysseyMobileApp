@@ -27,35 +27,33 @@ class LocationListBarState extends State<LocationListBar> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(10.0),
-      child: Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SearchBar(
-              leading: Icon(Icons.search),
-              hintText: "Search for location to review",
-              onChanged: onQueryChange,
-            ),
-            ListView.builder(
-              shrinkWrap: true,
-              itemCount: searchResults.length,
-              itemBuilder: (context, index){
-                return ListTile(
-                  tileColor: Theme.of(context).listTileTheme.tileColor,
-                  title: searchResults.length>0 ? Text(searchResults[index].name) : Text("No locations found"),
-                  onTap: (){
-                    if(searchResults.length>0){
-                      setState(() {
-                        selectedLoc = searchResults[index].name;
-                        searchResults.clear();
-                      });
-                    }
-                  },
-                );
-              }
-            )
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SearchBar(
+            leading: Icon(Icons.search),
+            hintText: "Search for location to review",
+            onChanged: onQueryChange,
+          ),
+          ListView.builder(
+            shrinkWrap: true,
+            itemCount: searchResults.length,
+            itemBuilder: (context, index){
+              return ListTile(
+                tileColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                title: searchResults.length>0 ? Text(searchResults[index].name) : Text("No locations found"),
+                onTap: (){
+                  if(searchResults.length>0){
+                    setState(() {
+                      selectedLoc = searchResults[index].name;
+                      searchResults.clear();
+                    });
+                  }
+                },
+              );
+            }
+          )
+        ],
       ),
     );
   }
