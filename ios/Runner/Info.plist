@@ -28,10 +28,16 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
-	<!-- <key>NSSpeechRecognitionUsageDescription</key> -->
-	<!-- <string>Permission required to record audio for speech </string> -->
-	<!-- <key>NSMicrophoneUsageDescription</key> -->
-	<!-- <string>Permission required to record audio for speech </string> -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+     <string>This app needs access to location when open.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Permission required to record audio for speech </string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Permission required to record audio for speech </string>
+	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
+ <key>YourPurposeKey</key>
+  <string>The example App requires temporary access to the device&apos;s precise location.</string>
+
 
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
@@ -50,5 +56,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+ 
 </dict>
 </plist>
