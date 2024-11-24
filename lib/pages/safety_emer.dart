@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:odyssey/model/contact.dart';
 
 class ContactsPage extends StatefulWidget {
@@ -15,6 +16,8 @@ class _ContactsPageState extends State<ContactsPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   List<Contact> contacts = [];
+  // Variable to hold error message
+  String errorMessage = ''; 
 
   @override
   void initState() {
@@ -27,7 +30,7 @@ class _ContactsPageState extends State<ContactsPage> {
     if (userId == null) return;
 
     final snapshot = await _firestore
-        .collection('Users')
+        .collection('User')
         .doc(userId)
         .collection('Contacts')
         .get();
@@ -49,7 +52,7 @@ class _ContactsPageState extends State<ContactsPage> {
     if (userId == null) return;
 
     final docRef = await _firestore
-        .collection('Users')
+        .collection('User')
         .doc(userId)
         .collection('Contacts')
         .add(newContact.toMap());
@@ -64,7 +67,7 @@ class _ContactsPageState extends State<ContactsPage> {
     if (userId == null || updatedContact.id == null) return;
 
     await _firestore
-        .collection('Users')
+        .collection('User')
         .doc(userId)
         .collection('Contacts')
         .doc(updatedContact.id)
@@ -84,7 +87,7 @@ class _ContactsPageState extends State<ContactsPage> {
     if (userId == null || contactToDelete.id == null) return;
 
     await _firestore
-        .collection('Users')
+        .collection('User')
         .doc(userId)
         .collection('Contacts')
         .doc(contactToDelete.id)
@@ -95,40 +98,88 @@ class _ContactsPageState extends State<ContactsPage> {
     });
   }
 
-  void _showContactDialog({Contact? contact}) {
-    final nameController = TextEditingController(text: contact?.name ?? '');
-    final numberController = TextEditingController(text: contact?.number ?? '');
+void _showContactDialog({Contact? contact}) {
+  final nameController = TextEditingController(text: contact?.name ?? '');
+  final numberController = TextEditingController(text: contact?.number ?? '');
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(contact == null ? 'Add Contact' : 'Edit Contact'),
-        content: Column(
+  // Create a GlobalKey for the Form
+  final _formKey = GlobalKey<FormState>();
+
+  // Reset error message on dialog opening
+  setState(() {
+    errorMessage = '';
+  });
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(contact == null ? 'Add Contact' : 'Edit Contact'),
+      content: Form(
+        // Use the Form key to validate
+        key: _formKey,
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
+            TextFormField(
               controller: nameController,
               decoration: InputDecoration(labelText: 'Name'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Name cannot be empty';
+                }
+                if (value.length > 15) {
+                  return 'Name cannot be more than 15 characters';
+                }
+                return null; // No error
+              },
             ),
-            TextField(
+            TextFormField(
               controller: numberController,
-              decoration: InputDecoration(labelText: 'Number'),
+              decoration: InputDecoration(
+                labelText: 'Number',
+                // Display error message
+                errorText: errorMessage.isEmpty ? null : errorMessage,
+              ),
               keyboardType: TextInputType.phone,
+              inputFormatters: [
+                // Only digits for input
+                FilteringTextInputFormatter.digitsOnly, 
+              ],
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Number cannot be empty';
+                }
+                if (value.length > 15) {
+                  return 'Number cannot be more than 15 characters';
+                }
+                if (value.contains(' ')) {
+                  return 'Number cannot contain spaces';
+                }
+                if (!RegExp(r'^\d+$').hasMatch(value)) {
+                  return 'Please enter a valid phone number';
+                }
+                // No error
+                return null;
+              },
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            if (_formKey.currentState?.validate() ?? false) {
+              final name = nameController.text;
+              final number = numberController.text;
+
               final newContact = Contact(
-                // do not edit id
                 id: contact?.id,
-                name: nameController.text,
-                number: numberController.text,
+                name: name,
+                number: number,
                 avatarUrl: contact?.avatarUrl ?? '',
               );
 
@@ -139,13 +190,20 @@ class _ContactsPageState extends State<ContactsPage> {
               }
 
               Navigator.of(context).pop();
-            },
-            child: Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
+            } else {
+              // If the form is invalid, display the error message
+              setState(() {
+                errorMessage = 'Please fix the errors';
+              });
+            }
+          },
+          child: Text('Save'),
+        ),
+      ],
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
