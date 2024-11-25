@@ -7,30 +7,67 @@ part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final firebase_auth.FirebaseAuth _firebaseAuth = firebase_auth.FirebaseAuth.instance;
+  final firebase_auth.FirebaseAuth _firebaseAuth;
 
-  AuthBloc() : super(LoggedOut()) {
-    on<LogInEvent>((event, emit) async {
-      emit(Logging());
-
-      try {
-        // Attempt to sign in using the provided email and password
-        final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
-          email: event.email,
-          password: event.password,
-        );
-
-        // Emit the LoggedIn state with the user's details
-        emit(LoggedIn(user: User(name: userCredential.user!.displayName ?? 'Unknown', email: userCredential.user!.email ?? '')));
-      } catch (e) {
-        // Handle errors (e.g., invalid credentials)
-        emit(LoggingError(error: e.toString()));
-      }
-    });
-
-    on<LogOutEvent>((event, emit) {
-      _firebaseAuth.signOut();
-      emit(LoggedOut());
-    });
+  AuthBloc({firebase_auth.FirebaseAuth? firebaseAuth})
+      : _firebaseAuth = firebaseAuth ?? firebase_auth.FirebaseAuth.instance,
+        super(LoggedOut()) {
+    on<LogInEvent>(_handleLogInEvent);
+    on<LogOutEvent>(_handleLogOutEvent);
   }
+
+Future<void> _handleLogInEvent(LogInEvent event, Emitter<AuthState> emit) async {
+  emit(Logging());
+  try {
+    final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
+      email: event.email,
+      password: event.password,
+    );
+
+    final user = userCredential.user;
+    if (user == null) {
+      emit(LoggingError(error: 'An unknown error occurred. Please try again.'));
+      return;
+    }
+
+    emit(LoggedIn(
+      user: User(
+        name: user.displayName ?? 'Unknown',
+        email: user.email ?? 'Unknown',
+      ),
+    ));
+  } on firebase_auth.FirebaseAuthException catch (e) {
+    // Log the error code and message for debugging
+    print('FirebaseAuthException caught: ${e.code} - ${e.message}');
+    emit(LoggingError(error: _getFirebaseAuthErrorMessage(e.code)));
+  } catch (e, stackTrace) {
+    // Log the generic error for debugging
+    print('Unexpected error: $e');
+    print('Stack trace: $stackTrace');
+    emit(LoggingError(error: 'An unexpected error occurred. Please try again.'));
+  }
+}
+
+
+  Future<void> _handleLogOutEvent(LogOutEvent event, Emitter<AuthState> emit) async {
+    try {
+      await _firebaseAuth.signOut();
+      emit(LoggedOut());
+    } catch (e) {
+      emit(LoggingError(error: 'Failed to log out. Please try again.'));
+    }
+  }
+
+String _getFirebaseAuthErrorMessage(String errorCode) {
+  if (errorCode == 'user-not-found') {
+    return 'No account found with this email.';
+  } else if (errorCode == 'wrong-password') {
+    return 'The password you entered is incorrect.';
+  } else if (errorCode == 'invalid-email') {
+    return 'The email address format is invalid.';
+  }
+  return 'An unknown error occurred. Please try again.';
+}
+
+
 }

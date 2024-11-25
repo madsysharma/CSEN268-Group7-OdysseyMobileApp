@@ -112,14 +112,7 @@ class SignUpPageState extends State<SignUpPage> {
       return 'Enter a valid 10-digit USA phone number';
     }
 
-    // Additional check for Bay Area area codes
-    List<String> bayAreaAreaCodes = ['408', '415', '510', '650', '925', '669'];
-    String areaCode = digitsOnly.substring(1, 4);
-    if (!bayAreaAreaCodes.contains(areaCode)) {
-      return 'Phone number must be from the Bay Area';
-    }
-
-    return null;
+    return null; // Number is valid
   }
 
   @override
@@ -237,7 +230,6 @@ class SignUpPageState extends State<SignUpPage> {
                           ),
                           validator: validatePhoneNumber,
                           onFieldSubmitted: (_) {
-                            // Move focus to the email field
                             FocusScope.of(context).requestFocus(locationFocus);
                           },
                         ),

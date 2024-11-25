@@ -36,6 +36,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
   runApp(MultiBlocProvider(
     providers: [
       BlocProvider(create: (context) => AuthBloc()),
@@ -195,7 +196,7 @@ class MyApp extends StatelessWidget {
       listener: (context, state) {
         if (state is LoggedIn) {
           // User is logged in, print their email
-          print("User is logged in with email: ${state.user?.email}");
+          print("User is logged in with email: ${state.user.email}");
           router.go(Paths.home);
         } else if (state is LoggedOut) {
           // User is logged out
