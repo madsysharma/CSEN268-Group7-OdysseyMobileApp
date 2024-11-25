@@ -24,21 +24,18 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs access to microphone for speech recognition</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>This app needs access to speech recognition to convert speech to text</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs access to location for navigation features</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs access to location for navigation features</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-     <string>This app needs access to location when open.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Permission required to record audio for speech </string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Permission required to record audio for speech </string>
-	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
- <key>YourPurposeKey</key>
-  <string>The example App requires temporary access to the device&apos;s precise location.</string>
-
-
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -52,11 +49,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	
- 
 </dict>
 </plist>
