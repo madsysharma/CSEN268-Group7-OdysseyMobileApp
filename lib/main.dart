@@ -21,6 +21,7 @@ import 'package:odyssey/pages/profile/signup.dart';
 import 'package:odyssey/pages/safety.dart';
 import 'package:odyssey/pages/safety_checkin.dart';
 import 'package:odyssey/pages/safety_emer.dart';
+import 'package:odyssey/pages/safety_sharing.dart';
 import 'package:odyssey/pages/safety_tips.dart';
 import 'package:odyssey/pages/connect/connect.dart';
 import 'package:odyssey/pages/connect/friend_request.dart';
@@ -121,6 +122,10 @@ class MyApp extends StatelessWidget {
                   GoRoute(
                     path: 'travel-tips',
                     builder: (context, state) => SafetyTips(),
+                  ),
+                  GoRoute(
+                    path: 'sharing',
+                    builder: (context, state) => SharingPage(),
                   ),
                 ],
               ),
