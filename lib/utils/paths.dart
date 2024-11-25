@@ -18,4 +18,5 @@ class Paths {
   static const String locationCheckin = "/safety/location-checkin";
   static const String emergencyContact = "/safety/emergency-contact";
   static const String travelTips = "/safety/travel-tips";
+  static const String safeSharing = "/safety/sharing";
 }
