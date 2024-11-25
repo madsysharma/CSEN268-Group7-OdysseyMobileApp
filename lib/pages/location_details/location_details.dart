@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
 import 'package:odyssey/pages/location_details/reviews_widget.dart';
 
@@ -14,11 +16,59 @@ class LocationDetailsPage extends StatefulWidget {
 class _LocationDetailsPageState extends State<LocationDetailsPage> {
   @override
   void initState() {
+    super.initState();
     context
         .read<LocationDetailsBloc>()
         .add(FetchLocationDetails(widget.locationId));
-    super.initState();
   }
+
+  Future<void> saveLocationToFavorites({
+    required String name,
+    required String description,
+    required List<String> images,
+  }) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception("No user logged in.");
+      }
+
+      // Reference to the user's savedLocations
+      final savedLocationsRef = FirebaseFirestore.instance
+          .collection('User')
+          .doc(user.uid)
+          .collection('savedLocations');
+
+      // Check if the location already exists
+      final querySnapshot =
+          await savedLocationsRef.where('name', isEqualTo: name).get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Location is already saved!")),
+        );
+        return;
+      }
+
+      // Add the location
+      await savedLocationsRef.add({
+        'name': name,
+        'description': description,
+        'images': images,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Location saved to favorites!")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to save location: $e")),
+      );
+    }
+  }
+
+  bool isSaving = false;
 
   @override
   Widget build(BuildContext context) {
@@ -60,11 +110,10 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
                             SizedBox(height: 8),
-                            ReviewsWidget(reviews: state.location.reviews!)
                           ],
                         ),
                       ),
-                    )
+                    ),
                   ],
                 )
               : state is LocationDetailsLoading
