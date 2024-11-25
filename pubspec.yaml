@@ -52,9 +52,9 @@ dependencies:
   cloud_firestore: ^5.5.0
   geolocator: ^13.0.2
   share_plus: ^10.1.2
-  speech_to_text: ^6.1.1
+  speech_to_text: ^6.1.12
   permission_handler: ^11.3.1
-  location: ^5.0.0
+  location: ^7.0.1
   flutter_polyline_points: ^2.1.0
   http: ^1.2.2
   app_settings: ^5.1.1
@@ -67,6 +67,12 @@ dependencies:
   latlong2: ^0.9.1
   cached_network_image: ^3.4.1
   screenshot: ^3.0.0
+  flutter_rating: ^2.0.2
+  location_web: ^5.0.4
+  location_platform_interface: ^5.0.0
+  flutter_shimmer: ^2.1.2
+  shimmer: ^3.0.0
+  
  
   
   
