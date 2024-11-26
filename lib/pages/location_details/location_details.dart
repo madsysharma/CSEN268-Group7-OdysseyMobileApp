@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
-import 'package:odyssey/pages/location_details/reviews_widget.dart';
+import 'package:odyssey/pages/location_details/reviews_list.dart';
+import 'package:odyssey/pages/location_details/reviews_overview_widget.dart';
 
 class LocationDetailsPage extends StatefulWidget {
   final String locationId;
@@ -22,6 +23,7 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    var theme = Theme.of(context);
     return BlocBuilder<LocationDetailsBloc, LocationDetailsBlocState>(
       builder: (context, state) {
         return Scaffold(
@@ -44,23 +46,31 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                       errorBuilder: (context, error, stackTrace) =>
                           Icon(Icons.image, size: 100, color: Colors.grey),
                     ),
+                    SizedBox(height: 16),
+                    Text(
+                      state.location.name,
+                      style: theme.textTheme.headlineSmall,
+                    ),
+                    SizedBox(height: 4),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.symmetric(vertical:16, horizontal:24),
                         child: ListView(
                           scrollDirection: Axis.vertical,
                           children: [
                             Text(
-                              state.location.name,
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            SizedBox(height: 4),
-                            Text(
                               state.location.description,
-                              style: Theme.of(context).textTheme.bodyLarge,
+                              style: theme.textTheme.bodyLarge,
                             ),
                             SizedBox(height: 8),
-                            ReviewsWidget(reviews: state.location.reviews!)
+                            ReviewsOverViewWidget(reviews: state.location.reviews!),
+                            SizedBox(height: 8),
+                            ElevatedButton(onPressed: () {}, child: Text("Write a Review"), style: ButtonStyle(
+                              backgroundColor: WidgetStatePropertyAll(Theme.of(context).colorScheme.primary),
+                              foregroundColor: WidgetStatePropertyAll(Theme.of(context).colorScheme.onPrimary),
+                            )),
+                            SizedBox(height: 8),
+                            ReviewsList(reviews: state.location.reviews!)
                           ],
                         ),
                       ),

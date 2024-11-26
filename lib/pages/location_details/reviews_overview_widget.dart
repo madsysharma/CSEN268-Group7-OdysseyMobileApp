@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:odyssey/model/location.dart';
 
-class ReviewsWidget extends StatelessWidget {
+class ReviewsOverViewWidget extends StatelessWidget {
   final Reviews reviews;
 
-  ReviewsWidget({required this.reviews});
+  ReviewsOverViewWidget({required this.reviews});
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +42,8 @@ class ReviewsWidget extends StatelessWidget {
           Expanded(
             child: LinearProgressIndicator(
               value: proportion,
-              backgroundColor: Colors.grey[300],
-              color: Colors.blue,
+              backgroundColor: Colors.white,
+              color: Colors.grey[300],
             ),
           ),
           SizedBox(width: 8),
