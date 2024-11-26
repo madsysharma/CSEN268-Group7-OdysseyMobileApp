@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
+import 'package:odyssey/pages/location_details/reviews_widget.dart';
 
 class LocationDetailsPage extends StatefulWidget {
   final String locationId;
@@ -37,7 +38,7 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                   children: [
                     Image.network(
                       state.location.images.first,
-                      height: 400,
+                      height: 250,
                       width: double.infinity,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
@@ -59,6 +60,7 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
                             SizedBox(height: 8),
+                            ReviewsWidget(reviews: state.location.reviews!)
                           ],
                         ),
                       ),

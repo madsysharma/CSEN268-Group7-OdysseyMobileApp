@@ -9,7 +9,7 @@ import 'package:odyssey/components/navigation/shell_bottom_nav_bar.dart';
 import 'package:odyssey/pages/profile/download_network.dart';
 import 'package:odyssey/pages/profile/edit_profile.dart';
 import 'package:odyssey/pages/home.dart';
-import 'package:odyssey/pages/location_details.dart';
+import 'package:odyssey/pages/location_details/location_details.dart';
 import 'package:odyssey/pages/map_page.dart';
 import 'package:odyssey/pages/profile.dart';
 import 'package:odyssey/pages/profile/forgot_password.dart';
@@ -195,7 +195,7 @@ class MyApp extends StatelessWidget {
       listener: (context, state) {
         if (state is LoggedIn) {
           // User is logged in, print their email
-          print("User is logged in with email: ${state.user?.email}");
+          print("User is logged in with email: ${state.user.email}");
           router.go(Paths.home);
         } else if (state is LoggedOut) {
           // User is logged out
