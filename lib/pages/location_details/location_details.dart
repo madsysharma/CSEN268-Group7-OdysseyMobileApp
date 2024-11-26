@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
+import 'package:odyssey/pages/location_details/reviews_list.dart';
 import 'package:odyssey/pages/location_details/reviews_widget.dart';
 
 class LocationDetailsPage extends StatefulWidget {
@@ -110,6 +111,42 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
                             SizedBox(height: 8),
+                            ElevatedButton.icon(
+                              onPressed: isSaving
+                                  ? null // Disable button while saving
+                                  : () async {
+                                      setState(() {
+                                        isSaving = true;
+                                      });
+                                      await saveLocationToFavorites(
+                                        name: state.location.name,
+                                        description: state.location.description,
+                                        images: state.location.images,
+                                      );
+                                      setState(() {
+                                        isSaving = false;
+                                      });
+                                    },
+                              icon: isSaving
+                                  ? CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Theme.of(context).colorScheme.onPrimary,
+                                      ),
+                                    )
+                                  : Icon(Icons.favorite),
+                              label: Text(
+                                  isSaving ? "Saving..." : "Save Location"),
+                              style: ElevatedButton.styleFrom(
+                                foregroundColor:
+                                    Theme.of(context).colorScheme.onPrimary,
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            ReviewsWidget(reviews: state.location.reviews!),
+                            SizedBox(height: 8),
+                            ReviewsList(reviews: state.location.reviews!)
                           ],
                         ),
                       ),
