@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
+import 'package:odyssey/pages/location_details/review_list.dart';
+import 'package:odyssey/pages/location_details/reviews_overview_widget.dart';
 
 class LocationDetailsPage extends StatefulWidget {
   final String locationId;
@@ -87,23 +89,24 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                   children: [
                     Image.network(
                       state.location.images.first,
-                      height: 400,
+                      height: 250,
                       width: double.infinity,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
                           Icon(Icons.image, size: 100, color: Colors.grey),
                     ),
+                    SizedBox(height: 8),
+                     Text(
+                      state.location.name,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                     ),
+                    SizedBox(height: 8),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: ListView(
                           scrollDirection: Axis.vertical,
                           children: [
-                            Text(
-                              state.location.name,
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            SizedBox(height: 4),
                             Text(
                               state.location.description,
                               style: Theme.of(context).textTheme.bodyLarge,
@@ -140,7 +143,11 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                                 backgroundColor:
                                     Theme.of(context).colorScheme.primary,
                               ),
-                            )
+                            ),
+                            SizedBox(height: 8),
+                            ReviewsOverViewWidget(reviews: state.location.reviews!),
+                            SizedBox(height: 8),
+                            ReviewsList(reviews: state.location.reviews!)
                           ],
                         ),
                       ),
