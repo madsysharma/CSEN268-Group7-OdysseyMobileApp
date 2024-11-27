@@ -31,8 +31,6 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize Firebase before the app runs
-  // await Firebase.initializeApp();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -63,45 +61,47 @@ class MyApp extends StatelessWidget {
                 builder: (context, state) => HomeScreen(),
               ),
               GoRoute(
-                path: Paths.connect,
-                builder: (context, state) => Connect(tab: 'local'),
-                routes: [
-                  GoRoute(
-                    path: 'local',
-                    builder: (context, state) => Connect(tab: 'local',),
-                    routes: [
-                      GoRoute(
-                        path: Paths.friendReq,
-                        builder: (context, state) => FriendRequest(),
-                      ),
-                    ]
-                  ),
-                  GoRoute(
-                    path: 'friends',
-                    builder: (context, state) => Connect(tab: 'friends',),
-                    routes: [
-                      GoRoute(
-                        path: Paths.friendReq,
-                        builder: (context, state) => FriendRequest(),
-                      ),
-                    ]
-                  ),
-                  GoRoute(
-                    path: 'you',
-                    builder: (context, state) => Connect(tab: 'you',),
-                    routes: [
-                      GoRoute(
-                        path: Paths.post,
-                        builder: (context, state) => UploadPost(),
-                      ),
-                      GoRoute(
-                        path: Paths.friendReq,
-                        builder: (context, state) => FriendRequest(),
-                      ),
-                    ]
-                  ),
-                ]
-              ),
+                  path: Paths.connect,
+                  builder: (context, state) => Connect(tab: 'local'),
+                  routes: [
+                    GoRoute(
+                        path: 'local',
+                        builder: (context, state) => Connect(
+                              tab: 'local',
+                            ),
+                        routes: [
+                          GoRoute(
+                            path: Paths.friendReq,
+                            builder: (context, state) => FriendRequest(),
+                          ),
+                        ]),
+                    GoRoute(
+                        path: 'friends',
+                        builder: (context, state) => Connect(
+                              tab: 'friends',
+                            ),
+                        routes: [
+                          GoRoute(
+                            path: Paths.friendReq,
+                            builder: (context, state) => FriendRequest(),
+                          ),
+                        ]),
+                    GoRoute(
+                        path: 'you',
+                        builder: (context, state) => Connect(
+                              tab: 'you',
+                            ),
+                        routes: [
+                          GoRoute(
+                            path: Paths.post,
+                            builder: (context, state) => UploadPost(),
+                          ),
+                          GoRoute(
+                            path: Paths.friendReq,
+                            builder: (context, state) => FriendRequest(),
+                          ),
+                        ]),
+                  ]),
               GoRoute(
                 path: Paths.maps,
                 builder: (context, state) => MapPage(),
@@ -177,17 +177,13 @@ class MyApp extends StatelessWidget {
 
           if (loggedIn &&
               (tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
-            // Redirect logged-in users away from login/signup pages to the home page
             return Paths.home;
           }
 
           if (!loggedIn &&
               !(tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
-            // Redirect unauthenticated users to login if they are accessing a protected page
             return Paths.loginPage;
           }
-
-          // No redirect needed
           return null;
         });
 
@@ -195,21 +191,37 @@ class MyApp extends StatelessWidget {
       listenWhen: (previous, current) => previous != current,
       listener: (context, state) {
         if (state is LoggedIn) {
-          // User is logged in, print their email
-          print("User is logged in with email: ${state.user.email}");
           router.go(Paths.home);
         } else if (state is LoggedOut) {
-          // User is logged out
           router.go(Paths.loginPage);
         }
       },
       child: MaterialApp.router(
         title: 'Odyssey',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF006A68)),
-          fontFamily: GoogleFonts.lato().fontFamily,
-          useMaterial3: true,
-        ),
+            colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF006A68)),
+            fontFamily: GoogleFonts.lato().fontFamily,
+            useMaterial3: true,
+            floatingActionButtonTheme: FloatingActionButtonThemeData(
+              backgroundColor: Color(0xFF006A68),
+              foregroundColor: Color(0xFFFFFFFF),
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+            textButtonTheme: TextButtonThemeData(
+                style: ButtonStyle(
+              foregroundColor: WidgetStateProperty.all(Color(0xFF006A68)),
+              textStyle: WidgetStateProperty.all(
+                TextStyle(
+                  fontSize: 16,
+                ),
+              ),
+              padding: WidgetStateProperty.all(
+                EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+              ),
+            ))),
         routerConfig: router,
       ),
     );

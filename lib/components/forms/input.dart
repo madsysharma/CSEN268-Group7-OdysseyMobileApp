@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:odyssey/utils/spaces.dart';
 
 class MyTextField extends StatelessWidget {
   final String label;
@@ -24,20 +23,17 @@ class MyTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: smallPadding,
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        obscureText: obscureText,
-        focusNode: focusNode,
-        onFieldSubmitted: (_) => nextFocusNode?.requestFocus(),
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(),
-        ),
-        validator: validator,
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      focusNode: focusNode,
+      onFieldSubmitted: (_) => nextFocusNode?.requestFocus(),
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(),
       ),
+      validator: validator,
     );
   }
 }
