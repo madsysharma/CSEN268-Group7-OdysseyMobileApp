@@ -60,6 +60,7 @@ dependencies:
   location: ^7.0.1
   flutter_shimmer: ^2.1.2
   shimmer: ^3.0.0
+  carousel_slider: ^5.0.0
   
   
   
