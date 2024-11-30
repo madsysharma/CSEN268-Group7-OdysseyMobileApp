@@ -1,7 +1,7 @@
 import 'package:email_validator/email_validator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:odyssey/components/forms/input.dart';
 import 'package:odyssey/utils/paths.dart';
 import 'package:odyssey/utils/spaces.dart';
 
@@ -14,67 +14,84 @@ class ForgotPasswordPage extends StatefulWidget {
 
 class ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final formKey = GlobalKey<FormState>();
-
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmationController = TextEditingController();
-
   final emailFocus = FocusNode();
-  final passwordFocus = FocusNode();
-  final confirmationFocus = FocusNode();
 
   @override
   void dispose() {
     _emailController.dispose();
-    _passwordController.dispose();
-    _confirmationController.dispose();
     emailFocus.dispose();
-    passwordFocus.dispose();
-    confirmationFocus.dispose();
     super.dispose();
+  }
+
+  Future<void> _sendPasswordResetEmail(String email) async {
+    try {
+      // Send a password reset email
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Password reset email sent to $email')),
+      );
+
+      // Optionally navigate to login page
+      GoRouter.of(context).go(Paths.loginPage);
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'An error occurred. Please try again.';
+      if (e.code == 'user-not-found') {
+        errorMessage = 'No account found for this email.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'The email address is invalid.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('An unexpected error occurred. Please try again.')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: SingleChildScrollView(
-      padding: pagePadding,
-      child: SafeArea(
-        child: Column(
-          children: [
-            extraLargeVertical,
-            const Text("Change your password below"),
-            smallVertical,
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Flexible(
-                  child: Text("If you're new"),
-                ),
-                Flexible(
-                  child: TextButton(
+      body: SingleChildScrollView(
+        padding: pagePadding,
+        child: SafeArea(
+          child: Column(
+            children: [
+              extraLargeVertical,
+              const Text("Reset Your Password"),
+              smallVertical,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Flexible(child: Text("Don't have an account?")),
+                  Flexible(
+                    child: TextButton(
                       onPressed: () {
-                       GoRouter.of(context).go(Paths.signupPage);
+                        GoRouter.of(context).go(Paths.signupPage);
                       },
-                      child: const Text("Join Us Here")),
-                ),
-              ],
-            ),
-            extraLargeVertical,
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text("Forgot Password"),
-            ),
-            mediumVertical,
-            Form(
+                      child: const Text("Sign Up Here"),
+                    ),
+                  ),
+                ],
+              ),
+              extraLargeVertical,
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text("Forgot Password"),
+              ),
+              mediumVertical,
+              Form(
                 key: formKey,
                 child: Column(
                   children: [
-                    MyTextField(
-                      label: 'Email',
+                    TextFormField(
                       controller: _emailController,
                       focusNode: emailFocus,
-                      nextFocusNode: passwordFocus,
+                      decoration: const InputDecoration(labelText: 'Email'),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Email is required';
@@ -85,61 +102,30 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         return null;
                       },
                     ),
-                     MyTextField(
-                      label: 'Password',
-                      controller: _passwordController,
-                      focusNode: passwordFocus,
-                      nextFocusNode: confirmationFocus,
-                      obscureText: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Password is required';
-                        }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
-                        }
-                        return null;
-                      },
-                    ),
-                    smallVertical,
-                    MyTextField(
-                      label: 'Confirm Password',
-                      controller: _confirmationController,
-                      focusNode: confirmationFocus,
-                      nextFocusNode: null,
-                      obscureText: true,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Password confirmation is required';
-                        }
-                        if (value != _passwordController.text) {
-                          return 'Password and confirmation must match';
-                        }
-                        return null;
-                      },
-                    ),
                   ],
-                )),
-            mediumVertical,
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: FloatingActionButton.extended(
-                    onPressed: () {
-                      final isValid = formKey.currentState!.validate();
-                      if (isValid == true) {
-                       //update password
-                      }
-                    },
-                    label: const Text("Update Password"),
-                  ),
                 ),
-              ],
-            ),
-          ],
+              ),
+              mediumVertical,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: FloatingActionButton.extended(
+                      onPressed: () {
+                        if (formKey.currentState!.validate()) {
+                          final email = _emailController.text.trim();
+                          _sendPasswordResetEmail(email);
+                        }
+                      },
+                      label: const Text("Send Reset Email"),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ));
+    );
   }
 }
