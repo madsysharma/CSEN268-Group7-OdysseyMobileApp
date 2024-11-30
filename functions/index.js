@@ -79,7 +79,7 @@ exports.sendFriendRequestEmail = functions.https.onCall(async (data, context) =>
 });
 
 exports.sendAcceptRequestEmail = functions.https.onCall(async (data, context) => {
-  const mailgunDomain = "mail.madsysharma.me";
+  const mailgunDomain = await getSecret("mailgun-domain");
   const mailgunApiKey = await getSecret("mailgun-api-key");
   console.log("Function triggered");
   console.log("Raw data received (full object):", data);
