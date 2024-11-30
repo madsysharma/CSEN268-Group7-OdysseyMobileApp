@@ -5,9 +5,10 @@ class ReviewCard extends StatelessWidget{
   final String pageName;
   final List<String> imgUrls;
   final String posterName;
+  final String locationName;
   final int dayDiff;
   final String reviewText;
-  const ReviewCard({super.key, required this.pageName, required this.imgUrls, required this.posterName, required this.dayDiff, required this.reviewText});
+  const ReviewCard({super.key, required this.pageName, required this.imgUrls, required this.posterName, required this.locationName, required this.dayDiff, required this.reviewText});
 
   @override
   Widget build(BuildContext context) {
@@ -72,8 +73,15 @@ class ReviewCard extends StatelessWidget{
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              this.reviewText,
+              "Location name: ${this.locationName}",
               style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              this.reviewText,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
         ],

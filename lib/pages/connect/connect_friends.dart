@@ -33,7 +33,7 @@ class _ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAlive
         final dayDifference = getDayDifference(postedDate.toDate());
         final revText = doc.data()['reviewtext'] ?? "";
         print("Posted date: $postedDate, day difference: $dayDifference, review text: $revText");
-        reviews.add(ReviewCard(pageName: "ConnectFriends",imgUrls: List<String>.from(doc.data()['images']), posterName: f.split(" ").first, dayDiff: dayDifference, reviewText: revText,));
+        reviews.add(ReviewCard(pageName: "ConnectFriends",imgUrls: List<String>.from(doc.data()['images']), posterName: f.split(" ").first, locationName: doc.data()['locationname'], dayDiff: dayDifference, reviewText: revText,));
       }
     }
     print("Reviews: $reviews");
@@ -65,15 +65,18 @@ class _ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAlive
             )
           );
         } else {
-          return Container(
-            constraints: BoxConstraints(maxHeight: double.infinity),
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemBuilder: (context, index){
-                return snap.data![index];
-              },
-              separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
-              itemCount: snap.data!.length)
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemBuilder: (context, index){
+                    return snap.data![index];
+                  },
+                  separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
+                  itemCount: snap.data!.length),
+              ),
+            ],
           );
         }
       }
