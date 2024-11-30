@@ -10,7 +10,8 @@ class NotifCard extends StatefulWidget{
   final String fromScreen;
   final String sentBy;
   final DateTime sentAt;
-  const NotifCard({super.key, required this.text, required this.type, required this.unread, required this.fromScreen, required this.sentBy, required this.sentAt});
+  final String acceptStatus;
+  const NotifCard({super.key, required this.text, required this.type, required this.unread, required this.fromScreen, required this.sentBy, required this.sentAt, required this.acceptStatus});
 
   @override
   State<NotifCard> createState() => NotifCardState();
@@ -51,8 +52,11 @@ class NotifCardState extends State<NotifCard> with AutomaticKeepAliveClientMixin
         } catch(e) {
           print("Exception in updating notification: $e");
         }
-        if(widget.type == 'friendRequest'){
+        if(widget.type == 'friendRequest' && widget.acceptStatus == 'Not yet'){
           GoRouter.of(context).go('/connect/${widget.fromScreen}'+'/notifications/acceptreq?q=${widget.sentBy}');
+        }
+        else if(widget.type == 'friendRequest' && (widget.acceptStatus == 'Accepted' || widget.acceptStatus == 'Declined')){
+          GoRouter.of(context).go('/connect/${widget.fromScreen}'+'/notifications/expiredreq');
         }
       },
       child: Container(

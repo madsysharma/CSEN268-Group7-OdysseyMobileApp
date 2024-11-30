@@ -16,7 +16,8 @@ import 'package:odyssey/mockdata/locations.dart';
 import 'package:path_provider/path_provider.dart';
 
 class UploadPost extends StatefulWidget{
-  const UploadPost({super.key});
+  final String startingLocName;
+  const UploadPost({super.key, required this.startingLocName});
 
   @override
   State<UploadPost> createState() => _UploadPostState();
@@ -52,8 +53,7 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
   @override
   void initState() {
     super.initState();
-    this.controller.text = locations.first.name;
-    this.locationName = this.controller.text;
+    this.controller.text = widget.startingLocName == 'setNone' ? locations.first.name : widget.startingLocName; //setNone in case of accessing Upload page via the You tab of Connect
   }
 
   @override
@@ -164,15 +164,6 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
                                 title: Text("Choose Photo from Gallery"),
                                 onTap: () async{
                                   try {
-                                    /*File? image = await pickImage(context, ImageSource.gallery);
-                                    if(image == null){
-                                      showMessageSnackBar(context, "No image was selected");
-                                    } else {
-                                      setState(() {
-                                        images.add(image);
-                                      });
-                                    }
-                                    Navigator.of(context).pop();*/
                                     Navigator.of(dialogContext).pop();
                                     String result = await GoRouter.of(context).push("/connect/you/post"+Paths.customGallery, extra: ImgPaths.paths) as String;
                                     if(result.isNotEmpty){

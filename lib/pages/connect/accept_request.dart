@@ -51,6 +51,7 @@ class AcceptRequest extends StatelessWidget{
                           'unread': true,
                         }
                       );
+                      final snapUpdate = await this.firestore.collection('User').doc(userDoc.id).collection('Notifications').get();
                       final senderDocRef = this.firestore.collection('User').doc(this.auth.currentUser?.uid);
                       final recvDocRef = this.firestore.collection('User').doc(userDoc.id);
                       final sendData = await senderDocRef.get();

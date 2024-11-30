@@ -136,6 +136,7 @@ class FriendRequestState extends State<FriendRequest> with AutomaticKeepAliveCli
                                       'sentAt': FieldValue.serverTimestamp(),
                                       'sentBy': username,
                                       'unread': true,
+                                      'accepted': 'Not yet',
                                     }
                                   );
                                   Navigator.of(context).pop();
