@@ -53,7 +53,8 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
   @override
   void initState() {
     super.initState();
-    this.controller.text = widget.startingLocName == 'setNone' ? locations.first.name : widget.startingLocName; //setNone in case of accessing Upload page via the You tab of Connect
+    this.controller.text = widget.startingLocName == 'setNone' ? locations.first.name : widget.startingLocName;
+    this.locationName = this.controller.text; //setNone in case of accessing Upload page via the You tab of Connect
   }
 
   @override
@@ -104,6 +105,7 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             //Location search section
+            this.controller.text == locations.first.name ?
             DropdownMenu(
               label: const Text("Select location"),
               controller: this.controller,
@@ -118,6 +120,10 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
                   print("Location name is now: ${this.locationName}");
                 });
               },
+            ) :
+            Text(
+              "Location name: ${this.controller.text}",
+              style: Theme.of(context).textTheme.titleMedium
             ),
             SizedBox(height: 28.0,),
             //Photo upload section
