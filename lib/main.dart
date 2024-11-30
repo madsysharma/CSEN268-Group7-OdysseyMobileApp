@@ -6,6 +6,7 @@ import 'package:odyssey/bloc/auth/auth_bloc.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
 import 'package:odyssey/bloc/locations/locations_bloc.dart';
 import 'package:odyssey/components/navigation/shell_bottom_nav_bar.dart';
+import 'package:odyssey/pages/connect/expired_request.dart';
 import 'package:odyssey/pages/profile/download_network.dart';
 import 'package:odyssey/pages/profile/edit_profile.dart';
 import 'package:odyssey/pages/home.dart';
@@ -24,10 +25,15 @@ import 'package:odyssey/pages/safety_emer.dart';
 import 'package:odyssey/pages/safety_tips.dart';
 import 'package:odyssey/pages/connect/connect.dart';
 import 'package:odyssey/pages/connect/friend_request.dart';
+import 'package:odyssey/pages/connect/notifications.dart';
+import 'package:odyssey/pages/connect/accept_request.dart';
+import 'package:odyssey/utils/custom_gallery.dart';
 import 'package:odyssey/utils/paths.dart';
 import 'package:odyssey/pages/connect/upload_post.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,6 +41,9 @@ void main() async {
   // await Firebase.initializeApp();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.debug
   );
   runApp(MultiBlocProvider(
     providers: [
@@ -73,6 +82,23 @@ class MyApp extends StatelessWidget {
                         path: Paths.friendReq,
                         builder: (context, state) => FriendRequest(),
                       ),
+                      GoRoute(
+                        path: Paths.notifs,
+                        builder: (context, state) => Notifications(fromScreen: 'local',),
+                        routes: [
+                          GoRoute(
+                            path: Paths.acceptReq,
+                            builder: (context, state){
+                              final query = state.uri.queryParameters['q'];
+                              return AcceptRequest(requesterName: query);
+                            },
+                          ),
+                          GoRoute(
+                            path: Paths.expiredReq,
+                            builder: (context, state) => ExpiredRequest()
+                          ),
+                        ],
+                      ),
                     ]
                   ),
                   GoRoute(
@@ -83,6 +109,23 @@ class MyApp extends StatelessWidget {
                         path: Paths.friendReq,
                         builder: (context, state) => FriendRequest(),
                       ),
+                      GoRoute(
+                        path: Paths.notifs,
+                        builder: (context, state) => Notifications(fromScreen: 'friends',),
+                        routes: [
+                          GoRoute(
+                            path: Paths.acceptReq,
+                            builder: (context, state){
+                              final query = state.uri.queryParameters['q'];
+                              return AcceptRequest(requesterName: query);
+                            }
+                          ),
+                          GoRoute(
+                            path: Paths.expiredReq,
+                            builder: (context, state) => ExpiredRequest()
+                          ),
+                        ],
+                      ),
                     ]
                   ),
                   GoRoute(
@@ -92,10 +135,33 @@ class MyApp extends StatelessWidget {
                       GoRoute(
                         path: Paths.post,
                         builder: (context, state) => UploadPost(),
+                        routes: [
+                          GoRoute(
+                            path: Paths.customGallery,
+                            builder: (context, state) => CustomGallery(imgPaths: state.extra as List<String>),
+                          ),
+                        ]
                       ),
                       GoRoute(
                         path: Paths.friendReq,
                         builder: (context, state) => FriendRequest(),
+                      ),
+                      GoRoute(
+                        path: Paths.notifs,
+                        builder: (context, state) => Notifications(fromScreen: 'you',),
+                        routes: [
+                          GoRoute(
+                            path: Paths.acceptReq,
+                            builder: (context, state){
+                              final query = state.uri.queryParameters['q'];
+                              return AcceptRequest(requesterName: query);
+                            },
+                          ),
+                          GoRoute(
+                            path: Paths.expiredReq,
+                            builder: (context, state) => ExpiredRequest()
+                          ),
+                        ],
                       ),
                     ]
                   ),
