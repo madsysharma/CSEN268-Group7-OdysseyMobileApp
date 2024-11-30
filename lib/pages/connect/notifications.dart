@@ -45,7 +45,7 @@ class NotificationsState extends State<Notifications> with AutomaticKeepAliveCli
               itemCount: this.notifs.length,
               itemBuilder: (context, index){
                 Map<String, dynamic> notif = this.notifs[index];
-                return NotifCard(text: notif['notificationText'], type: notif['type'], unread: notif['unread'], fromScreen: widget.fromScreen, sentBy: notif['sentBy'], sentAt: notif['sentAt'].toDate(),);
+                return NotifCard(text: notif['notificationText'], type: notif['type'], unread: notif['unread'], fromScreen: widget.fromScreen, sentBy: notif['sentBy'], sentAt: notif['sentAt'].toDate(), acceptStatus: notif['accepted'],);
               }
             )
           )

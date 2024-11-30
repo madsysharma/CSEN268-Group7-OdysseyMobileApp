@@ -30,7 +30,7 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
   Future<List<ReviewCard>> _load(String? email) async{
     final QuerySnapshot<Map<String, dynamic>> snap = await this.firestore.collection('Review').where('email',isEqualTo: email).get();
     return snap.docs
-        .map((doc) => ReviewCard(pageName: "ConnectYou", imgUrls: List<String>.from(doc.data()['images']), posterName: "You", dayDiff: getDayDifference(doc.data()['postedOn'].toDate()), reviewText: doc.data()['reviewtext'],))
+        .map((doc) => ReviewCard(pageName: "ConnectYou", imgUrls: List<String>.from(doc.data()['images']), posterName: "You", locationName: doc.data()['locationname'], dayDiff: getDayDifference(doc.data()['postedOn'].toDate()), reviewText: doc.data()['reviewtext'],))
         .toList();
   }
 
@@ -79,8 +79,7 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
           print("You have posted these reviews");
           return Column(
             children: [
-              Container(
-                constraints: BoxConstraints(maxHeight: double.infinity),
+              Expanded(
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemBuilder: (context, index){
