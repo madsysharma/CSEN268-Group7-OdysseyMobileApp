@@ -4,11 +4,33 @@
 const functions = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 const axios = require("axios");
+const {SecretManagerServiceClient} = require("@google-cloud/secret-manager");
+const secretClient = new SecretManagerServiceClient();
 admin.initializeApp();
+
+
+/**
+ * Retrieves a secret value from Google Cloud Secret Manager.
+ *
+ * @param {string} secretName - The name of the secret to retrieve.
+ * @return {Promise<string>} - The secret value as a string.
+ * @throws {Error} - If the secret cannot be retrieved.
+ */
+async function getSecret(secretName) {
+  try {
+    const [accessResponse] = await secretClient.accessSecretVersion({
+      name: `projects/749175602340/secrets/${secretName}/versions/latest`,
+    });
+    return accessResponse.payload.data.toString("utf8");
+  } catch (error) {
+    console.error(`Failed to access secret ${secretName}:`, error.message);
+    throw new Error(`Unable to retrieve secret ${secretName}`);
+  }
+}
 
 exports.sendFriendRequestEmail = functions.https.onCall(async (data, context) => {
   const mailgunDomain = "mail.madsysharma.me";
-  const mailgunApiKey = "7ef797421359929e489de4a1176bd58a-c02fd0ba-529b2278";
+  const mailgunApiKey = await getSecret("mailgun-api-key");
   console.log("Function triggered");
   console.log("Raw data received (full object):", data);
 
@@ -58,7 +80,7 @@ exports.sendFriendRequestEmail = functions.https.onCall(async (data, context) =>
 
 exports.sendAcceptRequestEmail = functions.https.onCall(async (data, context) => {
   const mailgunDomain = "mail.madsysharma.me";
-  const mailgunApiKey = "7ef797421359929e489de4a1176bd58a-c02fd0ba-529b2278";
+  const mailgunApiKey = await getSecret("mailgun-api-key");
   console.log("Function triggered");
   console.log("Raw data received (full object):", data);
   if (!data) {
