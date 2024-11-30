@@ -38,11 +38,15 @@ class _SavedLocationsState extends State<SavedLocations> {
 
       return savedLocationsSnapshot.docs.map((doc) {
         final data = doc.data();
+        final images = data['images'] as List<dynamic>?; // Array of image URLs
+        final imageUrl = (images != null && images.isNotEmpty)
+            ? images[0]
+            : ''; // Get the first URL or empty
         return {
           'id': doc.id, // Document ID for deletion
-          'imageUrl': data['imageUrl'] ?? '',
-          'title': data['title'] ?? 'Untitled',
-          'subtitle': data['subtitle'] ?? '',
+          'imageUrl': imageUrl,
+          'title': data['name'] ?? 'Untitled',
+          'subtitle': data['description'] ?? '',
         };
       }).toList();
     } catch (e) {
@@ -65,7 +69,8 @@ class _SavedLocationsState extends State<SavedLocations> {
           .doc(locationId)
           .delete();
 
-      showMessageSnackBar(context, "Location has been removed from saved locations.");
+      showMessageSnackBar(
+          context, "Location has been removed from saved locations.");
       setState(() {
         favoriteLocationsFuture = fetchSavedLocations(); // Refresh the UI
       });
@@ -91,7 +96,10 @@ class _SavedLocationsState extends State<SavedLocations> {
             return Center(
               child: Text(
                 'Error: ${snapshot.error}',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.error),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.copyWith(color: colorScheme.error),
               ),
             );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {

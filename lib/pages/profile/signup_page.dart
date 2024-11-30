@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:odyssey/components/forms/input.dart';
+import 'package:odyssey/components/forms/password_input.dart';
 import 'package:odyssey/utils/paths.dart';
 import 'package:odyssey/utils/spaces.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
@@ -17,6 +18,7 @@ class SignUpPage extends StatefulWidget {
 
 class SignUpPageState extends State<SignUpPage> {
   final formKey = GlobalKey<FormState>();
+  // ignore: unused_field
   PhoneNumber? _phoneNumber;
 
   final TextEditingController _firstNameController = TextEditingController();
@@ -44,34 +46,46 @@ class SignUpPageState extends State<SignUpPage> {
     required String location,
   }) async {
     try {
-      // Create a new user in Firebase Authentication
+      final emailQuery = await FirebaseFirestore.instance
+          .collection('User')
+          .where('email', isEqualTo: email)
+          .get();
+
+      final phoneQuery = await FirebaseFirestore.instance
+          .collection('User')
+          .where('phonenumber', isEqualTo: phoneNumber)
+          .get();
+
+      if (emailQuery.docs.isNotEmpty) {
+        throw Exception('An account with this email already exists.');
+      }
+
+      if (phoneQuery.docs.isNotEmpty) {
+        throw Exception('An account with this phone number already exists.');
+      }
+
       UserCredential userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Get the generated user ID
       String userId = userCredential.user!.uid;
 
-      // Save user details in Firestore
       await FirebaseFirestore.instance.collection('User').doc(userId).set({
         'firstname': firstName,
         'lastname': lastName,
         'email': email,
         'phonenumber': phoneNumber,
         'homelocation': location,
-        'membertype': 'Standard', // Default value, can be updated later
-        'interests': [], // Default empty list
-        'createdAt':
-            FieldValue.serverTimestamp(), // Add a timestamp for tracking
+        'membertype': 'Standard',
+        'interests': [],
+        'createdAt': FieldValue.serverTimestamp(),
       });
-
-      print("User signed up and details saved successfully!");
     } on FirebaseAuthException catch (e) {
-      print("Error: ${e.message}");
-      throw Exception(
-          e.message); // You can handle this with a UI-friendly message
+      throw Exception(e.message);
+    } catch (e) {
+      throw Exception(e.toString());
     }
   }
 
@@ -99,57 +113,55 @@ class SignUpPageState extends State<SignUpPage> {
       return 'Phone number is required';
     }
 
-    // Prepend +1 if missing
     String formattedValue = value.startsWith('+1') ? value : '+1$value';
 
-    // Remove all non-digit characters for validation
     String digitsOnly = formattedValue.replaceAll(RegExp(r'\D'), '');
 
-    // Check for valid USA phone number length
     if (!digitsOnly.startsWith('1') || digitsOnly.length != 11) {
       return 'Enter a valid 10-digit USA phone number';
     }
 
-    return null; // Number is valid
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: SingleChildScrollView(
         padding: pagePadding,
         child: SafeArea(
           child: Column(
             children: [
-              extraLargeVertical,
-              const Text("Fill out the form below to join"),
-              smallVertical,
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Flexible(
-                    child: Text("Or, if you have an account"),
-                  ),
-                  Flexible(
-                    child: TextButton(
-                      onPressed: () {
-                        GoRouter.of(context).go(Paths.loginPage);
-                      },
-                      child: const Text("Login Here"),
-                    ),
-                  ),
-                ],
-              ),
-              extraLargeVertical,
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text("Sign Up"),
-              ),
-              mediumVertical,
               Form(
                 key: formKey,
                 child: Column(
                   children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        "Create Your Account",
+                        style: Theme.of(context).textTheme.displaySmall,
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        children: [
+                          Text(
+                            "Already have an account?",
+                          ),
+                          smallHorizontal,
+                          TextButton(
+                              onPressed: () {
+                                GoRouter.of(context).go(Paths.loginPage);
+                              },
+                              child: Text("Login Here"))
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 30),
                     Row(
                       children: [
                         Expanded(
@@ -183,7 +195,7 @@ class SignUpPageState extends State<SignUpPage> {
                         ),
                       ],
                     ),
-                    smallVertical,
+                    mediumVertical,
                     MyTextField(
                       label: 'Email',
                       controller: _emailController,
@@ -199,41 +211,48 @@ class SignUpPageState extends State<SignUpPage> {
                         return null;
                       },
                     ),
-                    smallVertical,
-                    Padding(
-                      padding: const EdgeInsets.only(right: 20),
-                      child: Focus(
-                        focusNode: numberFocus,
-                        child: InternationalPhoneNumberInput(
-                          onInputChanged: (PhoneNumber number) {
-                            setState(() {
-                              _phoneNumber = number;
-                            });
-                          },
-                          selectorConfig: const SelectorConfig(
-                            selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
-                            showFlags: false,
-                          ),
-                          ignoreBlank: false,
-                          autoValidateMode: AutovalidateMode.disabled,
-                          initialValue:
-                              PhoneNumber(isoCode: 'US', dialCode: '+1'),
-                          countries: const ['US'],
-                          textFieldController: _numberController,
-                          formatInput: true,
-                          inputDecoration: InputDecoration(
-                            border: const OutlineInputBorder(),
-                            hintText: 'Enter phone number',
-                            labelText: 'Phone Number',
-                          ),
-                          validator: validatePhoneNumber,
-                          onFieldSubmitted: (_) {
-                            FocusScope.of(context).requestFocus(locationFocus);
-                          },
+                    mediumVertical,
+                    Focus(
+                      focusNode: numberFocus,
+                      child: InternationalPhoneNumberInput(
+                        onInputChanged: (PhoneNumber number) {
+                          setState(() {
+                            _phoneNumber = number;
+                          });
+                        },
+                        selectorConfig: const SelectorConfig(
+                          selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+                          showFlags: false,
                         ),
+                        ignoreBlank: false,
+                        autoValidateMode: AutovalidateMode.disabled,
+                        initialValue:
+                            PhoneNumber(isoCode: 'US', dialCode: '+1'),
+                        countries: const ['US'],
+                        textFieldController: _numberController,
+                        formatInput: true,
+                        inputDecoration: InputDecoration(
+                          hintText: 'Phone Number',
+                          hintStyle: TextStyle(
+                            fontSize: 16,
+                          ),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: colorScheme.shadow),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(
+                              width: 2,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                        validator: validatePhoneNumber,
+                        onFieldSubmitted: (_) {
+                          FocusScope.of(context).requestFocus(locationFocus);
+                        },
                       ),
                     ),
-                    smallVertical,
+                    mediumVertical,
                     MyTextField(
                       label: 'Location',
                       controller: _locationController,
@@ -246,8 +265,8 @@ class SignUpPageState extends State<SignUpPage> {
                         return null;
                       },
                     ),
-                    smallVertical,
-                    MyTextField(
+                    mediumVertical,
+                    PasswordTextField(
                       label: 'Password',
                       controller: _passwordController,
                       focusNode: passwordFocus,
@@ -263,8 +282,8 @@ class SignUpPageState extends State<SignUpPage> {
                         return null;
                       },
                     ),
-                    smallVertical,
-                    MyTextField(
+                    mediumVertical,
+                    PasswordTextField(
                       label: 'Confirm Password',
                       controller: _confirmationController,
                       focusNode: confirmationFocus,
@@ -283,12 +302,12 @@ class SignUpPageState extends State<SignUpPage> {
                   ],
                 ),
               ),
-              mediumVertical,
+              largeVertical,
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Flexible(
-                    child: FloatingActionButton.extended(
+                    child: ElevatedButton(
                       onPressed: () async {
                         final isValid = formKey.currentState!.validate();
                         if (isValid) {
@@ -306,17 +325,21 @@ class SignUpPageState extends State<SignUpPage> {
                                   content:
                                       Text("Account created successfully!")),
                             );
-
-                            // Navigate to another page after sign-up
                             GoRouter.of(context).go(Paths.home);
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Error: $e")),
+                              SnackBar(
+                                content: Text(e is Exception
+                                    ? e
+                                        .toString()
+                                        .replaceAll('Exception: ', '')
+                                    : "An unknown error occurred"),
+                              ),
                             );
                           }
                         }
                       },
-                      label: const Text("Create Account"),
+                      child: const Text("Create Account"),
                     ),
                   ),
                 ],

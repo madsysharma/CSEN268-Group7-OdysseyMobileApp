@@ -51,11 +51,19 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
       onFieldSubmitted: (_) => widget.nextFocusNode?.requestFocus(),
       decoration: InputDecoration(
         labelText: widget.label,
-        border: const OutlineInputBorder(),
+        hintText: widget.hintText,
+        border: const UnderlineInputBorder(),
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+        ),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface),
+        ),
         suffixIcon: widget.obscureText
             ? IconButton(
                 icon: Icon(
                   _isObscured ? Icons.visibility : Icons.visibility_off,
+                  color: Theme.of(context).iconTheme.color,
                 ),
                 onPressed: _toggleVisibility,
               )

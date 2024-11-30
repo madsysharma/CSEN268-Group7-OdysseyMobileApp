@@ -25,18 +25,20 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   Future<void> _sendPasswordResetEmail(String email) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
     try {
-      // Send a password reset email
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-
-      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Password reset email sent to $email')),
+        SnackBar(content: Text('Password reset email sent to $email.')),
       );
-
-      // Optionally navigate to login page
       GoRouter.of(context).go(Paths.loginPage);
     } on FirebaseAuthException catch (e) {
+      Navigator.of(context).pop();
       String errorMessage = 'An error occurred. Please try again.';
       if (e.code == 'user-not-found') {
         errorMessage = 'No account found for this email.';
@@ -47,10 +49,14 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
         SnackBar(content: Text(errorMessage)),
       );
     } catch (e) {
+      Navigator.of(context).pop(); 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('An unexpected error occurred. Please try again.')),
+        const SnackBar(
+          content: Text('An unexpected error occurred. Please try again.'),
+        ),
       );
     }
+    Navigator.of(context).pop();
   }
 
   @override
@@ -61,27 +67,28 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
         child: SafeArea(
           child: Column(
             children: [
-              extraLargeVertical,
-              const Text("Reset Your Password"),
-              smallVertical,
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Flexible(child: Text("Don't have an account?")),
-                  Flexible(
-                    child: TextButton(
-                      onPressed: () {
-                        GoRouter.of(context).go(Paths.signupPage);
-                      },
-                      child: const Text("Sign Up Here"),
-                    ),
-                  ),
-                ],
-              ),
-              extraLargeVertical,
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
-                child: Text("Forgot Password"),
+                child: Text(
+                  "Change Password",
+                  style: Theme.of(context).textTheme.displaySmall,
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  children: [
+                    Text(
+                      "New Here?",
+                    ),
+                    smallHorizontal,
+                    TextButton(
+                        onPressed: () {
+                          GoRouter.of(context).go(Paths.signupPage);
+                        },
+                        child: Text("Create an Account"))
+                  ],
+                ),
               ),
               mediumVertical,
               Form(

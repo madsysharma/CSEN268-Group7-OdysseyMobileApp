@@ -15,48 +15,73 @@ class LocationDetailsPage extends StatefulWidget {
 }
 
 class _LocationDetailsPageState extends State<LocationDetailsPage> {
+  bool isSaving = false;
+  bool isSaved = false; // Track whether the location is already saved
+
   @override
   void initState() {
     super.initState();
     context
         .read<LocationDetailsBloc>()
         .add(FetchLocationDetails(widget.locationId));
+    checkIfLocationIsSaved(); // Check if the location is saved on page load
+  }
+
+  Future<String?> getCurrentUserId() async {
+    final user = FirebaseAuth.instance.currentUser;
+    return user?.uid;
+  }
+
+  Future<void> checkIfLocationIsSaved() async {
+    try {
+      final userId = await getCurrentUserId();
+      if (userId == null) return;
+
+      final savedLocationsRef = FirebaseFirestore.instance
+          .collection('User')
+          .doc(userId)
+          .collection('savedLocations');
+
+      // Check if the location is already saved by matching the locationId
+      final querySnapshot = await savedLocationsRef
+          .where('locationId', isEqualTo: widget.locationId) // Match by ID
+          .get();
+
+      setState(() {
+        isSaved = querySnapshot.docs.isNotEmpty;
+      });
+    } catch (e) {
+      debugPrint("Error checking saved location: $e");
+    }
   }
 
   Future<void> saveLocationToFavorites({
+    required String locationId,
     required String name,
     required String description,
     required List<String> images,
   }) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
+      final userId = await getCurrentUserId();
+      if (userId == null) {
         throw Exception("No user logged in.");
       }
 
-      // Reference to the user's savedLocations
       final savedLocationsRef = FirebaseFirestore.instance
           .collection('User')
-          .doc(user.uid)
+          .doc(userId)
           .collection('savedLocations');
 
-      // Check if the location already exists
-      final querySnapshot =
-          await savedLocationsRef.where('name', isEqualTo: name).get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Location is already saved!")),
-        );
-        return;
-      }
-
-      // Add the location
       await savedLocationsRef.add({
+        'locationId': locationId, // Unique identifier
         'name': name,
         'description': description,
         'images': images,
         'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      setState(() {
+        isSaved = true; // Mark as saved
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -69,7 +94,39 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
     }
   }
 
-  bool isSaving = false;
+  Future<void> removeLocationFromFavorites(String locationId) async {
+    try {
+      final userId = await getCurrentUserId();
+      if (userId == null) {
+        throw Exception("No user logged in.");
+      }
+
+      final savedLocationsRef = FirebaseFirestore.instance
+          .collection('User')
+          .doc(userId)
+          .collection('savedLocations');
+
+      final querySnapshot = await savedLocationsRef
+          .where('locationId', isEqualTo: locationId)
+          .get();
+
+      for (final doc in querySnapshot.docs) {
+        await doc.reference.delete();
+      }
+
+      setState(() {
+        isSaved = false; // Mark as not saved
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Location removed from favorites!")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to remove location: $e")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,10 +153,10 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                           Icon(Icons.image, size: 100, color: Colors.grey),
                     ),
                     SizedBox(height: 8),
-                     Text(
+                    Text(
                       state.location.name,
                       style: Theme.of(context).textTheme.headlineSmall,
-                     ),
+                    ),
                     SizedBox(height: 8),
                     Expanded(
                       child: Padding(
@@ -119,11 +176,19 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                                       setState(() {
                                         isSaving = true;
                                       });
-                                      await saveLocationToFavorites(
-                                        name: state.location.name,
-                                        description: state.location.description,
-                                        images: state.location.images,
-                                      );
+                                      if (isSaved) {
+                                        await removeLocationFromFavorites(
+                                          widget.locationId,
+                                        );
+                                      } else {
+                                        await saveLocationToFavorites(
+                                          locationId: widget.locationId,
+                                          name: state.location.name,
+                                          description:
+                                              state.location.description,
+                                          images: state.location.images,
+                                        );
+                                      }
                                       setState(() {
                                         isSaving = false;
                                       });
@@ -134,9 +199,18 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                                         Theme.of(context).colorScheme.onPrimary,
                                       ),
                                     )
-                                  : Icon(Icons.favorite),
+                                  : Icon(
+                                      isSaved
+                                          ? Icons.remove_circle
+                                          : Icons.favorite,
+                                    ),
                               label: Text(
-                                  isSaving ? "Saving..." : "Save Location"),
+                                isSaving
+                                    ? "Processing..."
+                                    : isSaved
+                                        ? "Remove Location"
+                                        : "Save Location",
+                              ),
                               style: ElevatedButton.styleFrom(
                                 foregroundColor:
                                     Theme.of(context).colorScheme.onPrimary,
@@ -145,7 +219,8 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                               ),
                             ),
                             SizedBox(height: 8),
-                            ReviewsOverViewWidget(reviews: state.location.reviews!),
+                            ReviewsOverViewWidget(
+                                reviews: state.location.reviews!),
                             SizedBox(height: 8),
                             ReviewsList(reviews: state.location.reviews!)
                           ],

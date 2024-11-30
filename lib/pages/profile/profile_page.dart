@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -25,13 +27,30 @@ class ProfilePageState extends State<ProfilePage> {
     _loadProfileImage();
   }
 
-  Future<void> _loadProfileImage() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? imagePath = prefs.getString('profile_image_path');
+  String? imageUrl;
+    String? getCurrentUserId() {
+    final User? user = FirebaseAuth.instance.currentUser;
+    return user?.uid;
+  }
 
-    setState(() {
-      _profileImage = File(imagePath!);
-    });
+  Future<void> _loadProfileImage() async {
+    try {
+      final userId = getCurrentUserId();
+      if (userId == null) {
+        throw Exception("User not logged in");
+      }
+
+      final docSnapshot =
+          await FirebaseFirestore.instance.collection('User').doc(userId).get();
+      if (docSnapshot.exists && docSnapshot.data() != null) {
+        final data = docSnapshot.data()!;
+        imageUrl = data['imageUrl'] as String?;
+        setState(() {});
+      }
+    } catch (e) {
+      print("Error loading profile image: $e");
+      // Optionally, show an error message to the user.
+    }
   }
 
   void _showLogoutDialog() {
@@ -74,10 +93,10 @@ class ProfilePageState extends State<ProfilePage> {
             children: [
               largeVertical,
               Center(
-                child: _profileImage != null
+                child: imageUrl != null
                     ? CircleAvatar(
                         radius: 50,
-                        backgroundImage: FileImage(_profileImage!),
+                        backgroundImage: NetworkImage(imageUrl!),
                       )
                     : Icon(
                         Icons.person,

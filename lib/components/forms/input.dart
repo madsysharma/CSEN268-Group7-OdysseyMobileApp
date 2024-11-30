@@ -10,7 +10,8 @@ class MyTextField extends StatelessWidget {
   final FocusNode? focusNode;
   final FocusNode? nextFocusNode;
 
-  const MyTextField({super.key, 
+  const MyTextField({
+    super.key,
     required this.label,
     this.hintText,
     this.controller,
@@ -27,11 +28,18 @@ class MyTextField extends StatelessWidget {
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
-      focusNode: focusNode,
+      focusNode: focusNode ?? FocusNode(), // Ensure focus node is provided
       onFieldSubmitted: (_) => nextFocusNode?.requestFocus(),
       decoration: InputDecoration(
         labelText: label,
-        border: OutlineInputBorder(),
+        hintText: hintText,
+        border: const UnderlineInputBorder(), // Single bottom line
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
+        ),
+        enabledBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.onSurface),
+        ),
       ),
       validator: validator,
     );
