@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:odyssey/components/alerts/snack_bar.dart';
 import 'package:odyssey/utils/image_picker_utils.dart';
+import 'package:odyssey/utils/img_paths.dart';
+import 'package:odyssey/utils/paths.dart';
 import 'dart:io';
 import 'package:odyssey/model/location.dart';
 import 'package:odyssey/mockdata/locations.dart';
+import 'package:path_provider/path_provider.dart';
 
 class UploadPost extends StatefulWidget{
   const UploadPost({super.key});
@@ -20,13 +26,16 @@ class UploadPost extends StatefulWidget{
 class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMixin{
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  final FirebaseStorage storage = FirebaseStorage.instance;
   static List<String> filterSetOne = ["Arts", "Culture", "Food"];
   static List<String> filterSetTwo = ["History", "Nature", "Safe Spot"];
   static List<String> filterSetThree = ["Hidden Gem", "Pet-Friendly", "Avoid"];
+  TextEditingController controller = TextEditingController();
   List<String>? labels =[];
   String? reviewText = "";
   String? locationName = "";
   List<File?> images = [];
+  List<String> imageUrls = [];
   double starRating = 0.0;
   final List<Map<String, dynamic>> _filtersSelected = [
     {"Arts": false},
@@ -41,6 +50,49 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
   ];
 
   @override
+  void initState() {
+    super.initState();
+    this.controller.text = locations.first.name;
+    this.locationName = this.controller.text;
+  }
+
+  @override
+  void dispose(){
+    controller.dispose();
+    super.dispose();
+  }
+
+  Future<File> copyAssetToFile(String assetPath) async{
+    try{
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/${assetPath.split('/').last}');
+      final byteData = await rootBundle.load(assetPath);
+
+      await tempFile.writeAsBytes(byteData.buffer.asUint8List());
+      return tempFile;
+    } catch(e){
+      throw Exception("Exception: $e");
+    }
+  }
+
+  Future<String> uploadFile(File f) async{
+    try{
+      final storageRef = this.storage.ref();
+      final fileRef = storageRef.child("uploads/${DateTime.now().millisecondsSinceEpoch}_${f.path.split('/').last}");
+      final uploadRef = fileRef.putFile(f);
+
+      final snap = await uploadRef.whenComplete(()=> null);
+
+      final downloadUrl = await snap.ref.getDownloadURL();
+
+      return downloadUrl;
+    } catch(e){
+      print("Error uploading file");
+      throw(e);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     super.build(context);
     //GlobalKey<LocationListBarState>? listBarKey = GlobalKey<LocationListBarState>();
@@ -49,18 +101,21 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 44.0, horizontal: 37.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             //Location search section
             DropdownMenu(
               label: const Text("Select location"),
-              initialSelection: locations[0].name,
+              controller: this.controller,
+              initialSelection: this.controller.text,
               dropdownMenuEntries: locations.map<DropdownMenuEntry<String>>((LocationDetails l){
                 return DropdownMenuEntry<String>(value: l.name, label: l.name);
               }).toList(),
               onSelected: (String? selected){
                 setState((){
-                  locationName = selected;
+                  this.controller.text = selected ?? "";
+                  this.locationName = this.controller.text;
+                  print("Location name is now: ${this.locationName}");
                 });
               },
             ),
@@ -74,7 +129,7 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
                   onPressed: (){
                     showDialog(
                       context: context,
-                      builder: (context) => SimpleDialog(
+                      builder: (dialogContext) => SimpleDialog(
                         children: [
                           Column(
                             mainAxisSize: MainAxisSize.min,
@@ -83,18 +138,24 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
                                 leading: Icon(Icons.camera_alt),
                                 title: Text("Take Photo"),
                                 onTap: () async{
-                                  Navigator.of(context).pop();
+                                  Navigator.of(dialogContext).pop();
                                   try {
                                     File? image = await pickImage(context, ImageSource.camera);
                                     if(image == null){
-                                      showMessageSnackBar(context, "No image was selected");
+                                      if(mounted){
+                                        showMessageSnackBar(context, "No image was selected");
+                                      }
                                     } else {
-                                      setState(() {
-                                        images.add(image);
-                                      });
+                                      if(mounted){
+                                        setState(() {
+                                          images.add(image);
+                                        });
+                                      }
                                     }
                                   } catch (e) {
-                                    showMessageSnackBar(context, "Error loading image");
+                                    if(mounted){
+                                      showMessageSnackBar(context, "Error loading image");
+                                    }
                                   }
                                 }
                               ),
@@ -102,9 +163,8 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
                                 leading: Icon(Icons.photo_library),
                                 title: Text("Choose Photo from Gallery"),
                                 onTap: () async{
-                                  Navigator.of(context).pop();
                                   try {
-                                    File? image = await pickImage(context, ImageSource.gallery);
+                                    /*File? image = await pickImage(context, ImageSource.gallery);
                                     if(image == null){
                                       showMessageSnackBar(context, "No image was selected");
                                     } else {
@@ -112,8 +172,58 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
                                         images.add(image);
                                       });
                                     }
-                                  } catch (e) {
-                                    showMessageSnackBar(context, "Error loading image");
+                                    Navigator.of(context).pop();*/
+                                    Navigator.of(dialogContext).pop();
+                                    String result = await GoRouter.of(context).push("/connect/you/post"+Paths.customGallery, extra: ImgPaths.paths) as String;
+                                    if(result.isNotEmpty){
+                                      if(result.startsWith('assets/')){
+                                        try{
+                                          final file = await copyAssetToFile(result);
+                                          if(file.existsSync()){
+                                            print("Selected image path: $result");
+                                            if(mounted){
+                                              setState(() {
+                                                images.add(file);
+                                              });
+                                            }
+                                          }
+                                          else{
+                                            if(mounted){
+                                              showMessageSnackBar(context, "The selected file doesn't exist");
+                                            }
+                                          }
+                                        } catch (e){
+                                          if(mounted){
+                                            print("Exception: $e");
+                                            showMessageSnackBar(context, "Failed to resolve the file.");
+                                          }
+                                        }
+                                      } else {
+                                        try{
+                                          final file = File(result);
+                                          if(file.existsSync()){
+                                            print("Selected image path: $result");
+                                            if(mounted){
+                                              setState(() {
+                                                images.add(file);
+                                              });
+                                            }
+                                          }
+                                          else{
+                                            if(mounted){
+                                              showMessageSnackBar(context, "The selected file doesn't exist");
+                                            }
+                                          }
+                                        } catch (e){
+                                          if(mounted){
+                                            print("Exception: $e");
+                                            showMessageSnackBar(context, "Failed to resolve the file.");
+                                          }
+                                        }
+                                      }
+                                    }
+                                  } catch (e){
+                                    throw Exception("Exception: $e");
                                   }
                                 },
                               ),
@@ -237,7 +347,7 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
               onPressed: (){
                 showDialog(
                   context: context,
-                  builder: (context) => SimpleDialog(
+                  builder: (dialogContext) => SimpleDialog(
                     title: Text("Good to go?", style: Theme.of(context).textTheme.headlineSmall),
                     children: [
                       Padding(
@@ -255,25 +365,33 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
                                   onPressed: () async{
                                     try {
                                       String uid = this.auth.currentUser!.uid;
-                                      final docSnap = await this.firestore.collection('User').doc(uid).get();
-                                      final uname;
+                                      DocumentSnapshot<Map<String, dynamic>> docSnap = await this.firestore.collection('User').doc(uid).get();
+                                      String uname = "";
                                       if (docSnap.exists){
                                         uname = docSnap.data()?['firstname'];
                                       } else {
                                         uname = "";
                                       }
-                                      final docRef = await this.firestore.collection('Review').doc(uid).set({
+                                      for(File? f in images){
+                                        String url = await uploadFile(f!);
+                                        imageUrls.add(url);
+                                      }
+                                      await this.firestore.collection('Review').add({
+                                        'userId': this.auth.currentUser?.uid,
                                         'email': this.auth.currentUser!.email,
-                                        'images': images,
+                                        'images': imageUrls,
                                         'locationname': locationName,
                                         'rating': starRating,
                                         'reviewtext': reviewText,
                                         'tags': labels,
                                         'username': uname,
+                                        'postedOn': FieldValue.serverTimestamp(),
                                       });
-                                      Navigator.of(context).pop();
+                                      Navigator.of(dialogContext).pop();
                                       showMessageSnackBar(context, "Success! Your post is now uploaded.");
                                     } catch (e) {
+                                      print("Error: $e");
+                                      Navigator.of(dialogContext).pop();
                                       showMessageSnackBar(context, "Failed to upload post. Please try again.");
                                     }
                                   },
@@ -282,7 +400,7 @@ class _UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMi
                                 SizedBox(width: 8.0,),
                                 SimpleDialogOption(
                                   onPressed: (){
-                                    Navigator.of(context).pop();
+                                    Navigator.of(dialogContext).pop();
                                   },
                                   child: Text("No", style: Theme.of(context).textTheme.labelLarge)
                                 )

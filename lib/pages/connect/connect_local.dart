@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:odyssey/components/cards/review_card.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:odyssey/utils/date_time_utils.dart';
 
 class ConnectLocal extends StatefulWidget{
   ConnectLocal({super.key});
@@ -41,10 +42,13 @@ class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClie
         names.add("$firstname $lastname");
       }
       for(String n in names){
-        final localReviewQuerySnap = await this.firestore.collection('Review').where('username'.toLowerCase(),isEqualTo: n.toLowerCase()).get();
+        final localReviewQuerySnap = await this.firestore.collection('Review').where('username'.toLowerCase(),isEqualTo: n.toLowerCase().split(" ").first).get();
         for(var doc in localReviewQuerySnap.docs){
-          final images = doc.data()['images'] ?? [];
-          reviews.add(ReviewCard(pageName: "ConnectLocal", imgUrls: images));
+          final images = List<String>.from(doc.data()['images']) ?? [];
+          final postedDate = doc.data()['postedOn'] ?? "";
+          final dayDifference = getDayDifference(postedDate.toDate());
+          final revText = doc.data()['reviewtext'] ?? "";
+          reviews.add(ReviewCard(pageName: "ConnectLocal", imgUrls: images, posterName: n.split(" ").first, dayDiff: dayDifference, reviewText: revText,));
         }
       }
       print('Loaded reviews: ${reviews.length}');
