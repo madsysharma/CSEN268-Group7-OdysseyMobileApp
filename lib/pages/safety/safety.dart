@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:odyssey/pages/safety_sos.dart';
+import 'package:odyssey/pages/safety/safety_sos.dart';
 import 'package:odyssey/utils/paths.dart';
 
 class Safety extends StatelessWidget{
@@ -39,19 +39,19 @@ class Safety extends StatelessWidget{
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             buildButton("Location Checkin", () {
-              context.go(Paths.locationCheckin); // Navigates to safety/location-checkin
+              context.go(Paths.locationCheckin); 
             }, buttonWidth),
             SizedBox(height: 20),
             buildButton("Emergency Contact", () {
-              context.go(Paths.emergencyContact); // Navigates to safety/location-checkin
+              context.go(Paths.emergencyContact); 
             }, buttonWidth),
             SizedBox(height: 20),
             buildButton("Solo Travel Tips", () {
-              context.go(Paths.travelTips); // Navigates to safety/location-checkin
+              context.go(Paths.travelTips); 
             }, buttonWidth),
             SizedBox(height: 20),
             buildButton("Live Sharing", () {
-              
+              context.go(Paths.safeSharing); 
             }, buttonWidth),
             SizedBox(height: 20),
             buildButton("SOS", () {

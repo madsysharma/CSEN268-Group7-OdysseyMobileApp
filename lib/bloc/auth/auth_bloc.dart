@@ -7,30 +7,48 @@ part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final firebase_auth.FirebaseAuth _firebaseAuth = firebase_auth.FirebaseAuth.instance;
+  final firebase_auth.FirebaseAuth _firebaseAuth;
 
-  AuthBloc() : super(LoggedOut()) {
-    on<LogInEvent>((event, emit) async {
-      emit(Logging());
+  AuthBloc({firebase_auth.FirebaseAuth? firebaseAuth})
+      : _firebaseAuth = firebaseAuth ?? firebase_auth.FirebaseAuth.instance,
+        super(LoggedOut()) {
+    on<LogInEvent>(_handleLogInEvent);
+    on<LogOutEvent>(_handleLogOutEvent);
+  }
 
-      try {
-        // Attempt to sign in using the provided email and password
-        final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
-          email: event.email,
-          password: event.password,
-        );
+  Future<void> _handleLogInEvent(
+      LogInEvent event, Emitter<AuthState> emit) async {
+    emit(Logging());
+    try {
+      final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: event.email,
+        password: event.password,
+      );
 
-        // Emit the LoggedIn state with the user's details
-        emit(LoggedIn(user: User(name: userCredential.user!.displayName ?? 'Unknown', email: userCredential.user!.email ?? '')));
-      } catch (e) {
-        // Handle errors (e.g., invalid credentials)
-        emit(LoggingError(error: e.toString()));
+      final user = userCredential.user;
+      if (user == null) {
+        emit(LoggingError(error: 'Login failed. Please try again.'));
+        return;
       }
-    });
 
-    on<LogOutEvent>((event, emit) {
-      _firebaseAuth.signOut();
+      emit(LoggedIn(
+        user: User(
+          name: user.displayName ?? 'Unknown',
+          email: user.email ?? 'Unknown',
+        ),
+      ));
+    } catch (e) {
+      emit(LoggingError(error: 'Login failed. Please check your credentials.'));
+    }
+  }
+
+  Future<void> _handleLogOutEvent(
+      LogOutEvent event, Emitter<AuthState> emit) async {
+    try {
+      await _firebaseAuth.signOut();
       emit(LoggedOut());
-    });
+    } catch (e) {
+      emit(LoggingError(error: 'Failed to log out. Please try again.'));
+    }
   }
 }

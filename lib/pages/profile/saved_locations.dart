@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/components/alerts/snack_bar.dart';
 import 'package:odyssey/components/cards/favorite_locations.dart';
 import 'package:odyssey/components/navigation/app_bar.dart';
@@ -7,74 +9,115 @@ class SavedLocations extends StatefulWidget {
   const SavedLocations({super.key});
 
   @override
-  State<SavedLocations> createState() => SavedLocationsState();
+  State<SavedLocations> createState() => _SavedLocationsState();
 }
 
-class SavedLocationsState extends State<SavedLocations> {
-  List<Map<String, dynamic>> favoriteLocations = [
-    {
-      'imageUrl': 'https://example.com/image1.jpg',
-      'title': 'Lake Tahoe',
-      'subtitle': 'Tahoe, California',
-    },
-    {
-      'imageUrl': 'https://example.com/image2.jpg',
-      'title': 'Yosemite',
-      'subtitle': 'California, USA',
-    },
-    {
-      'imageUrl': 'https://example.com/image3.jpg',
-      'title': 'Napa Valley',
-      'subtitle': 'California, USA',
-    },
-    {
-      'imageUrl': 'https://example.com/image4.jpg',
-      'title': 'San Francisco',
-      'subtitle': 'California, USA',
-    },
-  ];
+class _SavedLocationsState extends State<SavedLocations> {
+  late Future<List<Map<String, dynamic>>> favoriteLocationsFuture;
 
-  void removeLocation(int index) {
-    setState(() {
-      favoriteLocations.removeAt(index);
-    });
-    showMessageSnackBar(
-        context, "Location has been removed from saved locations.");
+  @override
+  void initState() {
+    super.initState();
+    favoriteLocationsFuture = fetchSavedLocations();
+  }
+
+  // Fetch saved locations from Firestore
+  Future<List<Map<String, dynamic>>> fetchSavedLocations() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception("No user logged in.");
+      }
+
+      final savedLocationsSnapshot = await FirebaseFirestore.instance
+          .collection('User')
+          .doc(user.uid)
+          .collection('savedLocations')
+          .orderBy('createdAt', descending: true) // Order by most recent
+          .get();
+
+      return savedLocationsSnapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': doc.id, // Document ID for deletion
+          'imageUrl': data['imageUrl'] ?? '',
+          'title': data['title'] ?? 'Untitled',
+          'subtitle': data['subtitle'] ?? '',
+        };
+      }).toList();
+    } catch (e) {
+      throw Exception("Failed to fetch saved locations: $e");
+    }
+  }
+
+  // Remove a location from Firestore
+  Future<void> removeLocation(String locationId) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception("No user logged in.");
+      }
+
+      await FirebaseFirestore.instance
+          .collection('User')
+          .doc(user.uid)
+          .collection('savedLocations')
+          .doc(locationId)
+          .delete();
+
+      showMessageSnackBar(context, "Location has been removed from saved locations.");
+      setState(() {
+        favoriteLocationsFuture = fetchSavedLocations(); // Refresh the UI
+      });
+    } catch (e) {
+      showMessageSnackBar(context, "Failed to remove location: $e");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: MyAppBar(
         title: 'Saved Locations',
       ),
-      body: favoriteLocations.isEmpty
-          ? const Center(
-              child: Text('No favorite locations'),
-            )
-          : ListView.builder(
-            padding: EdgeInsets.only(top: 10),
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: favoriteLocationsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.error),
+              ),
+            );
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No favorite locations'));
+          } else {
+            final favoriteLocations = snapshot.data!;
+            return ListView.builder(
+              padding: const EdgeInsets.only(top: 10),
               itemCount: favoriteLocations.length,
               itemBuilder: (context, index) {
                 final location = favoriteLocations[index];
                 return Dismissible(
-                  key: ValueKey(location['title']),
+                  key: ValueKey(location['id']),
                   direction: DismissDirection.endToStart,
-                  onDismissed: (direction) {
-                    removeLocation(index);
-                  },
+                  onDismissed: (_) => removeLocation(location['id']),
                   background: Container(
-                      color: colorScheme.error,
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 20),
-                      child: Text("Remove Location",
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelLarge
-                              ?.copyWith(
-                                color: colorScheme.onError, // Change the color to red
-                              ))),
+                    color: colorScheme.error,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    child: Text(
+                      "Remove Location",
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: colorScheme.onError,
+                          ),
+                    ),
+                  ),
                   child: FavoriteLocations(
                     imageUrl: location['imageUrl'],
                     title: location['title'],
@@ -83,7 +126,10 @@ class SavedLocationsState extends State<SavedLocations> {
                   ),
                 );
               },
-            ),
+            );
+          }
+        },
+      ),
     );
   }
 }
