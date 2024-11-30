@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:odyssey/pages/safety_sos.dart';
+import 'package:odyssey/pages/safety/safety_sos.dart';
 import 'package:odyssey/utils/paths.dart';
 
 class Safety extends StatelessWidget{
