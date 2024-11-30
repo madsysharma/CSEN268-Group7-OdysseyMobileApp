@@ -6,6 +6,13 @@ import 'package:odyssey/pages/connect/upload_post.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+Future<void> requestPermissions() async{
+  await Permission.camera.request();
+  await Permission.photos.request();
+  await Permission.storage.request();
+}
 
 Future<File?> pickImage(BuildContext context, ImageSource source) async{
   final picker = ImagePicker();
