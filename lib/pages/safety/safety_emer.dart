@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
+import 'package:odyssey/components/cards/contact_item.dart';
 import 'package:odyssey/model/contact.dart';
 
 class ContactsPage extends StatefulWidget {
@@ -10,6 +11,27 @@ class ContactsPage extends StatefulWidget {
   @override
   _ContactsPageState createState() => _ContactsPageState();
 }
+
+
+class PhoneNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    String formatted = digits;
+
+    if (digits.length >= 4 && digits.length <= 6) {
+      formatted = '${digits.substring(0, 3)}-${digits.substring(3)}';
+    } else if (digits.length > 6) {
+      formatted = '${digits.substring(0, 3)}-${digits.substring(3, 6)}-${digits.substring(6)}';
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
 
 class _ContactsPageState extends State<ContactsPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -98,14 +120,16 @@ class _ContactsPageState extends State<ContactsPage> {
     });
   }
 
+  
+
 void _showContactDialog({Contact? contact}) {
   final nameController = TextEditingController(text: contact?.name ?? '');
-  final numberController = TextEditingController(text: contact?.number ?? '');
+  final numberController = TextEditingController(
+    text: contact?.number.replaceAll(RegExp(r'[\D]'), '') ?? '',
+  );
 
-  // Create a GlobalKey for the Form
   final _formKey = GlobalKey<FormState>();
 
-  // Reset error message on dialog opening
   setState(() {
     errorMessage = '';
   });
@@ -115,7 +139,6 @@ void _showContactDialog({Contact? contact}) {
     builder: (context) => AlertDialog(
       title: Text(contact == null ? 'Add Contact' : 'Edit Contact'),
       content: Form(
-        // Use the Form key to validate
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -130,35 +153,23 @@ void _showContactDialog({Contact? contact}) {
                 if (value.length > 15) {
                   return 'Name cannot be more than 15 characters';
                 }
-                return null; // No error
+                return null;
               },
             ),
             TextFormField(
               controller: numberController,
-              decoration: InputDecoration(
-                labelText: 'Number',
-                // Display error message
-                errorText: errorMessage.isEmpty ? null : errorMessage,
-              ),
+              decoration: InputDecoration(labelText: 'Phone Number'),
               keyboardType: TextInputType.phone,
               inputFormatters: [
-                // Only digits for input
-                FilteringTextInputFormatter.digitsOnly, 
+                FilteringTextInputFormatter.digitsOnly,
               ],
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Number cannot be empty';
+                  return 'Phone number cannot be empty';
                 }
-                if (value.length > 15) {
-                  return 'Number cannot be more than 15 characters';
+                if (value.length != 10) {
+                  return 'Please enter US phone number';
                 }
-                if (value.contains(' ')) {
-                  return 'Number cannot contain spaces';
-                }
-                if (!RegExp(r'^\d+$').hasMatch(value)) {
-                  return 'Please enter a valid phone number';
-                }
-                // No error
                 return null;
               },
             ),
@@ -174,12 +185,16 @@ void _showContactDialog({Contact? contact}) {
           onPressed: () {
             if (_formKey.currentState?.validate() ?? false) {
               final name = nameController.text;
-              final number = numberController.text;
+              final rawNumber = numberController.text;
+
+              // Format number to "+1 xxx-xxx-xxxx"
+              final formattedNumber =
+                  '+1 ${rawNumber.substring(0, 3)}-${rawNumber.substring(3, 6)}-${rawNumber.substring(6)}';
 
               final newContact = Contact(
                 id: contact?.id,
                 name: name,
-                number: number,
+                number: formattedNumber,
                 avatarUrl: contact?.avatarUrl ?? '',
               );
 
@@ -191,7 +206,6 @@ void _showContactDialog({Contact? contact}) {
 
               Navigator.of(context).pop();
             } else {
-              // If the form is invalid, display the error message
               setState(() {
                 errorMessage = 'Please fix the errors';
               });
@@ -203,6 +217,8 @@ void _showContactDialog({Contact? contact}) {
     ),
   );
 }
+
+
 
 
   @override
@@ -233,50 +249,3 @@ void _showContactDialog({Contact? contact}) {
   }
 }
 
-class ContactItem extends StatelessWidget {
-  final Contact contact;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  const ContactItem({
-    super.key,
-    required this.contact,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      padding: EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Color.fromARGB(255, 189, 220, 204),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundImage: contact.avatarUrl.isNotEmpty
-              ? NetworkImage(contact.avatarUrl)
-              : null,
-          child: contact.avatarUrl.isEmpty ? Icon(Icons.person) : null,
-        ),
-        title: Text(contact.name, style: TextStyle(color: Colors.black)),
-        subtitle: Text(contact.number, style: TextStyle(color: Colors.black87)),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: Icon(Icons.edit, color: Colors.black54),
-              onPressed: onEdit,
-            ),
-            IconButton(
-              icon: Icon(Icons.delete, color: Colors.red),
-              onPressed: onDelete,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
