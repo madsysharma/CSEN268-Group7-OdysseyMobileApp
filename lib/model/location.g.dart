@@ -16,6 +16,7 @@ LocationDetails _$LocationDetailsFromJson(Map<String, dynamic> json) =>
       description: json['description'] as String,
       coordinates:
           GeoCoordinates.fromJson(json['coordinates'] as Map<String, dynamic>),
+      tags: (json['tags'] as List<dynamic>).map((e) => e as String).toList(),
     );
 
 Map<String, dynamic> _$LocationDetailsToJson(LocationDetails instance) =>
@@ -26,6 +27,7 @@ Map<String, dynamic> _$LocationDetailsToJson(LocationDetails instance) =>
       'images': instance.images,
       'coordinates': instance.coordinates,
       'description': instance.description,
+      'tags': instance.tags,
     };
 
 GeoCoordinates _$GeoCoordinatesFromJson(Map<String, dynamic> json) =>
