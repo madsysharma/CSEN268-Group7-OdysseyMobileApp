@@ -33,6 +33,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
               enlargeCenterPage: true,
               aspectRatio: 16 / 9,
               viewportFraction: 0.9,
+              enableInfiniteScroll: false,
               onPageChanged: (index, reason) {
                 setState(() {
                   _currentIndex = index; // Update the index when the page changes
