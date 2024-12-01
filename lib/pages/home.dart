@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:odyssey/bloc/auth/auth_bloc.dart';
 import 'package:odyssey/bloc/locations/locations_bloc.dart';
 import 'package:odyssey/components/home_locations_list.dart';
 import 'package:odyssey/components/search_places.dart';
@@ -20,12 +21,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var user = (context.read<AuthBloc>().state as LoggedIn).user;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
           Text(
-            "Hi User!",
+            "Hi ${user.name}!",
             style: Theme.of(context).textTheme.titleLarge,
             textAlign: TextAlign.left,
           ),
