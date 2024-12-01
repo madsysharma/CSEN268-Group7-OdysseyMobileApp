@@ -34,6 +34,7 @@ class ReviewsWidget extends StatelessWidget {
         }
       var reviews = snapshot.data!;
       return Column(
+       crossAxisAlignment: CrossAxisAlignment.stretch,
        children: [
          ElevatedButton(onPressed: () {
             context.push('/connect/you' + Paths.post, extra: locationDetails);
