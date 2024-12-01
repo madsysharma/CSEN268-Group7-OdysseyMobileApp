@@ -72,6 +72,7 @@ dependencies:
   geocoding: ^2.0.5
   googleapis: ^13.2.0
   googleapis_auth: ^1.6.0
+  tuple: ^2.0.2
   
   
   
