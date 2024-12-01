@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
+import 'package:odyssey/pages/location_details/image_carousel.dart';
 import 'package:odyssey/pages/location_details/review_list.dart';
 
 class LocationDetailsPage extends StatefulWidget {
@@ -86,14 +87,15 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
           body: state is LocationDetailsSuccess
               ? Column(
                   children: [
-                    Image.network(
-                      state.location.images.first,
-                      height: 250,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Icon(Icons.image, size: 100, color: Colors.grey),
-                    ),
+                    // Image.network(
+                    //   state.location.images.first,
+                    //   height: 250,
+                    //   width: double.infinity,
+                    //   fit: BoxFit.cover,
+                    //   errorBuilder: (context, error, stackTrace) =>
+                    //       Icon(Icons.image, size: 100, color: Colors.grey),
+                    // ),
+                    ImageCarousel(imageUrls: state.location.images),
                     SizedBox(height: 8),
                      Text(
                       state.location.name,
