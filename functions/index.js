@@ -11,26 +11,33 @@ admin.initializeApp();
 
 /**
  * Retrieves a secret value from Google Cloud Secret Manager.
- *
+ * @param {CallableProxyResponse} context - The context from which the function is invoked
  * @param {string} secretName - The name of the secret to retrieve.
  * @return {Promise<string>} - The secret value as a string.
  * @throws {Error} - If the secret cannot be retrieved.
  */
-async function getSecret(secretName) {
-  try {
-    const [accessResponse] = await secretClient.accessSecretVersion({
-      name: `projects/749175602340/secrets/${secretName}/versions/latest`,
-    });
-    return accessResponse.payload.data.toString("utf8");
-  } catch (error) {
-    console.error(`Failed to access secret ${secretName}:`, error.message);
-    throw new Error(`Unable to retrieve secret ${secretName}`);
+async function getSecret(context, secretName) {
+  if (!context.auth || !context.auth.token) {
+    throw new functions.https.HttpsError(
+        "unauthenticated",
+        "The function must be called while authenticated.",
+    );
+  } else {
+    try {
+      const [accessResponse] = await secretClient.accessSecretVersion({
+        name: `projects/749175602340/secrets/${secretName}/versions/latest`,
+      });
+      return accessResponse.payload.data.toString("utf8");
+    } catch (error) {
+      console.error(`Failed to access secret ${secretName}:`, error.message);
+      throw new Error(`Unable to retrieve secret ${secretName}`);
+    }
   }
 }
 
 exports.sendFriendRequestEmail = functions.https.onCall(async (data, context) => {
-  const mailgunDomain = await getSecret("mailgun-domain");
-  const mailgunApiKey = await getSecret("mailgun-api-key");
+  const mailgunDomain = await getSecret(context, "mailgun-domain");
+  const mailgunApiKey = await getSecret(context, "mailgun-api-key");
   console.log("Function triggered");
   console.log("Raw data received (full object):", data);
 
@@ -79,8 +86,8 @@ exports.sendFriendRequestEmail = functions.https.onCall(async (data, context) =>
 });
 
 exports.sendAcceptRequestEmail = functions.https.onCall(async (data, context) => {
-  const mailgunDomain = await getSecret("mailgun-domain");
-  const mailgunApiKey = await getSecret("mailgun-api-key");
+  const mailgunDomain = await getSecret(context, "mailgun-domain");
+  const mailgunApiKey = await getSecret(context, "mailgun-api-key");
   console.log("Function triggered");
   console.log("Raw data received (full object):", data);
   if (!data) {
