@@ -74,6 +74,7 @@ dependencies:
   googleapis_auth: ^1.6.0
   tuple: ^2.0.2
   smooth_page_indicator: ^1.2.0+3
+  geolocator: ^13.0.2
   
   
   

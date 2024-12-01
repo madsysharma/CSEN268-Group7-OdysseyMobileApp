@@ -14,16 +14,15 @@ Future<void> updateFirestoreFromMockData() async {
         await firestore.collection('locations').get();
 
     for (QueryDocumentSnapshot doc in existingLocations.docs) {
-      // Delete subcollections (e.g., reviews) if they exist
-      CollectionReference reviewsRef = doc.reference.collection('reviews');
-      QuerySnapshot reviews = await reviewsRef.get();
-      for (QueryDocumentSnapshot reviewDoc in reviews.docs) {
-        await reviewDoc.reference.delete();
-      }
-
-      // Delete the location document
       await doc.reference.delete();
     }
+
+    QuerySnapshot existingReviews =
+        await firestore.collection('Reviews').get();
+    for (QueryDocumentSnapshot doc in existingReviews.docs) {
+      await doc.reference.delete();
+    }
+
     print("Existing data cleaned.");
   } catch (e) {
     print("Error cleaning existing data: $e");
@@ -42,6 +41,7 @@ Future<void> updateFirestoreFromMockData() async {
         ),
         "images": location.images,
         "description": location.description,
+        "tags": location.tags
       };
 
       // Add the location to Firestore

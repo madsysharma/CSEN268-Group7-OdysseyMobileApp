@@ -20,6 +20,7 @@ class LocationDetails {
   List<String> images;
   GeoCoordinates coordinates;
   String description;
+  List<String> tags;
 
   LocationDetails(
       {this.id,
@@ -27,7 +28,8 @@ class LocationDetails {
       required this.city,
       required this.images,
       required this.description,
-      required this.coordinates});
+      required this.coordinates,
+      required this.tags});
 
   static LocationDetails fromJson(Map<String, dynamic> json) =>
       _$LocationDetailsFromJson(json);
