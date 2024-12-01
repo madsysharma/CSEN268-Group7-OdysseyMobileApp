@@ -5,6 +5,7 @@ part 'review.g.dart';
 
 @JsonSerializable()
 class LocationReview {
+  String? reviewId;
   String userId;
   String email;
   String username;
@@ -30,6 +31,7 @@ class LocationReview {
     this.tags,
     required this.username,
     this.postedOn,
+    this.reviewId
   });
 
   // Connect the generated `fromJson` and `toJson` methods
@@ -43,5 +45,52 @@ class LocationReview {
 
   static Timestamp? _dateTimeToTimestamp(DateTime? dateTime) {
     return dateTime != null ? Timestamp.fromDate(dateTime) : null;
+  }
+}
+
+
+class RatingsOverview {
+  int oneStar;
+  int twoStar;
+  int threeStar;
+  int fourStar;
+  int fiveStar;
+
+  RatingsOverview({
+    required this.oneStar,
+    required this.twoStar,
+    required this.threeStar,
+    required this.fourStar,
+    required this.fiveStar,
+  });
+
+  static RatingsOverview fromReviews(List<LocationReview> reviews) {
+    int oneStar = 0, twoStar = 0, threeStar = 0, fourStar = 0, fiveStar = 0;
+
+  for (var review in reviews) {
+    switch (review.rating) {
+      case 1:
+        oneStar++;
+        break;
+      case 2:
+        twoStar++;
+        break;
+      case 3:
+        threeStar++;
+        break;
+      case 4:
+        fourStar++;
+        break;
+      case 5:
+        fiveStar++;
+        break;
+    }
+  }
+  return RatingsOverview(
+      oneStar: oneStar,
+      twoStar: twoStar,
+      threeStar: threeStar,
+      fourStar: fourStar,
+      fiveStar: fiveStar);
   }
 }

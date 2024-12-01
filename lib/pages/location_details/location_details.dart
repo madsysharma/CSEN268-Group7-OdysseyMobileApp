@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
 import 'package:odyssey/pages/location_details/review_list.dart';
-import 'package:odyssey/pages/location_details/reviews_overview_widget.dart';
 
 class LocationDetailsPage extends StatefulWidget {
   final String locationId;
@@ -145,9 +144,7 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                               ),
                             ),
                             SizedBox(height: 8),
-                            ReviewsOverViewWidget(reviews: state.location.reviews!),
-                            SizedBox(height: 8),
-                            ReviewsList(reviews: state.location.reviews!)
+                            ReviewsWidget(locationDetails: state.location)
                           ],
                         ),
                       ),
@@ -168,3 +165,4 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
     );
   }
 }
+

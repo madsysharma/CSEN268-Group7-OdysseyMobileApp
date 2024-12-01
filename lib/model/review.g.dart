@@ -20,10 +20,12 @@ LocationReview _$LocationReviewFromJson(Map<String, dynamic> json) =>
       username: json['username'] as String,
       postedOn:
           LocationReview._timestampToDateTime(json['postedOn'] as Timestamp?),
+      reviewId: json['reviewId'] as String?,
     );
 
 Map<String, dynamic> _$LocationReviewToJson(LocationReview instance) =>
     <String, dynamic>{
+      'reviewId': instance.reviewId,
       'userId': instance.userId,
       'email': instance.email,
       'username': instance.username,
