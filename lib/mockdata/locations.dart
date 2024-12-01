@@ -4,243 +4,199 @@ const String firebaseStoragePrefix = "https://firebasestorage.googleapis.com/v0/
 const String mediaSuffix = "?alt=media";
 
 List<LocationDetails> locations = [
-  // Existing Locations
+  // Locations within 10 miles (Santa Clara)
   LocationDetails(
-    name: "Emerald Bay State Park",
-    city: "Lake Tahoe",
-    coordinates: GeoCoordinates(latitude: 38.9571, longitude: -120.1107),
+    name: "California's Great America",
+    city: "Santa Clara",
+    coordinates: GeoCoordinates(latitude: 37.3723, longitude: -121.9749),
     images: [
-      "$firebaseStoragePrefix" + "emerald-bay-park-1.jpeg$mediaSuffix",
-      "$firebaseStoragePrefix" + "emerald-bay-state-park-2.jpeg$mediaSuffix",
-      "$firebaseStoragePrefix" + "emerald-bay-state-park-3.jpeg$mediaSuffix",
-      "$firebaseStoragePrefix" + "emerald-bay-state-park-4.jpeg$mediaSuffix"
+      "$firebaseStoragePrefix" + "california-greate-america-1.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "california-greate-america-2.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "california-greate-america-3.jpg$mediaSuffix"
     ],
     description:
-        "A beautiful bay with crystal-clear water and breathtaking views. Known for its hiking trails and scenic overlooks.",
-    tags: ['Nature'],
-  ),
-  LocationDetails(
-    name: "Sand Harbor",
-    city: "Lake Tahoe",
-    coordinates: GeoCoordinates(latitude: 39.1004, longitude: -120.0112),
-    images: [
-      "$firebaseStoragePrefix" + "sand-harbor-1.jpeg$mediaSuffix",
-      "$firebaseStoragePrefix" + "sand-harbor-2.jpeg$mediaSuffix",
-      "$firebaseStoragePrefix" + "sand-harbor-3.jpeg$mediaSuffix",
-      "$firebaseStoragePrefix" + "sand-harbor-4.jpeg$mediaSuffix"
-    ],
-    description:
-        "Popular beach area with sandy shores and rocky landscapes, great for swimming, kayaking, and picnicking.",
-    tags: ['Nature', 'Culture'],
-  ),
-  LocationDetails(
-    name: "Heavenly Mountain Resort",
-    city: "Lake Tahoe",
-    coordinates: GeoCoordinates(latitude: 38.9338, longitude: -119.9403),
-    images: [
-      "$firebaseStoragePrefix" + "heavenly-mountain-resort-1.jpeg$mediaSuffix",
-      "$firebaseStoragePrefix" + "heavenly-mountain-resort-2.jpeg$mediaSuffix",
-      "$firebaseStoragePrefix" + "heavenly-mountain-resort-3.jpeg$mediaSuffix",
-      "$firebaseStoragePrefix" + "heavenly-mountain-resort-4.jpeg$mediaSuffix"
-    ],
-    description:
-        "A major ski resort offering winter sports, summer hikes, and stunning gondola rides with panoramic views of the lake.",
-    tags: ['Nature', 'Culture'],
-  ),
-  LocationDetails(
-    name: "D.L. Bliss State Park",
-    city: "Lake Tahoe",
-    coordinates: GeoCoordinates(latitude: 39.0431, longitude: -120.1228),
-    images: [
-      "$firebaseStoragePrefix" + "bliss-state-park-1.jpg$mediaSuffix",
-      "$firebaseStoragePrefix" + "bliss-state-park-2.jpg$mediaSuffix"
-    ],
-    description:
-        "Scenic state park with hiking trails, beaches, and breathtaking views of Lake Tahoe.",
-    tags: ['Nature'],
-  ),
-  LocationDetails(
-    name: "Taylor Creek Visitor Center",
-    city: "South Lake Tahoe",
-    coordinates: GeoCoordinates(latitude: 38.9407, longitude: -120.0486),
-    images: [
-      "$firebaseStoragePrefix" + "taylor-creek-visitor-center-1.jpg$mediaSuffix",
-      "$firebaseStoragePrefix" + "taylor-creek-visitor-center-2.jpg$mediaSuffix",
-      "$firebaseStoragePrefix" + "taylor-creek-visitor-center-3.jpg$mediaSuffix"
-    ],
-    description:
-        "Educational visitor center with guided tours and a stream profile chamber to observe fish.",
-    tags: ['Culture', 'History'],
-  ),
-  
-  // 10 miles range
-  LocationDetails(
-    name: "Barton Memorial Hospital",
-    city: "South Lake Tahoe",
-    coordinates: GeoCoordinates(latitude: 38.9483, longitude: -119.9794),
-    images: [
-      "$firebaseStoragePrefix" + "barton-memorial-hospital-1.jpg$mediaSuffix"
-    ],
-    description:
-        "A local hospital providing healthcare services to the Lake Tahoe region.",
+        "A large amusement park with rides, live entertainment, and family-friendly attractions.",
     tags: ['Culture'],
   ),
   LocationDetails(
-    name: "Echo Lake",
-    city: "South Lake Tahoe",
-    coordinates: GeoCoordinates(latitude: 38.9257, longitude: -120.0121),
+    name: "Levi's Stadium",
+    city: "Santa Clara",
+    coordinates: GeoCoordinates(latitude: 37.4036, longitude: -121.9756),
     images: [
-      "$firebaseStoragePrefix" + "echo-lake-1.jpg$mediaSuffix"
+      "$firebaseStoragePrefix" + "levis-stadium-1.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "levis-stadium-2.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "levis-stadium-3.jpeg$mediaSuffix"
     ],
     description:
-        "A beautiful alpine lake, popular for kayaking, fishing, and relaxing by the water.",
-    tags: ['Nature'],
-  ),
-  LocationDetails(
-    name: "South Lake Tahoe Beaches",
-    city: "South Lake Tahoe",
-    coordinates: GeoCoordinates(latitude: 38.9393, longitude: -119.9773),
-    images: [
-      "$firebaseStoragePrefix" + "south-lake-tahoe-beaches-1.jpg$mediaSuffix"
-    ],
-    description:
-        "A collection of beaches around the South Lake Tahoe area, great for picnics, sunbathing, and watersports.",
-    tags: ['Nature'],
-  ),
-  LocationDetails(
-    name: "Stateline Lookout",
-    city: "South Lake Tahoe",
-    coordinates: GeoCoordinates(latitude: 38.9583, longitude: -119.9361),
-    images: [
-      "$firebaseStoragePrefix" + "stateline-lookout-1.jpg$mediaSuffix"
-    ],
-    description:
-        "A scenic overlook that provides panoramic views of the Lake Tahoe region and surrounding mountains.",
-    tags: ['Nature'],
-  ),
-  LocationDetails(
-    name: "Lakeview Commons",
-    city: "South Lake Tahoe",
-    coordinates: GeoCoordinates(latitude: 38.9431, longitude: -119.9774),
-    images: [
-      "$firebaseStoragePrefix" + "lakeview-commons-1.jpg$mediaSuffix"
-    ],
-    description:
-        "A popular public park with views of the lake, picnic areas, and access to a sandy beach.",
-    tags: ['Nature'],
-  ),
-  
-  // 20 miles range
-  LocationDetails(
-    name: "Mount Tallac Trailhead",
-    city: "South Lake Tahoe",
-    coordinates: GeoCoordinates(latitude: 38.8834, longitude: -120.0217),
-    images: [
-      "$firebaseStoragePrefix" + "mount-tallac-trailhead-1.jpg$mediaSuffix"
-    ],
-    description:
-        "A popular trail leading to the summit of Mount Tallac, offering sweeping views of Lake Tahoe.",
-    tags: ['Nature'],
-  ),
-  LocationDetails(
-    name: "Meeks Bay",
-    city: "Tahoma",
-    coordinates: GeoCoordinates(latitude: 39.0801, longitude: -120.1547),
-    images: [
-      "$firebaseStoragePrefix" + "meeks-bay-1.jpg$mediaSuffix"
-    ],
-    description:
-        "A serene bay on the west shore of Lake Tahoe, offering a sandy beach, picnic areas, and hiking trails.",
-    tags: ['Nature'],
-  ),
-  LocationDetails(
-    name: "Tahoma Market",
-    city: "Tahoma",
-    coordinates: GeoCoordinates(latitude: 39.0346, longitude: -120.1173),
-    images: [
-      "$firebaseStoragePrefix" + "tahoma-market-1.jpg$mediaSuffix"
-    ],
-    description:
-        "A local market offering fresh produce, groceries, and community services.",
-    tags: ['Food'],
-  ),
-  LocationDetails(
-    name: "Sugar Pine Point State Park",
-    city: "Homewood",
-    coordinates: GeoCoordinates(latitude: 39.0723, longitude: -120.1348),
-    images: [
-      "$firebaseStoragePrefix" + "sugar-pine-point-park-1.jpg$mediaSuffix"
-    ],
-    description:
-        "A peaceful state park offering hiking, camping, and swimming opportunities along Lake Tahoe's western shore.",
-    tags: ['Nature'],
-  ),
-  LocationDetails(
-    name: "Granlibakken Resort",
-    city: "Tahoe City",
-    coordinates: GeoCoordinates(latitude: 39.1867, longitude: -120.1396),
-    images: [
-      "$firebaseStoragePrefix" + "granlibakken-resort-1.jpg$mediaSuffix"
-    ],
-    description:
-        "A resort offering skiing, hiking, and dining, located in the Tahoe City area.",
-    tags: ['Nature', 'Culture'],
-  ),
-  
-  // 100 miles range
-  LocationDetails(
-    name: "Reno, Nevada",
-    city: "Reno",
-    coordinates: GeoCoordinates(latitude: 39.5296, longitude: -119.8138),
-    images: [
-      "$firebaseStoragePrefix" + "reno-nevada-1.jpg$mediaSuffix"
-    ],
-    description:
-        "A major city known for its casinos, art, and outdoor activities.",
-    tags: ['Culture', 'Food'],
-  ),
-  LocationDetails(
-    name: "Squaw Valley Ski Resort",
-    city: "Olympic Valley",
-    coordinates: GeoCoordinates(latitude: 39.2007, longitude: -120.2331),
-    images: [
-      "$firebaseStoragePrefix" + "squaw-valley-ski-resort-1.jpg$mediaSuffix"
-    ],
-    description:
-        "A world-class ski resort known for its Olympic history and winter sports.",
-    tags: ['Nature', 'Culture'],
-  ),
-  LocationDetails(
-    name: "Tahoe City",
-    city: "Tahoe City",
-    coordinates: GeoCoordinates(latitude: 39.1701, longitude: -120.1439),
-    images: [
-      "$firebaseStoragePrefix" + "tahoe-city-1.jpg$mediaSuffix"
-    ],
-    description:
-        "A charming town known for its lakeside activities, dining, and art galleries.",
+        "Home of the San Francisco 49ers and a venue for concerts, events, and sporting activities.",
     tags: ['Culture'],
   ),
   LocationDetails(
-    name: "Truckee",
-    city: "Truckee",
-    coordinates: GeoCoordinates(latitude: 39.327, longitude: -120.1852),
+    name: "Intel Museum",
+    city: "Santa Clara",
+    coordinates: GeoCoordinates(latitude: 37.3911, longitude: -121.9721),
     images: [
-      "$firebaseStoragePrefix" + "truckee-1.jpg$mediaSuffix"
+      "$firebaseStoragePrefix" + "intel-museum-1.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "intel-musenum-2.jpeg$mediaSuffix"
     ],
     description:
-        "A historic town offering shops, dining, and access to nearby lakes and outdoor recreation.",
+        "A museum showcasing the history of Intel and the innovations in computing technology.",
+    tags: ['History'],
+  ),
+  LocationDetails(
+    name: "Rosicrucian Egyptian Museum",
+    city: "San Jose",
+    coordinates: GeoCoordinates(latitude: 37.3153, longitude: -121.9120),
+    images: [
+      "$firebaseStoragePrefix" + "egyptian-museum-1.jpg$mediaSuffix",
+      "$firebaseStoragePrefix" + "egyptian-museum-2.JPG$mediaSuffix",
+      "$firebaseStoragePrefix" + "egyptian-museum-3.jpg$mediaSuffix"
+    ],
+    description:
+        "A museum with an extensive collection of ancient Egyptian artifacts and exhibits.",
+    tags: ['History'],
+  ),
+  LocationDetails(
+    name: "Winchester Mystery House",
+    city: "San Jose",
+    coordinates: GeoCoordinates(latitude: 37.2970, longitude: -121.9503),
+    images: [
+      "$firebaseStoragePrefix" + "mystery-house-1.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "mystery-house-2.jpg$mediaSuffix"
+    ],
+    description:
+        "A mysterious Victorian mansion known for its architectural curiosities and ghost stories.",
+    tags: ['Culture'],
+  ),
+
+  // Locations within 20 miles
+  LocationDetails(
+    name: "Mission San Jose",
+    city: "Fremont",
+    coordinates: GeoCoordinates(latitude: 37.5249, longitude: -121.9183),
+    images: [
+      "$firebaseStoragePrefix" + "mission-san-jose-2.jpg$mediaSuffix"
+    ],
+    description:
+        "One of the historic California missions, with a museum and beautiful gardens.",
+    tags: ['History'],
+  ),
+  LocationDetails(
+    name: "Apple Park Visitor Center",
+    city: "Cupertino",
+    coordinates: GeoCoordinates(latitude: 37.3318, longitude: -122.0300),
+    images: [
+      "$firebaseStoragePrefix" + "apple-visitor-center-1.jpg$mediaSuffix",
+      "$firebaseStoragePrefix" + "apple-visitor-center-2.jpg$mediaSuffix",
+      "$firebaseStoragePrefix" + "apple-visitor-center-3.jpg$mediaSuffix"
+    ],
+    description:
+        "A sleek visitor center at Apple's headquarters, featuring an interactive exhibit and cafe.",
+    tags: ['Culture'],
+  ),
+  LocationDetails(
+    name: "Stanford University",
+    city: "Stanford",
+    coordinates: GeoCoordinates(latitude: 37.4275, longitude: -122.1697),
+    images: [
+      "$firebaseStoragePrefix" + "stanford-university-1.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "stanford-university-2.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "stanford-university-3.jpeg$mediaSuffix"
+    ],
+    description:
+        "A prestigious university with beautiful architecture and expansive grounds.",
+    tags: ['History', 'Culture'],
+  ),
+  LocationDetails(
+    name: "Palo Alto Baylands Nature Preserve",
+    city: "Palo Alto",
+    coordinates: GeoCoordinates(latitude: 37.4419, longitude: -122.1559),
+    images: [
+      "$firebaseStoragePrefix" + "baylands-nature-preserve-1.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "baylands-nature-preserve-2.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "baylands-nature-preserve-3.jpeg$mediaSuffix"
+    ],
+    description:
+        "A large wildlife preserve with marshes, hiking trails, and birdwatching opportunities.",
+    tags: ['Nature'],
+  ),
+  LocationDetails(
+    name: "Berkeley Art Museum and Pacific Film Archive",
+    city: "Berkeley",
+    coordinates: GeoCoordinates(latitude: 37.8697, longitude: -122.2594),
+    images: [
+      "$firebaseStoragePrefix" + "berkeley-art-museum-1.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "berkeley-art-museum-2.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "berkeley-art-museum-3.jpeg$mediaSuffix"
+    ],
+    description:
+        "A museum and archive showcasing art and cinema with a diverse collection of exhibitions.",
+    tags: ['Arts'],
+  ),
+
+  // Locations within 100 miles
+  LocationDetails(
+    name: "Golden Gate Bridge",
+    city: "San Francisco",
+    coordinates: GeoCoordinates(latitude: 37.8199, longitude: -122.4783),
+    images: [
+      "$firebaseStoragePrefix" + "golden-gate-bridge-1.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "golden-gate-bridge-2.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "golden-gate-bridge-3.jpeg$mediaSuffix"
+    ],
+    description:
+        "An iconic suspension bridge connecting San Francisco to Marin County, offering stunning views.",
     tags: ['Culture', 'History'],
   ),
   LocationDetails(
-    name: "Nevada State Museum",
-    city: "Carson City",
-    coordinates: GeoCoordinates(latitude: 39.1605, longitude: -119.7669),
+    name: "Fisherman's Wharf",
+    city: "San Francisco",
+    coordinates: GeoCoordinates(latitude: 37.8080, longitude: -122.4177),
     images: [
-      "$firebaseStoragePrefix" + "nevada-state-museum-1.jpg$mediaSuffix"
+      "$firebaseStoragePrefix" + "fishermans-wharf-1.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "fishermans-wharf-2.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "fishermans-wharf-3.jpeg$mediaSuffix"
     ],
     description:
-        "A museum showcasing the history of Nevada, with exhibits on local history and mining.",
-    tags: ['Culture', 'History'],
+        "A popular waterfront district known for seafood restaurants, shops, and attractions like Pier 39.",
+    tags: ['Food', 'Culture'],
+  ),
+  LocationDetails(
+    name: "Alcatraz Island",
+    city: "San Francisco",
+    coordinates: GeoCoordinates(latitude: 37.8267, longitude: -122.4230),
+    images: [
+      "$firebaseStoragePrefix" + "alcatraz-island-1.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "alcatraz-island-2.jpeg$mediaSuffix"
+    ],
+    description:
+        "A historic island known for its former prison and now a national park and tourist destination.",
+    tags: ['History', 'Culture'],
+  ),
+  LocationDetails(
+    name: "Big Basin Redwoods State Park",
+    city: "Boulder Creek",
+    coordinates: GeoCoordinates(latitude: 37.1881, longitude: -122.2084),
+    images: [
+      "$firebaseStoragePrefix" + "big-basin-redwoods-state-park-1.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "big-basin-redwoods-state-park-2.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "big-basin-redwoods-state-park-3.jpeg$mediaSuffix"
+    ],
+    description:
+        "A scenic park featuring towering redwoods, hiking trails, and a variety of wildlife.",
+    tags: ['Nature'],
+  ),
+  LocationDetails(
+    name: "Point Reyes National Seashore",
+    city: "Point Reyes Station",
+    coordinates: GeoCoordinates(latitude: 38.0832, longitude: -123.0204),
+    images: [
+      "$firebaseStoragePrefix" + "point-reyes-national-seashore-1.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "point-reyes-national-seashore-2.jpeg$mediaSuffix",
+      "$firebaseStoragePrefix" + "point-reyes-national-seashore-3.jpeg$mediaSuffix"
+    ],
+    description:
+        "A rugged coastline with cliffs, beaches, and wildlife, perfect for hiking and nature watching.",
+    tags: ['Nature'],
   ),
 ];
