@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:odyssey/model/location.dart';
+import 'package:odyssey/model/review.dart';
 
 class ReviewsOverViewWidget extends StatelessWidget {
-  final Reviews reviews;
+  final List<LocationReview> reviews;
 
   ReviewsOverViewWidget({required this.reviews});
 
   @override
   Widget build(BuildContext context) {
-    final totalReviews = reviews.reviews.length;
-    final overview = reviews.overview;
+    final totalReviews = reviews.length;
+    final overview = RatingsOverview.fromReviews(reviews);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

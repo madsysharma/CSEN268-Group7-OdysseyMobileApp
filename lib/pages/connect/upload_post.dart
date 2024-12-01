@@ -61,7 +61,7 @@ class _UploadPostState extends State<_UploadPost> with AutomaticKeepAliveClientM
   String? locationId = "";
   List<File?> images = [];
   List<String> imageUrls = [];
-  double starRating = 0.0;
+  double starRating = 1.0;
   final List<Map<String, dynamic>> _filtersSelected = [
     {"Arts": false},
     {"Culture": false},

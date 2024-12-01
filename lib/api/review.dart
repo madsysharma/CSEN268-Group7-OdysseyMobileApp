@@ -21,5 +21,9 @@ Future<List<LocationReview>> fetchReviews({String? userEmail, String? locationId
   }
   final querySnapshot = await locationRef.get();
   print(querySnapshot);
-  return querySnapshot.docs.map((e) => LocationReview.fromJson(e.data())).toList();
+  return querySnapshot.docs.map((doc) {
+    Map<String, dynamic> data = doc.data();
+    data['id'] = doc.id;
+    return LocationReview.fromJson(data);
+  }).toList();
 }
