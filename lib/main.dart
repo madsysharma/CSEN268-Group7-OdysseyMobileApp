@@ -133,7 +133,7 @@ class MyApp extends StatelessWidget {
                     routes: [
                       GoRoute(
                         path: Paths.post,
-                        builder: (context, state) => UploadPost(startingLocName: 'setNone'),
+                        builder: (context, state) => UploadPost(),
                         routes: [
                           GoRoute(
                             path: Paths.customGallery,
