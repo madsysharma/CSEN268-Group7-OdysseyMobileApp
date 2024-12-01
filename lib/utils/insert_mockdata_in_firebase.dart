@@ -48,19 +48,6 @@ Future<void> updateFirestoreFromMockData() async {
       DocumentReference locationRef =
           await firestore.collection('locations').add(locationData);
 
-      var reviews = location.reviews != null ? location.reviews!.reviews : [];
-
-      // Add the reviews to the subcollection
-      for (var review in reviews) {
-        Map<String, dynamic> reviewData = {
-          "userEmail": review.userEmail,
-          "review": review.review,
-          "rating": review.rating,
-        };
-
-        await locationRef.collection('reviews').add(reviewData);
-      }
-
       print("Added location: ${location.name}");
     }
   } catch (e) {

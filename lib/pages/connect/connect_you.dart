@@ -3,7 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:odyssey/api/review.dart';
 import 'package:odyssey/components/cards/review_card.dart';
+import 'package:odyssey/model/review.dart';
 import 'package:odyssey/utils/paths.dart';
 import 'package:odyssey/utils/date_time_utils.dart';
 
@@ -28,9 +30,9 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
   }
 
   Future<List<ReviewCard>> _load(String? email) async{
-    final QuerySnapshot<Map<String, dynamic>> snap = await this.firestore.collection('Review').where('email',isEqualTo: email).get();
-    return snap.docs
-        .map((doc) => ReviewCard(pageName: "ConnectYou", imgUrls: List<String>.from(doc.data()['images']), posterName: "You", locationName: doc.data()['locationname'], dayDiff: getDayDifference(doc.data()['postedOn'].toDate()), reviewText: doc.data()['reviewtext'],))
+    List<LocationReview> reviews = await fetchReviews(userEmail: email);
+    return reviews
+        .map((review) => ReviewCard(pageName: "ConnectYou", imgUrls: review.images ?? [], posterName: "You", locationName: review.locationName, dayDiff: getDayDifference(review.postedOn!), reviewText: review.reviewText!,))
         .toList();
   }
 

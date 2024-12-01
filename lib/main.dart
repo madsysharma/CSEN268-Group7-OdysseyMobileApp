@@ -6,6 +6,7 @@ import 'package:odyssey/bloc/auth/auth_bloc.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
 import 'package:odyssey/bloc/locations/locations_bloc.dart';
 import 'package:odyssey/components/navigation/shell_bottom_nav_bar.dart';
+import 'package:odyssey/model/location.dart';
 import 'package:odyssey/pages/connect/expired_request.dart';
 import 'package:odyssey/pages/profile/download_network.dart';
 import 'package:odyssey/pages/profile/edit_profile.dart';
@@ -50,17 +51,19 @@ void main() async {
       BlocProvider(create: (context) => LocationsBloc()),
       BlocProvider(create: (context) => LocationDetailsBloc())
     ],
-    child: const MyApp(),
+    child: MyApp(),
   ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+  MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     final GoRouter router = GoRouter(
         initialLocation: Paths.loginPage,
+        navigatorKey: rootNavigatorKey,
         routes: [
           ShellRoute(
             builder: (context, state, child) => ShellBottomNavBar(child: child),
@@ -133,7 +136,11 @@ class MyApp extends StatelessWidget {
                     routes: [
                       GoRoute(
                         path: Paths.post,
-                        builder: (context, state) => UploadPost(startingLocName: 'setNone'),
+                        parentNavigatorKey: rootNavigatorKey, // open it not in the inner Navigator, but in a root Navigator
+                        builder: (context, state) {
+                          LocationDetails? location = state.extra as LocationDetails?;
+                          return UploadPost(location: location);
+                        },
                         routes: [
                           GoRoute(
                             path: Paths.customGallery,
