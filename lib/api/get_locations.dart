@@ -36,13 +36,6 @@ Future<LocationDetails> fetchLocationDetailsFromFirestore(String id) async {
       longitude: geoPoint.longitude,
     ).toJson();
     LocationDetails locationDetails = LocationDetails.fromJson(data);
-
-    // Fetch reviews for the location
-    QuerySnapshot reviewSnapshot = await firestore
-        .collection('locations')
-        .doc(id)
-        .collection('reviews')
-        .get();
     return locationDetails;
   } catch (e) {
     throw Exception("Error fetching location: $e");
