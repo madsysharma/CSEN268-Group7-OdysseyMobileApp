@@ -52,7 +52,7 @@ exports.sendFriendRequestEmail = functions.https.onCall(async (data, context) =>
     console.log("Validated data:", {email, senderName, senderEmail});
 
     const mailData = {
-      from: "noreply@mail.madsysharma.me",
+      from: "noreply@***REMOVED***",
       to: email,
       subject: `You have a new friend request!`,
       text: `${senderName} wants to connect with you on Odyssey! Make a new friend today!`,
@@ -100,7 +100,7 @@ exports.sendAcceptRequestEmail = functions.https.onCall(async (data, context) =>
   console.log("Validated data:", {email, senderName, senderEmail});
   try {
     const mailData = {
-      from: "noreply@mail.madsysharma.me",
+      from: "noreply@***REMOVED***",
       to: email,
       subject: `Your friend request has been accepted!`,
       text: `${senderName} accepted your friend request.`,
