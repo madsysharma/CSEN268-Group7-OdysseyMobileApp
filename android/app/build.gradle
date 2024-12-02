@@ -71,12 +71,12 @@ android {
     }
 
     buildscript {
-        dependencies {
+         dependencies {
             classpath 'com.android.tools.build:gradle:8.5.0' // Use the latest compatible version
-            classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20'
-        }
-    }
-}
+             classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.20'
+         }
+     }
+ }
 
 flutter {
     source = "../.."
