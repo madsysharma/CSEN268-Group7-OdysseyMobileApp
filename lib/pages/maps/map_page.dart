@@ -342,40 +342,7 @@ Widget build(BuildContext context) {
       _mapController.animateCamera(CameraUpdate.newLatLngZoom(result, 15.0));
     }
   }
-Future<void> _toggleSpeechToText() async {
-  if (_isListening) {
-    _speech.stop();
-    setState(() {
-      _isListening = false;
-    });
-  } else {
-    bool available = await _speech.initialize();
-    if (available) {
-      _speech.listen(
-        onResult: (result) {
-          setState(() {
-            _searchQuery = result.recognizedWords;
-          });
-          
-          // Automatically search the location after speech recognition
-          if (result.finalResult) {
-            _searchLocation();
-          }
-        },
-        listenFor: Duration(seconds: 5), // Optional: Limit listening time
-        cancelOnError: true,
-      );
-      
-      setState(() {
-        _isListening = true;
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Speech recognition not available')),
-      );
-    }
-  }
-}
+
 
 Future<void> _searchLocation() async {
   if (_searchQuery.isEmpty) {
@@ -475,6 +442,7 @@ void _showLocationDetailsOverlay(String address) {
                SizedBox(width: 8.0),
                ElevatedButton(
                  onPressed: () {
+
                    // Find the marker for the searched location
                    final searchLocationMarker = _markers.firstWhere(
                      (marker) => marker.markerId.value == 'SearchLocation',
@@ -489,6 +457,7 @@ void _showLocationDetailsOverlay(String address) {
                        ),
                      ),
                    );
+
                  },
                  child: Text('Get Directions'),
                ),

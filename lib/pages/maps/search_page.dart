@@ -647,3 +647,4 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 }
+

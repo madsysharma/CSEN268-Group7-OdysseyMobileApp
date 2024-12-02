@@ -9,6 +9,31 @@ class LocationWidget extends StatefulWidget {
   _LocationWidgetState createState() => _LocationWidgetState();
 }
 
+class LocationHelper {
+  static final loc.Location _location = loc.Location();
+
+  static Future<loc.LocationData?> getCurrentCoordinates() async {
+    try {
+      bool serviceEnabled = await _location.serviceEnabled();
+      if (!serviceEnabled) {
+        serviceEnabled = await _location.requestService();
+        if (!serviceEnabled) return null;
+      }
+
+      loc.PermissionStatus permissionGranted = await _location.hasPermission();
+      if (permissionGranted == loc.PermissionStatus.denied) {
+        permissionGranted = await _location.requestPermission();
+        if (permissionGranted != loc.PermissionStatus.granted) return null;
+      }
+
+      return await _location.getLocation();
+    } catch (e) {
+      print("Error fetching location: $e");
+      return null;
+    }
+  }
+}
+
 class _LocationWidgetState extends State<LocationWidget> {
   loc.Location location = loc.Location(); // Use the 'loc' prefix here
   String? _currentLocation;
@@ -52,7 +77,7 @@ class _LocationWidgetState extends State<LocationWidget> {
             "Latitude: ${locData.latitude}, Longitude: ${locData.longitude}";
       });
 
-      // Perform reverse geocoding to get the address
+      // geocoding to get the address
       List<Placemark> placemarks = await placemarkFromCoordinates(
         locData.latitude!,
         locData.longitude!,
