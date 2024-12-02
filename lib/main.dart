@@ -137,7 +137,7 @@ class MyApp extends StatelessWidget {
                     routes: [
                       GoRoute(
                         path: Paths.post,
-                        parentNavigatorKey: rootNavigatorKey, // open it not in the inner Navigator, but in a root Navigator
+                        // parentNavigatorKey: rootNavigatorKey, // open it not in the inner Navigator, but in a root Navigator
                         builder: (context, state) {
                           LocationDetails? location = state.extra as LocationDetails?;
                           return UploadPost(location: location);
