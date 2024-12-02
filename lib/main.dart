@@ -6,11 +6,14 @@ import 'package:odyssey/bloc/auth/auth_bloc.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
 import 'package:odyssey/bloc/locations/locations_bloc.dart';
 import 'package:odyssey/components/navigation/shell_bottom_nav_bar.dart';
+import 'package:odyssey/model/location.dart';
+import 'package:odyssey/pages/connect/expired_request.dart';
 import 'package:odyssey/pages/profile/download_network.dart';
 import 'package:odyssey/pages/profile/edit_profile.dart';
 import 'package:odyssey/pages/home.dart';
-import 'package:odyssey/pages/location_details.dart';
+//import 'package:odyssey/pages/location_details.dart';
 import 'package:odyssey/pages/maps/map_page.dart';
+import 'package:odyssey/pages/location_details/location_details.dart';
 import 'package:odyssey/pages/profile.dart';
 import 'package:odyssey/pages/profile/forgot_password.dart';
 import 'package:odyssey/pages/profile/login.dart';
@@ -18,42 +21,50 @@ import 'package:odyssey/pages/profile/manage_membership.dart';
 import 'package:odyssey/pages/profile/profile_page.dart';
 import 'package:odyssey/pages/profile/saved_locations.dart';
 import 'package:odyssey/pages/profile/signup.dart';
-import 'package:odyssey/pages/safety.dart';
-import 'package:odyssey/pages/safety_checkin.dart';
-import 'package:odyssey/pages/safety_emer.dart';
-import 'package:odyssey/pages/safety_tips.dart';
+import 'package:odyssey/pages/safety/safety.dart';
+import 'package:odyssey/pages/safety/safety_checkin.dart';
+import 'package:odyssey/pages/safety/safety_emer.dart';
+import 'package:odyssey/pages/safety/safety_sharing.dart';
+import 'package:odyssey/pages/safety/safety_tips.dart';
 import 'package:odyssey/pages/connect/connect.dart';
 import 'package:odyssey/pages/connect/friend_request.dart';
+import 'package:odyssey/pages/connect/notifications.dart';
+import 'package:odyssey/pages/connect/accept_request.dart';
+import 'package:odyssey/utils/custom_gallery.dart';
 import 'package:odyssey/utils/paths.dart';
 import 'package:odyssey/pages/connect/upload_post.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize Firebase before the app runs
-  // await Firebase.initializeApp();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.debug
+  );
   runApp(MultiBlocProvider(
     providers: [
       BlocProvider(create: (context) => AuthBloc()),
       BlocProvider(create: (context) => LocationsBloc()),
       BlocProvider(create: (context) => LocationDetailsBloc())
     ],
-    child: const MyApp(),
+    child: MyApp(),
   ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+  MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     final GoRouter router = GoRouter(
         initialLocation: Paths.loginPage,
+        navigatorKey: rootNavigatorKey,
         routes: [
           ShellRoute(
             builder: (context, state, child) => ShellBottomNavBar(child: child),
@@ -74,6 +85,23 @@ class MyApp extends StatelessWidget {
                         path: Paths.friendReq,
                         builder: (context, state) => FriendRequest(),
                       ),
+                      GoRoute(
+                        path: Paths.notifs,
+                        builder: (context, state) => Notifications(fromScreen: 'local',),
+                        routes: [
+                          GoRoute(
+                            path: Paths.acceptReq,
+                            builder: (context, state){
+                              final query = state.uri.queryParameters['q'];
+                              return AcceptRequest(requesterName: query);
+                            },
+                          ),
+                          GoRoute(
+                            path: Paths.expiredReq,
+                            builder: (context, state) => ExpiredRequest()
+                          ),
+                        ],
+                      ),
                     ]
                   ),
                   GoRoute(
@@ -84,6 +112,23 @@ class MyApp extends StatelessWidget {
                         path: Paths.friendReq,
                         builder: (context, state) => FriendRequest(),
                       ),
+                      GoRoute(
+                        path: Paths.notifs,
+                        builder: (context, state) => Notifications(fromScreen: 'friends',),
+                        routes: [
+                          GoRoute(
+                            path: Paths.acceptReq,
+                            builder: (context, state){
+                              final query = state.uri.queryParameters['q'];
+                              return AcceptRequest(requesterName: query);
+                            }
+                          ),
+                          GoRoute(
+                            path: Paths.expiredReq,
+                            builder: (context, state) => ExpiredRequest()
+                          ),
+                        ],
+                      ),
                     ]
                   ),
                   GoRoute(
@@ -92,11 +137,38 @@ class MyApp extends StatelessWidget {
                     routes: [
                       GoRoute(
                         path: Paths.post,
-                        builder: (context, state) => UploadPost(),
+                        parentNavigatorKey: rootNavigatorKey, // open it not in the inner Navigator, but in a root Navigator
+                        builder: (context, state) {
+                          LocationDetails? location = state.extra as LocationDetails?;
+                          return UploadPost(location: location);
+                        },
+                        routes: [
+                          GoRoute(
+                            path: Paths.customGallery,
+                            builder: (context, state) => CustomGallery(imgPaths: state.extra as List<String>),
+                          ),
+                        ]
                       ),
                       GoRoute(
                         path: Paths.friendReq,
                         builder: (context, state) => FriendRequest(),
+                      ),
+                      GoRoute(
+                        path: Paths.notifs,
+                        builder: (context, state) => Notifications(fromScreen: 'you',),
+                        routes: [
+                          GoRoute(
+                            path: Paths.acceptReq,
+                            builder: (context, state){
+                              final query = state.uri.queryParameters['q'];
+                              return AcceptRequest(requesterName: query);
+                            },
+                          ),
+                          GoRoute(
+                            path: Paths.expiredReq,
+                            builder: (context, state) => ExpiredRequest()
+                          ),
+                        ],
                       ),
                     ]
                   ),
@@ -121,6 +193,10 @@ class MyApp extends StatelessWidget {
                   GoRoute(
                     path: 'travel-tips',
                     builder: (context, state) => SafetyTips(),
+                  ),
+                  GoRoute(
+                    path: 'sharing',
+                    builder: (context, state) => SharingPage(),
                   ),
                 ],
               ),
@@ -177,17 +253,13 @@ class MyApp extends StatelessWidget {
 
           if (loggedIn &&
               (tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
-            // Redirect logged-in users away from login/signup pages to the home page
             return Paths.home;
           }
 
           if (!loggedIn &&
               !(tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
-            // Redirect unauthenticated users to login if they are accessing a protected page
             return Paths.loginPage;
           }
-
-          // No redirect needed
           return null;
         });
 
@@ -195,21 +267,37 @@ class MyApp extends StatelessWidget {
       listenWhen: (previous, current) => previous != current,
       listener: (context, state) {
         if (state is LoggedIn) {
-          // User is logged in, print their email
-          print("User is logged in with email: ${state.user.email}");
           router.go(Paths.home);
         } else if (state is LoggedOut) {
-          // User is logged out
           router.go(Paths.loginPage);
         }
       },
       child: MaterialApp.router(
         title: 'Odyssey',
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF006A68)),
-          fontFamily: GoogleFonts.lato().fontFamily,
-          useMaterial3: true,
-        ),
+            colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF006A68)),
+            fontFamily: GoogleFonts.lato().fontFamily,
+            useMaterial3: true,
+            floatingActionButtonTheme: FloatingActionButtonThemeData(
+              backgroundColor: Color(0xFF006A68),
+              foregroundColor: Color(0xFFFFFFFF),
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+            textButtonTheme: TextButtonThemeData(
+                style: ButtonStyle(
+              foregroundColor: WidgetStateProperty.all(Color(0xFF006A68)),
+              textStyle: WidgetStateProperty.all(
+                TextStyle(
+                  fontSize: 16,
+                ),
+              ),
+              padding: WidgetStateProperty.all(
+                EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+              ),
+            ))),
         routerConfig: router,
       ),
     );

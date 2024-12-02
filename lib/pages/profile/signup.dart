@@ -94,8 +94,6 @@ class SignUpPageState extends State<SignUpPage> {
     super.dispose();
   }
 
-  final List<String> _bayAreaAreaCodes = ['408', '415', '510', '650', '925'];
-
   String? validatePhoneNumber(String? value) {
     if (value == null || value.isEmpty) {
       return 'Phone number is required';
