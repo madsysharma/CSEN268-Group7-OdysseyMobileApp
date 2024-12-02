@@ -74,6 +74,12 @@ class MyApp extends StatelessWidget {
                 builder: (context, state) => HomeScreen(),
               ),
               GoRoute(
+                path: Paths.locationDetails,
+                builder: (context, state) {
+                  var location = state.extra as String;
+                  return LocationDetailsPage(locationId: location);
+              }),
+              GoRoute(
                 path: Paths.connect,
                 builder: (context, state) => Connect(tab: 'local'),
                 routes: [
@@ -234,12 +240,7 @@ class MyApp extends StatelessWidget {
               ),
             ],
           ),
-          GoRoute(
-              path: Paths.locationDetails,
-              builder: (context, state) {
-                var location = state.extra as String;
-                return LocationDetailsPage(locationId: location);
-              }),
+        
           GoRoute(
             path: Paths.loginPage,
             builder: (context, state) => LoginPage(),
