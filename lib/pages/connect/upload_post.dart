@@ -18,39 +18,53 @@ import 'package:odyssey/model/location.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tuple/tuple.dart';
 
-class UploadPost extends StatelessWidget {
+class UploadPostInitial extends StatefulWidget {
   final LocationDetails? location;
-  const UploadPost({super.key, this.location});
+  const UploadPostInitial({super.key, this.location});
+
+  @override
+  State<UploadPostInitial> createState() => UploadPostInitialState();
+}
+
+class UploadPostInitialState extends State<UploadPostInitial> with AutomaticKeepAliveClientMixin{
+  late Future<List<LocationDetails>> _locationsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _locationsFuture = widget.location != null ? Future.value([widget.location!]) : fetchLocationsFromFirestore();
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
-    if (location!=null) {
-      return _UploadPost(locations: [location!]);
-    }
-    Future<List<LocationDetails>> locationsFuture =  fetchLocationsFromFirestore();
-    return FutureBuilder(
-        future: locationsFuture, 
-        builder: (BuildContext context, AsyncSnapshot<List<LocationDetails>> snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-              return CircularProgressIndicator(); // Loading indicator
-          }  else if (snapshot.hasError) {
-              return Text('Error: ${snapshot.error}');
-          }
-          return _UploadPost(locations: snapshot.data!);
-        },);  
-    }
+    super.build(context);
+    return FutureBuilder<List<LocationDetails>>(
+      future: _locationsFuture,
+      builder: (BuildContext context, AsyncSnapshot<List<LocationDetails>> snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        return UploadPost(locations: snapshot.data!);
+      },
+    );
+  }
 }
 
-class _UploadPost extends StatefulWidget{
+class UploadPost extends StatefulWidget{
   final List<LocationDetails> locations;
-  const _UploadPost({required this.locations});
+  const UploadPost({super.key, required this.locations});
 
   @override
-  State<_UploadPost> createState() => _UploadPostState();
+  State<UploadPost> createState() => UploadPostState();
 
 }
 
-class _UploadPostState extends State<_UploadPost> with AutomaticKeepAliveClientMixin{
+class UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMixin{
   static List<String> filterSetOne = ["Arts", "Culture", "Food"];
   static List<String> filterSetTwo = ["History", "Nature", "Safe Spot"];
   static List<String> filterSetThree = ["Hidden Gem", "Pet-Friendly", "Avoid"];
