@@ -4,6 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:odyssey/components/cards/contact_item.dart';
 import 'package:odyssey/model/contact.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:odyssey/utils/image_picker_utils.dart';
 
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
@@ -11,7 +15,6 @@ class ContactsPage extends StatefulWidget {
   @override
   _ContactsPageState createState() => _ContactsPageState();
 }
-
 
 class PhoneNumberFormatter extends TextInputFormatter {
   @override
@@ -32,14 +35,13 @@ class PhoneNumberFormatter extends TextInputFormatter {
   }
 }
 
-
 class _ContactsPageState extends State<ContactsPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   List<Contact> contacts = [];
-  // Variable to hold error message
-  String errorMessage = ''; 
+  String errorMessage = '';
 
   @override
   void initState() {
@@ -69,45 +71,86 @@ class _ContactsPageState extends State<ContactsPage> {
     });
   }
 
-  Future<void> _addContact(Contact newContact) async {
+  Future<void> _addContact(Contact newContact, {File? imageFile}) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return;
 
+    String avatarUrl = newContact.avatarUrl;
+
+
+    if (imageFile != null) {
+      avatarUrl = await uploadImageToFirebase(imageFile) ?? '';
+    }
+
+
+    final contactData = newContact.copyWith(avatarUrl: avatarUrl).toMap();
     final docRef = await _firestore
         .collection('User')
         .doc(userId)
         .collection('Contacts')
-        .add(newContact.toMap());
+        .add(contactData);
 
     setState(() {
-      contacts.add(newContact.copyWith(id: docRef.id));
+      contacts.add(newContact.copyWith(id: docRef.id, avatarUrl: avatarUrl));
     });
   }
 
-  Future<void> _editContact(Contact updatedContact) async {
+  Future<void> _editContact(Contact updatedContact, {File? imageFile}) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null || updatedContact.id == null) return;
 
+    String avatarUrl = updatedContact.avatarUrl;
+
+
+    if (imageFile != null) {
+      avatarUrl = await uploadImageToFirebase(imageFile) ?? avatarUrl;
+    }
+
+
+    final contactData = updatedContact.copyWith(avatarUrl: avatarUrl).toMap();
     await _firestore
         .collection('User')
         .doc(userId)
         .collection('Contacts')
         .doc(updatedContact.id)
-        .update(updatedContact.toMap());
+        .update(contactData);
 
     setState(() {
       final index =
           contacts.indexWhere((contact) => contact.id == updatedContact.id);
       if (index != -1) {
-        contacts[index] = updatedContact;
+        contacts[index] = updatedContact.copyWith(avatarUrl: avatarUrl);
       }
     });
   }
 
   Future<void> _deleteContact(Contact contactToDelete) async {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null || contactToDelete.id == null) return;
+  final userId = _auth.currentUser?.uid;
+  if (userId == null || contactToDelete.id == null) return;
 
+  // confirm before deleting
+  final bool? shouldDelete = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Delete Contact'),
+        content: Text('Are you sure you want to delete this contact?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('Delete'),
+          ),
+        ],
+      );
+    },
+  );
+
+
+  if (shouldDelete == true) {
     await _firestore
         .collection('User')
         .doc(userId)
@@ -119,44 +162,53 @@ class _ContactsPageState extends State<ContactsPage> {
       contacts.removeWhere((contact) => contact.id == contactToDelete.id);
     });
   }
+}
 
-  
 
-void _showContactDialog({Contact? contact}) {
-  final nameController = TextEditingController(text: contact?.name ?? '');
-  final numberController = TextEditingController(
-    text: contact?.number.replaceAll(RegExp(r'[\D]'), '') ?? '',
-  );
+  Future<String?> uploadImageToFirebase(File imageFile) async {
+    try {
+      final storageRef = _storage.ref().child('contacts/${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final uploadTask = storageRef.putFile(imageFile);
+      final snapshot = await uploadTask.whenComplete(() {});
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      print("Error uploading image: $e");
+      return null;
+    }
+  }
 
-  final _formKey = GlobalKey<FormState>();
+  void _showContactDialog({Contact? contact}) {
+    final nameController = TextEditingController(text: contact?.name ?? '');
+    final numberController = TextEditingController(
+      text: contact?.number.replaceAll(RegExp(r'[\D]'), '') ?? '',
+    );
 
-  setState(() {
-    errorMessage = '';
-  });
+    File? selectedImage;
+    final _formKey = GlobalKey<FormState>();
 
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(contact == null ? 'Add Contact' : 'Edit Contact'),
-      content: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: nameController,
-              decoration: InputDecoration(labelText: 'Name'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Name cannot be empty';
-                }
-                if (value.length > 15) {
-                  return 'Name cannot be more than 15 characters';
-                }
-                return null;
-              },
-            ),
-            TextFormField(
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(contact == null ? 'Add Contact' : 'Edit Contact'),
+        content: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Name Input
+              TextFormField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: 'Name'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Name cannot be empty';
+                  }
+                  return null;
+                },
+              ),
+              // Phone Number Input
+              TextFormField(
               controller: numberController,
               decoration: InputDecoration(labelText: 'Phone Number'),
               keyboardType: TextInputType.phone,
@@ -173,53 +225,74 @@ void _showContactDialog({Contact? contact}) {
                 return null;
               },
             ),
-          ],
+              // Image Picker
+              GestureDetector(
+                onTap: () async {
+                  final image = await pickImage(context, ImageSource.gallery);
+                  setState(() {
+                    selectedImage = image;
+                  });
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(top: 10),
+                  height: 100,
+                  width: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(50),
+                    image: selectedImage != null
+                        ? DecorationImage(
+                            image: FileImage(selectedImage!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: selectedImage == null
+                      ? Icon(Icons.camera_alt, color: Colors.grey[700])
+                      : null,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () {
-            if (_formKey.currentState?.validate() ?? false) {
-              final name = nameController.text;
-              final rawNumber = numberController.text;
-
-              // Format number to "+1 xxx-xxx-xxxx"
-              final formattedNumber =
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (_formKey.currentState?.validate() ?? false) {
+                final name = nameController.text;
+                final rawNumber = numberController.text;
+                // Format number to "+1 xxx-xxx-xxxx"
+                final formattedNumber =
                   '+1 ${rawNumber.substring(0, 3)}-${rawNumber.substring(3, 6)}-${rawNumber.substring(6)}';
 
-              final newContact = Contact(
-                id: contact?.id,
-                name: name,
-                number: formattedNumber,
-                avatarUrl: contact?.avatarUrl ?? '',
-              );
+                final newContact = Contact(
+                  name: name,
+                  number: formattedNumber,
+                  avatarUrl: contact?.avatarUrl ?? '',
+                );
 
-              if (contact == null) {
-                _addContact(newContact);
-              } else {
-                _editContact(newContact);
+                if (contact == null) {
+                  await _addContact(newContact, imageFile: selectedImage);
+                } else {
+                  await _editContact(
+                    newContact.copyWith(id: contact.id),
+                    imageFile: selectedImage,
+                  );
+                }
+
+                Navigator.of(context).pop();
               }
-
-              Navigator.of(context).pop();
-            } else {
-              setState(() {
-                errorMessage = 'Please fix the errors';
-              });
-            }
-          },
-          child: Text('Save'),
-        ),
-      ],
-    ),
-  );
-}
-
-
-
+            },
+            child: Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -238,8 +311,7 @@ void _showContactDialog({Contact? contact}) {
             onDelete: () => _deleteContact(contacts[index]),
           );
         },
-        separatorBuilder: (context, index) =>
-            const SizedBox(height: 10),
+        separatorBuilder: (context, index) => const SizedBox(height: 10),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showContactDialog(),
@@ -248,4 +320,3 @@ void _showContactDialog({Contact? contact}) {
     );
   }
 }
-

@@ -1,4 +1,4 @@
-
+import 'dart:io'; 
 import 'package:flutter/material.dart';
 import 'package:odyssey/model/contact.dart';
 
@@ -25,13 +25,24 @@ class ContactItem extends StatelessWidget {
       ),
       child: ListTile(
         leading: CircleAvatar(
+          radius: 25, 
           backgroundImage: contact.avatarUrl.isNotEmpty
-              ? NetworkImage(contact.avatarUrl)
+              ? (Uri.parse(contact.avatarUrl).isAbsolute
+                  ? NetworkImage(contact.avatarUrl) 
+                  : FileImage(File(contact.avatarUrl))) 
               : null,
-          child: contact.avatarUrl.isEmpty ? Icon(Icons.person) : null,
+          child: contact.avatarUrl.isEmpty
+              ? Icon(Icons.person, size: 30, color: Colors.grey)
+              : null, 
         ),
-        title: Text(contact.name, style: TextStyle(color: Colors.black)),
-        subtitle: Text(contact.number, style: TextStyle(color: Colors.black87)),
+        title: Text(
+          contact.name,
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          contact.number,
+          style: TextStyle(color: Colors.black87),
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
