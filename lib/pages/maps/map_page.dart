@@ -343,30 +343,6 @@ Widget build(BuildContext context) {
     }
   }
 
-  Future<void> _toggleSpeechToText() async {
-    if (_isListening) {
-      _speech.stop();
-      setState(() {
-        _isListening = false;
-      });
-    } else {
-      bool available = await _speech.initialize();
-      if (available) {
-        _speech.listen(onResult: (result) {
-          setState(() {
-            _searchQuery = result.recognizedWords;
-          });
-        });
-        setState(() {
-          _isListening = true;
-        });
-      }
-    }
-  }
-
-  
-
-
 
 Future<void> _searchLocation() async {
   if (_searchQuery.isEmpty) {
@@ -466,9 +442,22 @@ void _showLocationDetailsOverlay(String address) {
                SizedBox(width: 8.0),
                ElevatedButton(
                  onPressed: () {
+
+                   // Find the marker for the searched location
+                   final searchLocationMarker = _markers.firstWhere(
+                     (marker) => marker.markerId.value == 'SearchLocation',
+                     orElse: () => _markers.first, // Return first marker as fallback
+                   );
                    
-                   _goToSearchPage();
-                   
+                   Navigator.push(
+                     context,
+                     MaterialPageRoute(
+                       builder: (context) => SearchPage(
+                         endLocation: searchLocationMarker.position,
+                       ),
+                     ),
+                   );
+
                  },
                  child: Text('Get Directions'),
                ),
