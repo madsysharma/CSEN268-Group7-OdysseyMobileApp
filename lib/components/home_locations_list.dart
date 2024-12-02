@@ -14,14 +14,16 @@ class HomeLocationsList extends StatelessWidget {
       builder: (context, state) {
         return Expanded(
           child: state is LocationsSuccess
-              ? ListView.builder(
+              ? (state.locations.length > 0 ? ListView.builder(
                   scrollDirection: Axis.vertical,
                   itemCount: state.locations.length,
                   itemBuilder: (context, index) {
                     final location = state.locations[index];
                     return LocationCard(location: location);
                   },
-                )
+                ) :Center(
+                      child: Text("No Locations Found"),
+                ))
               : state is LocationsLoading
                   ? Center(
                       child: CircularProgressIndicator(),

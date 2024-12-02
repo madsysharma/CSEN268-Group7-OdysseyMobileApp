@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:odyssey/api/review.dart';
 import 'package:odyssey/components/cards/review_card.dart';
+import 'package:odyssey/model/review.dart';
 import 'package:odyssey/utils/paths.dart';
+import 'package:odyssey/utils/date_time_utils.dart';
 
 class ConnectYou extends StatefulWidget{
   ConnectYou({super.key});
@@ -20,14 +24,15 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
   @override
   void initState() {
     super.initState();
-    String? uid = this.auth.currentUser?.uid;
-    _futureCards = _load(uid);
+    //String? uid = this.auth.currentUser?.uid;
+    String? email = this.auth.currentUser?.email;
+    _futureCards = _load(email);
   }
 
-  Future<List<ReviewCard>> _load(String? uid) async{
-    final QuerySnapshot<Map<String, dynamic>> snap = await this.firestore.collection('Review').where('uid',isEqualTo: uid).get();
-    return snap.docs
-        .map((doc) => ReviewCard(pageName: "ConnectYou", imgUrls: doc.data()['images'] ?? []))
+  Future<List<ReviewCard>> _load(String? email) async{
+    List<LocationReview> reviews = await fetchReviews(userEmail: email);
+    return reviews
+        .map((review) => ReviewCard(pageName: "ConnectYou", imgUrls: review.images ?? [], posterName: "You", locationName: review.locationName, dayDiff: getDayDifference(review.postedOn!), reviewText: review.reviewText!,))
         .toList();
   }
 
@@ -49,6 +54,7 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
           );
         }
         else if(snap.hasError){
+          print('Error: ${snap.error}');
           return Center(
             child: Text("Something went wrong. Please try again."),
             );
@@ -64,7 +70,7 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
                 SizedBox(height: 20.0,),
                 ElevatedButton(
                   onPressed: (){
-                    context.go('/connect/you'+Paths.post);
+                    GoRouter.of(context).go('/connect/you'+Paths.post);
                   },
                   child: Text("Create new post", style: Theme.of(context).textTheme.headlineSmall))
               ],
@@ -73,15 +79,25 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
         }
         else{
           print("You have posted these reviews");
-          return Container(
-            constraints: BoxConstraints(maxHeight: double.infinity),
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemBuilder: (context, index){
-                return snap.data![index];
-              },
-              separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
-              itemCount: snap.data!.length)
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemBuilder: (context, index){
+                    return snap.data![index];
+                  },
+                  separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
+                  itemCount: snap.data!.length)
+              ),
+              SizedBox(height: 20.0,),
+              ElevatedButton(
+                  onPressed: (){
+                    GoRouter.of(context).go('/connect/you'+Paths.post);
+                  },
+                  child: Text("Create new post", style: Theme.of(context).textTheme.headlineSmall)
+              )
+            ],
           );
         }
       }

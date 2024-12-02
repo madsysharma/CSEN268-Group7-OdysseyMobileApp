@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:odyssey/components/cards/review_card.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:odyssey/utils/date_time_utils.dart';
 
 class ConnectLocal extends StatefulWidget{
   ConnectLocal({super.key});
@@ -13,7 +14,6 @@ class ConnectLocal extends StatefulWidget{
 class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClientMixin{
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  List<ReviewCard>? cardList = [];
 
   Future<List<ReviewCard>> _loadLocalUserReviews(String? uid) async{
     try {
@@ -41,10 +41,13 @@ class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClie
         names.add("$firstname $lastname");
       }
       for(String n in names){
-        final localReviewQuerySnap = await this.firestore.collection('Review').where('username'.toLowerCase(),isEqualTo: n.toLowerCase()).get();
+        final localReviewQuerySnap = await this.firestore.collection('Review').where('username'.toLowerCase(),isEqualTo: n.toLowerCase().split(" ").first).get();
         for(var doc in localReviewQuerySnap.docs){
-          final images = doc.data()['images'] ?? [];
-          reviews.add(ReviewCard(pageName: "ConnectLocal", imgUrls: images));
+          final images = List<String>.from(doc.data()['images']) ?? [];
+          final postedDate = doc.data()['postedOn'] ?? "";
+          final dayDifference = getDayDifference(postedDate.toDate());
+          final revText = doc.data()['reviewtext'] ?? "";
+          reviews.add(ReviewCard(pageName: "ConnectLocal", imgUrls: images, posterName: n.split(" ").first, locationName: doc.data()['locationname'], dayDiff: dayDifference, reviewText: revText,));
         }
       }
       print('Loaded reviews: ${reviews.length}');
@@ -82,18 +85,18 @@ class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClie
             ),
           );
         } else {
-          setState(() {
-            cardList = snap.data;
-          });
-          return Container(
-            constraints: BoxConstraints(maxHeight: double.infinity),
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemBuilder: (context, index){
-                return snap.data![index];
-              },
-              separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
-              itemCount: snap.data!.length)
+          return Column(
+            children: [
+              Expanded(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemBuilder: (context, index){
+                  return snap.data![index];
+                },
+                separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
+                itemCount: snap.data!.length)
+              ),
+            ]
           );
         }
       },

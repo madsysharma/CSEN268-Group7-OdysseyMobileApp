@@ -11,7 +11,7 @@ class LocationsBloc extends Bloc<LocationsEvent, LocationsState> {
     on<FetchLocations>((event, emit) async {
       emit(LocationsLoading());
       try {
-        final locations = await fetchLocationsFromFirestore();
+        final locations = await fetchLocationsFromFirestore(searchQuery: event.searchQuery, proximity: event.proximity, tag: event.category);
         emit(LocationsSuccess(locations));
       } catch (e) {
         emit(LocationsError(e.toString()));

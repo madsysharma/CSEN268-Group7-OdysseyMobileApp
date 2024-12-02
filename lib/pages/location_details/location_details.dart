@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
+import 'package:odyssey/pages/location_details/image_carousel.dart';
+import 'package:odyssey/pages/location_details/review_list.dart';
 
 class LocationDetailsPage extends StatefulWidget {
   final String locationId;
@@ -85,25 +87,27 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
           body: state is LocationDetailsSuccess
               ? Column(
                   children: [
-                    Image.network(
-                      state.location.images.first,
-                      height: 400,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Icon(Icons.image, size: 100, color: Colors.grey),
-                    ),
+                    // Image.network(
+                    //   state.location.images.first,
+                    //   height: 250,
+                    //   width: double.infinity,
+                    //   fit: BoxFit.cover,
+                    //   errorBuilder: (context, error, stackTrace) =>
+                    //       Icon(Icons.image, size: 100, color: Colors.grey),
+                    // ),
+                    ImageCarousel(imageUrls: state.location.images),
+                    SizedBox(height: 8),
+                     Text(
+                      state.location.name,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                     ),
+                    SizedBox(height: 8),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: ListView(
                           scrollDirection: Axis.vertical,
                           children: [
-                            Text(
-                              state.location.name,
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            SizedBox(height: 4),
                             Text(
                               state.location.description,
                               style: Theme.of(context).textTheme.bodyLarge,
@@ -140,7 +144,9 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
                                 backgroundColor:
                                     Theme.of(context).colorScheme.primary,
                               ),
-                            )
+                            ),
+                            SizedBox(height: 8),
+                            ReviewsWidget(locationDetails: state.location)
                           ],
                         ),
                       ),
@@ -161,3 +167,4 @@ class _LocationDetailsPageState extends State<LocationDetailsPage> {
     );
   }
 }
+

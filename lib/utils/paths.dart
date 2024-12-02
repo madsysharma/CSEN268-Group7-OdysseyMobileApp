@@ -4,6 +4,10 @@ class Paths {
   static const String connect = "/connect";
   static const String post = "/post";
   static const String friendReq = '/friendreq';
+  static const String notifs = '/notifications';
+  static const String customGallery = '/customgallery';
+  static const String acceptReq = '/acceptreq';
+  static const String expiredReq = '/expiredreq';
   static const String maps = "/maps";
   static const String safety = "/safety";
   static const String profile = "/profile";
@@ -18,4 +22,5 @@ class Paths {
   static const String locationCheckin = "/safety/location-checkin";
   static const String emergencyContact = "/safety/emergency-contact";
   static const String travelTips = "/safety/travel-tips";
+  static const String safeSharing = "/safety/sharing";
 }

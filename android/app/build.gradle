@@ -10,16 +10,28 @@ plugins {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(23)
     }
 }
 
 dependencies {
-    // AndroidX dependencies
     implementation 'androidx.core:core:1.12.0'
     implementation 'androidx.annotation:annotation:1.6.0'
-    implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation(platform('com.google.firebase:firebase-bom:33.6.0'))
+    implementation('com.google.android.gms:play-services-base:18.5.0')
+    implementation('com.google.android.gms:play-services-base-testing:16.1.0')
+    implementation('com.google.android.gms:play-services-tasks:18.2.0')
+    implementation('com.google.android.gms:play-services-safetynet:18.1.0')
+    implementation('com.google.android.gms:play-services-basement:18.4.0')
+    implementation('com.google.firebase:firebase-inappmessaging-display')
+    implementation('com.google.firebase:firebase-analytics')
+    implementation('com.google.firebase:firebase-auth')
+    implementation('com.google.firebase:firebase-messaging')
+    implementation("com.google.firebase:firebase-functions")
 }
+
+apply plugin: 'com.google.gms.google-services'
 
 android {
     ndkVersion = "25.1.8937393"
@@ -69,3 +81,4 @@ android {
 flutter {
     source = "../.."
 }
+
