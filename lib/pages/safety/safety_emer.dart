@@ -8,6 +8,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:odyssey/utils/image_picker_utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
@@ -294,29 +295,46 @@ class _ContactsPageState extends State<ContactsPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color.fromARGB(255, 189, 220, 204),
-        title: Text("Emergency Contact"),
-        centerTitle: true,
-      ),
-      body: ListView.separated(
-        itemCount: contacts.length,
-        itemBuilder: (context, index) {
-          return ContactItem(
-            contact: contacts[index],
-            onEdit: () => _showContactDialog(contact: contacts[index]),
-            onDelete: () => _deleteContact(contacts[index]),
-          );
-        },
-        separatorBuilder: (context, index) => const SizedBox(height: 10),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showContactDialog(),
-        child: Icon(Icons.add),
-      ),
+  Future<void> _callContact(String phoneNumber) async {
+  final Uri callUri = Uri(
+    scheme: 'tel',
+    path: phoneNumber,
+  );
+
+  if (await canLaunchUrl(callUri)) {
+    await launchUrl(callUri);
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not launch the dialer for $phoneNumber')),
     );
   }
 }
+
+  @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      backgroundColor: Color.fromARGB(255, 189, 220, 204),
+      title: Text("Emergency Contact"),
+      centerTitle: true,
+    ),
+    body: ListView.separated(
+      itemCount: contacts.length,
+      itemBuilder: (context, index) {
+        return ContactItem(
+          contact: contacts[index],
+          onEdit: () => _showContactDialog(contact: contacts[index]),
+          onDelete: () => _deleteContact(contacts[index]),
+          onCall: () => _callContact(contacts[index].number), 
+        );
+      },
+      separatorBuilder: (context, index) => const SizedBox(height: 10),
+    ),
+    floatingActionButton: FloatingActionButton(
+      onPressed: () => _showContactDialog(),
+      child: Icon(Icons.add),
+    ),
+  );
+}
+}
+

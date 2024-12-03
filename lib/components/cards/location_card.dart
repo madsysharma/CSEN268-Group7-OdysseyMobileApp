@@ -26,12 +26,15 @@ class LocationCard extends StatelessWidget {
         children: [
           // Image section
           ClipRRect(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
             child: Image.network(
               imageUrl,
               fit: BoxFit.cover,
               height: 150,
               width: double.infinity,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(Icons.broken_image, size: 150);
+              },
             ),
           ),
           Padding(
@@ -46,10 +49,11 @@ class LocationCard extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         subtitle,
@@ -57,11 +61,11 @@ class LocationCard extends StatelessWidget {
                           color: Colors.grey[600],
                           fontSize: 14,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-                
                 Checkbox(
                   value: isChecked,
                   onChanged: onChecked,
