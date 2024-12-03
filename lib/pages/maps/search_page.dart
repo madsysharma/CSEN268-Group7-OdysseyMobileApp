@@ -6,7 +6,49 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/config.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io' show Platform,File, Directory;
+
+import 'dart:io' show Platform, File, Directory;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../profile/manage_membership.dart';
+
+class OfflineMap {
+  final String id;
+  final String startLocation;
+  final String endLocation;
+  final String filePath;
+  final DateTime createdAt;
+
+  OfflineMap({
+    required this.id,
+    required this.startLocation,
+    required this.endLocation,
+    required this.filePath,
+    required this.createdAt,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'startLocation': startLocation,
+      'endLocation': endLocation,
+      'filePath': filePath,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
+
+  static OfflineMap fromMap(Map<String, dynamic> map) {
+    return OfflineMap(
+      id: map['id'],
+      startLocation: map['startLocation'],
+      endLocation: map['endLocation'],
+      filePath: map['filePath'],
+      createdAt: DateTime.parse(map['createdAt']),
+    );
+  }
+}
+
 
 class SearchPage extends StatefulWidget {
   final LatLng? endLocation;
@@ -18,18 +60,25 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
+
+  // Controllers
   final TextEditingController _startController = TextEditingController();
   final TextEditingController _endController = TextEditingController();
   Timer? _debounceTimer;
+  late GoogleMapController _mapController;
+
+  // State variables
+  String? _memberType;
+  int _offlineMapsCount = 0;
+  bool _isLoadingMembership = true;
+  List<OfflineMap> _offlineMaps = [];
   List<dynamic> _searchResults = [];
-  
-  LatLng? _startLocation;
-  LatLng? _endLocation;
-  
   List<dynamic> _directions = [];
   Set<Polyline> _polylines = {};
   
-  late GoogleMapController _mapController;
+  LatLng? _startLocation;
+  LatLng? _endLocation;
+
   CameraPosition _initialCameraPosition = CameraPosition(
     target: LatLng(0, 0),
     zoom: 10,
@@ -43,8 +92,89 @@ class _SearchPageState extends State<SearchPage> {
       _fetchAddressForLocation(_endLocation!, isEnd: true);
     }
     _getCurrentLocation();
+
+    _fetchMembershipDetails();
+    _loadOfflineMaps();
   }
 
+  // Membership methods
+  int getOfflineMapsLimit(String memberType) {
+    switch (memberType.toUpperCase()) {
+      case 'BASIC':
+        return 3;
+      case 'PREMIUM':
+        return 5;
+      case 'ELITE':
+        return -1; // Unlimited
+      default:
+        return 0;
+    }
+  }
+
+  Future<void> _fetchMembershipDetails() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception("No user logged in");
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('User')
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists) {
+        setState(() {
+          _memberType = userDoc.data()?['membertype'] ?? 'BASIC';
+          _offlineMapsCount = userDoc.data()?['offline_maps_count'] ?? 0;
+          _isLoadingMembership = false;
+        });
+
+      }
+      
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+      );
+      
+      setState(() {
+        _startLocation = LatLng(position.latitude, position.longitude);
+        _initialCameraPosition = CameraPosition(
+          target: _startLocation!,
+          zoom: 12,
+        );
+      });
+      
+      _fetchAddressForLocation(_startLocation!, isEnd: false);
+    } catch (e) {
+
+      print('Error fetching membership: $e');
+      setState(() => _isLoadingMembership = false);
+    }
+  }
+
+  Future<bool> _canDownloadOfflineMap() async {
+    if (_memberType == null) return false;
+    final limit = getOfflineMapsLimit(_memberType!);
+    if (limit == -1) return true;
+    return _offlineMapsCount < limit;
+  }
+
+  Future<void> _incrementOfflineMapCount() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception("No user logged in");
+
+      await FirebaseFirestore.instance
+          .collection('User')
+          .doc(user.uid)
+          .update({'offline_maps_count': _offlineMapsCount + 1});
+
+      setState(() => _offlineMapsCount++);
+    } catch (e) {
+      print('Error updating offline maps count: $e');
+      throw e;
+    }
+  }
+
+  // Location and navigation methods
   Future<void> _getCurrentLocation() async {
     try {
       LocationPermission permission = await Geolocator.checkPermission();
@@ -104,148 +234,48 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  Future<void> _searchLocation(bool isStart) async {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        final TextEditingController searchController = TextEditingController();
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(isStart ? 'Search Start Location' : 'Search End Location'),
-              content: Container(
-                width: double.maxFinite,
-                height: MediaQuery.of(context).size.height * 0.5,
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: searchController,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: 'Enter location',
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        suffixIcon: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (searchController.text.isNotEmpty)
-                              IconButton(
-                                icon: Icon(Icons.clear),
-                                onPressed: () {
-                                  setDialogState(() {
-                                    searchController.clear();
-                                    _searchResults = [];
-                                  });
-                                },
-                              ),
-                            IconButton(
-                              icon: Icon(Icons.search),
-                              onPressed: () => _performSearch(searchController.text, setDialogState),
-                            ),
-                          ],
-                        ),
-                      ),
-                      onChanged: (value) {
-                        if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
-                        _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-                          _performSearch(value, setDialogState);
-                        });
-                      },
-                    ),
-                    SizedBox(height: 16),
-                    Expanded(
-                      child: _searchResults.isEmpty
-                          ? Center(
-                              child: Text(
-                                searchController.text.isEmpty
-                                    ? 'Enter a location to search'
-                                    : 'No results found',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            )
-                          : ListView.builder(
-                              itemCount: _searchResults.length,
-                              itemBuilder: (context, index) {
-                                final result = _searchResults[index];
-                                return ListTile(
-                                  leading: Icon(Icons.location_on),
-                                  title: Text(
-                                    result['formatted_address'] ?? result['name'] ?? '',
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  onTap: () {
-                                    _selectLocation(result, isStart);
-                                    Navigator.pop(context);
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
+  Future<void> _performSearch(String query, bool isStart) async {
+    if (query.isEmpty) return;
 
-  Future<void> _performSearch(String query, StateSetter setDialogState) async {
-    if (query.isEmpty) {
-      setDialogState(() => _searchResults = []);
-      return;
-    }
 
     try {
       final response = await http.get(
         Uri.parse(
           'https://maps.googleapis.com/maps/api/place/textsearch/json?query=$query&key=${Config.googleApiKey}',
         ),
+
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        setDialogState(() {
-          _searchResults = data['results'];
-        });
+        if (data['results'].isNotEmpty) {
+          final result = data['results'][0];
+          final location = result['geometry']['location'];
+          final address = result['formatted_address'] ?? result['name'] ?? '';
+          
+          setState(() {
+            if (isStart) {
+              _startLocation = LatLng(location['lat'], location['lng']);
+              _startController.text = address;
+            } else {
+              _endLocation = LatLng(location['lat'], location['lng']);
+              _endController.text = address;
+            }
+          });
+
+          _mapController.animateCamera(
+            CameraUpdate.newLatLng(
+              LatLng(location['lat'], location['lng'])
+            ),
+          );
+        }
       }
     } catch (e) {
       print('Error searching locations: $e');
-      setDialogState(() => _searchResults = []);
     }
   }
 
-  void _selectLocation(dynamic result, bool isStart) {
-    final location = result['geometry']['location'];
-    final address = result['formatted_address'] ?? result['name'] ?? '';
-    
-    setState(() {
-      if (isStart) {
-        _startLocation = LatLng(location['lat'], location['lng']);
-        _startController.text = address;
-      } else {
-        _endLocation = LatLng(location['lat'], location['lng']);
-        _endController.text = address;
-      }
-    });
-
-    _mapController.animateCamera(
-      CameraUpdate.newLatLng(
-        LatLng(location['lat'], location['lng'])
-      ),
-    );
-  }
-
+  // Directions and route methods
   Future<void> _searchDirections() async {
     if (_startLocation == null || _endLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -259,10 +289,9 @@ class _SearchPageState extends State<SearchPage> {
         Uri.parse(
           'https://maps.googleapis.com/maps/api/directions/json?origin=${_startLocation!.latitude},${_startLocation!.longitude}&destination=${_endLocation!.latitude},${_endLocation!.longitude}&key=${Config.googleApiKey}',
         ),
-      );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+
+
         
         if (data['routes'].isNotEmpty) {
           setState(() {
@@ -284,10 +313,6 @@ class _SearchPageState extends State<SearchPage> {
               _boundsFromLatLngList(_getRouteLatLngs(data['routes'][0]['legs'][0]['steps'])),
               50,
             ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('No routes found')),
           );
         }
       }
@@ -331,14 +356,8 @@ class _SearchPageState extends State<SearchPage> {
   List<LatLng> _getRouteLatLngs(List<dynamic> steps) {
     return steps.expand((step) {
       return [
-        LatLng(
-          step['start_location']['lat'],
-          step['start_location']['lng'],
-        ),
-        LatLng(
-          step['end_location']['lat'],
-          step['end_location']['lng'],
-        )
+        LatLng(step['start_location']['lat'], step['start_location']['lng']),
+        LatLng(step['end_location']['lat'], step['end_location']['lng'])
       ];
     }).toList();
   }
@@ -365,6 +384,29 @@ class _SearchPageState extends State<SearchPage> {
     return htmlText.replaceAll(exp, '');
   }
 
+  // Offline maps methods
+  Future<void> _loadOfflineMaps() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final offlineMapsDoc = await FirebaseFirestore.instance
+          .collection('User')
+          .doc(user.uid)
+          .collection('offline_maps')
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      setState(() {
+        _offlineMaps = offlineMapsDoc.docs
+            .map((doc) => OfflineMap.fromMap(doc.data()))
+            .toList();
+      });
+    } catch (e) {
+      print('Error loading offline maps: $e');
+    }
+  }
+
   Future<void> _downloadDirections() async {
     if (_directions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -374,7 +416,43 @@ class _SearchPageState extends State<SearchPage> {
     }
 
     try {
-      // Create a formatted text for directions
+      final canDownload = await _canDownloadOfflineMap();
+      if (!canDownload) {
+        final limit = getOfflineMapsLimit(_memberType ?? 'BASIC');
+        String message = limit == -1 
+            ? 'Error checking download permissions' 
+            : 'You have reached your offline maps limit ($limit maps). Upgrade your membership to download more maps.';
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+         SnackBar(
+  content: Text(message),
+  action: SnackBarAction(
+    label: 'Upgrade',
+    onPressed: () {
+      // Replace Navigator.pushNamed with direct navigation
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const ManageMembership(),
+        ),
+      );
+    },
+  ),
+),
+        );
+        return;
+      }
+
+      if (Platform.isAndroid) {
+        final status = await Permission.storage.request();
+        if (!status.isGranted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Storage permission required')),
+          );
+          return;
+        }
+      }
+
       final directionsText = StringBuffer();
       directionsText.writeln('Directions from ${_startController.text} to ${_endController.text}\n');
       
@@ -385,7 +463,6 @@ class _SearchPageState extends State<SearchPage> {
         directionsText.writeln('   Duration: ${step['duration']['text']}\n');
       }
 
-      // Get the directory for saving the file
       final directory = Platform.isAndroid
           ? await getExternalStorageDirectory()
           : await getApplicationDocumentsDirectory();
@@ -394,24 +471,94 @@ class _SearchPageState extends State<SearchPage> {
         throw Exception('Could not get storage directory');
       }
 
-      // Create the file
-      final file = File('${directory.path}/directions.txt');
+      final mapsDirectory = Directory('${directory.path}/offline_maps');
+      if (!await mapsDirectory.exists()) {
+        await mapsDirectory.create(recursive: true);
+      }
 
-      // Write the directions to the file
+      final mapId = DateTime.now().millisecondsSinceEpoch.toString();
+      final file = File('${mapsDirectory.path}/directions_$mapId.txt');
       await file.writeAsString(directionsText.toString());
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Directions downloaded to ${file.path}'),
-          duration: Duration(seconds: 3),
-        ),
-      );
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final offlineMap = OfflineMap(
+          id: mapId,
+          startLocation: _startController.text,
+          endLocation: _endController.text,
+          filePath: file.path,
+          createdAt: DateTime.now(),
+        );
+
+        await FirebaseFirestore.instance
+            .collection('User')
+            .doc(user.uid)
+            .collection('offline_maps')
+            .doc(mapId)
+            .set(offlineMap.toMap());
+
+        await _incrementOfflineMapCount();
+        await _loadOfflineMaps();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Map saved for offline use'),
+                Text(
+                  'Maps used: $_offlineMapsCount/${getOfflineMapsLimit(_memberType ?? 'BASIC') == -1 ? '∞' : getOfflineMapsLimit(_memberType ?? 'BASIC')}',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error downloading directions: $e')),
+        SnackBar(content: Text('Error saving offline map: $e')),
       );
     }
   }
+
+  Future<void> _deleteOfflineMap(OfflineMap map) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final file = File(map.filePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+
+      await FirebaseFirestore.instance
+          .collection('User')
+          .doc(user.uid)
+          .collection('offline_maps')
+          .doc(map.id)
+          .delete();
+
+      await FirebaseFirestore.instance
+          .collection('User')
+          .doc(user.uid)
+          .update({'offline_maps_count': _offlineMapsCount - 1});
+
+      setState(() => _offlineMapsCount--);
+      await _loadOfflineMaps();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Offline map deleted')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting offline map: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -419,149 +566,302 @@ class _SearchPageState extends State<SearchPage> {
         title: Text('Directions'),
         backgroundColor: Colors.teal,
         actions: [
+          if (!_isLoadingMembership) 
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Center(
+                child: Text(
+                  'Maps: $_offlineMapsCount/${getOfflineMapsLimit(_memberType ?? 'BASIC') == -1 ? '∞' : getOfflineMapsLimit(_memberType ?? 'BASIC')}',
+                  style: TextStyle(fontSize: 14),
+                ),
+              ),
+            ),
           if (_directions.isNotEmpty)
             IconButton(
               icon: Icon(Icons.download),
               onPressed: _downloadDirections,
-              tooltip: 'Download Directions',
+              tooltip: 'Save for Offline Use',
             ),
+          IconButton(
+            icon: Icon(Icons.storage),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (context) => _buildOfflineMapsSheet(),
+                isScrollControlled: true,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+              );
+            },
+            tooltip: 'Saved Maps',
+          ),
         ],
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _startController,
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      labelText: 'Start Location',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      suffixIcon: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_startController.text.isNotEmpty)
-                            IconButton(
-                              icon: Icon(Icons.clear),
-                              onPressed: () {
-                                setState(() {
-                                  _startLocation = null;
-                                  _startController.clear();
-                                  _polylines.clear();
-                                  _directions = [];
-                                });
-                              },
-                            ),
-                          IconButton(
-                            icon: Icon(Icons.search),
-                            onPressed: () => _searchLocation(true),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.swap_vert),
-                  onPressed: () {
-                    final tempLocation = _startLocation;
-                    final tempController = _startController.text;
-                    
-                    setState(() {
-                      _startLocation = _endLocation;
-                      _startController.text = _endController.text;
-                      
-                      _endLocation = tempLocation;
-                      _endController.text = tempController;
-                    });
-                  },
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _endController,
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      labelText: 'End Location',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      suffixIcon: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_endController.text.isNotEmpty)
-                            IconButton(
-                              icon: Icon(Icons.clear),
-                              onPressed: () {
-                                setState(() {
-                                  _endLocation = null;
-                                  _endController.clear();
-                                  _polylines.clear();
-                                  _directions = [];
-                                });
-                              },
-                            ),
-                          IconButton(
-                            icon: Icon(Icons.search),
-                            onPressed: () => _searchLocation(false),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: ElevatedButton.icon(
-              onPressed: _searchDirections,
-              icon: Icon(Icons.directions),
-              label: Text('Get Directions'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
+          _buildSearchInputs(),
+          _buildDirectionsButton(),
+          _buildMap(),
+          if (_directions.isNotEmpty) _buildDirectionsList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchInputs() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _startController,
+              decoration: InputDecoration(
+                labelText: 'Start Location',
+                border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
+                suffixIcon: _startController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            _startLocation = null;
+                            _startController.clear();
+                            _polylines.clear();
+                            _directions = [];
+                          });
+                        },
+                      )
+                    : null,
               ),
+              onChanged: (value) {
+                if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+                _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
+                  _performSearch(value, true);
+                });
+              },
             ),
           ),
+          IconButton(
+            icon: Icon(Icons.swap_vert),
+            onPressed: () {
+              final tempLocation = _startLocation;
+              final tempText = _startController.text;
+              
+              setState(() {
+                _startLocation = _endLocation;
+                _startController.text = _endController.text;
+                
+                _endLocation = tempLocation;
+                _endController.text = tempText;
+              });
+            },
+          ),
           Expanded(
-            flex: 2,
-            child: GoogleMap(
-              initialCameraPosition: _initialCameraPosition,
-              onMapCreated: (GoogleMapController controller) {
-                _mapController = controller;
+            child: TextField(
+              controller: _endController,
+              decoration: InputDecoration(
+                labelText: 'End Location',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                suffixIcon: _endController.text.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() {
+                            _endLocation = null;
+                            _endController.clear();
+                            _polylines.clear();
+                            _directions = [];
+                          });
+                        },
+                      )
+                    : null,
+              ),
+              onChanged: (value) {
+                if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+                _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
+                  _performSearch(value, false);
+                });
               },
-              polylines: _polylines,
-              markers: {
-                if (_startLocation != null)
-                  Marker(
-                    markerId: MarkerId('start'),
-                    position: _startLocation!,
-                    icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-                    infoWindow: InfoWindow(title: 'Start Location'),
-                  ),
-                if (_endLocation != null)
-                  Marker(
-                    markerId: MarkerId('end'),
-                    position: _endLocation!,
-                    icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-                    infoWindow: InfoWindow(title: 'End Location'),
-                  ),
-              },
-              myLocationEnabled: true,
-              myLocationButtonEnabled: true,
-              zoomControlsEnabled: true,
-              zoomGesturesEnabled: true,
-              mapToolbarEnabled: true,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDirectionsButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: ElevatedButton.icon(
+        onPressed: _searchDirections,
+        icon: Icon(Icons.directions),
+        label: Text('Get Directions'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.teal,
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMap() {
+    return Expanded(
+      flex: 2,
+      child: GoogleMap(
+        initialCameraPosition: _initialCameraPosition,
+        onMapCreated: (GoogleMapController controller) {
+          _mapController = controller;
+        },
+        polylines: _polylines,
+        markers: {
+          if (_startLocation != null)
+            Marker(
+              markerId: MarkerId('start'),
+              position: _startLocation!,
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+              infoWindow: InfoWindow(title: 'Start Location'),
+            ),
+          if (_endLocation != null)
+            Marker(
+              markerId: MarkerId('end'),
+              position: _endLocation!,
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+              infoWindow: InfoWindow(title: 'End Location'),
+            ),
+        },
+        myLocationEnabled: true,
+        myLocationButtonEnabled: true,
+        zoomControlsEnabled: true,
+        zoomGesturesEnabled: true,
+        mapToolbarEnabled: true,
+      ),
+    );
+  }
+
+  Widget _buildDirectionsList() {
+    return Expanded(
+      flex: 1,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: Offset(0, -3),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                children: [
+                  Icon(Icons.directions, color: Colors.teal),
+                  SizedBox(width: 8),
+                  Text(
+                    'Directions',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _directions.length,
+                itemBuilder: (context, index) {
+                  final step = _directions[index];
+                  return Card(
+                    margin: EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.teal,
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      title: Text(
+                        _stripHtmlTags(step['html_instructions']),
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      subtitle: Text(
+                        '${step['distance']['text']} - ${step['duration']['text']}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOfflineMapsSheet() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.6,
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Saved Offline Maps',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Using $_offlineMapsCount of ${getOfflineMapsLimit(_memberType ?? 'BASIC') == -1 ? '∞' : getOfflineMapsLimit(_memberType ?? 'BASIC')} maps',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          SizedBox(height: 16),
+          Expanded(
+            child: _offlineMaps.isEmpty
+                ? Center(
+                    child: Text('No offline maps saved'),
+                  )
+                : ListView.builder(
+                    itemCount: _offlineMaps.length,
+                    itemBuilder: (context, index) {
+                      final map = _offlineMaps[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text('${map.startLocation} to ${map.endLocation}'),
+                          subtitle: Text('Saved on ${map.createdAt.toString().split('.')[0]}'),
+                          trailing: IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () => _deleteOfflineMap(map),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
           ),
           if (_directions.isNotEmpty)
             Expanded(
@@ -639,6 +939,7 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
+
   @override
   void dispose() {
     _startController.dispose();
@@ -647,4 +948,3 @@ class _SearchPageState extends State<SearchPage> {
     super.dispose();
   }
 }
-
