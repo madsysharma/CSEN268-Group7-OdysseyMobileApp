@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/config.dart';
 import 'package:path_provider/path_provider.dart';
+
 import 'dart:io' show Platform, File, Directory;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -48,6 +49,7 @@ class OfflineMap {
   }
 }
 
+
 class SearchPage extends StatefulWidget {
   final LatLng? endLocation;
 
@@ -58,6 +60,7 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
+
   // Controllers
   final TextEditingController _startController = TextEditingController();
   final TextEditingController _endController = TextEditingController();
@@ -75,6 +78,7 @@ class _SearchPageState extends State<SearchPage> {
   
   LatLng? _startLocation;
   LatLng? _endLocation;
+
   CameraPosition _initialCameraPosition = CameraPosition(
     target: LatLng(0, 0),
     zoom: 10,
@@ -88,6 +92,7 @@ class _SearchPageState extends State<SearchPage> {
       _fetchAddressForLocation(_endLocation!, isEnd: true);
     }
     _getCurrentLocation();
+
     _fetchMembershipDetails();
     _loadOfflineMaps();
   }
@@ -122,8 +127,24 @@ class _SearchPageState extends State<SearchPage> {
           _offlineMapsCount = userDoc.data()?['offline_maps_count'] ?? 0;
           _isLoadingMembership = false;
         });
+
       }
+      
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+      );
+      
+      setState(() {
+        _startLocation = LatLng(position.latitude, position.longitude);
+        _initialCameraPosition = CameraPosition(
+          target: _startLocation!,
+          zoom: 12,
+        );
+      });
+      
+      _fetchAddressForLocation(_startLocation!, isEnd: false);
     } catch (e) {
+
       print('Error fetching membership: $e');
       setState(() => _isLoadingMembership = false);
     }
@@ -216,11 +237,13 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> _performSearch(String query, bool isStart) async {
     if (query.isEmpty) return;
 
+
     try {
       final response = await http.get(
         Uri.parse(
           'https://maps.googleapis.com/maps/api/place/textsearch/json?query=$query&key=${Config.googleApiKey}',
         ),
+
       );
 
       if (response.statusCode == 200) {
@@ -266,10 +289,9 @@ class _SearchPageState extends State<SearchPage> {
         Uri.parse(
           'https://maps.googleapis.com/maps/api/directions/json?origin=${_startLocation!.latitude},${_startLocation!.longitude}&destination=${_endLocation!.latitude},${_endLocation!.longitude}&key=${Config.googleApiKey}',
         ),
-      );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+
+
         
         if (data['routes'].isNotEmpty) {
           setState(() {
@@ -839,11 +861,84 @@ class _SearchPageState extends State<SearchPage> {
                       );
                     },
                   ),
+
           ),
+          if (_directions.isNotEmpty)
+            Expanded(
+              flex: 1,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.3),
+                      spreadRadius: 1,
+                      blurRadius: 5,
+                      offset: Offset(0, -3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        children: [
+                          Icon(Icons.directions, color: Colors.teal),
+                          SizedBox(width: 8),
+                          Text(
+                            'Directions',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _directions.length,
+                        itemBuilder: (context, index) {
+                          final step = _directions[index];
+                          return Card(
+                            margin: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.teal,
+                                child: Text(
+                                  '${index + 1}',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                              title: Text(
+                                _stripHtmlTags(step['html_instructions']),
+                                style: TextStyle(fontSize: 14),
+                              ),
+                              subtitle: Text(
+                                '${step['distance']['text']} - ${step['duration']['text']}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
+
 
   @override
   void dispose() {

@@ -371,6 +371,7 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
+
   void _showLocationDetailsOverlay(String address) {
     showModalBottomSheet(
       context: context,
@@ -420,6 +421,7 @@ class _MapPageState extends State<MapPage> {
           ],
         ),
       ),
+
     );
   }
 
@@ -551,6 +553,7 @@ class _MapPageState extends State<MapPage> {
       ),
     );
   }
+
 
   @override
   void dispose() {

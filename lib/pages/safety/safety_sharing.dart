@@ -3,6 +3,7 @@ import 'package:odyssey/components/get_location.dart';
 import 'package:odyssey/model/contact.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SharingPage extends StatefulWidget {
   const SharingPage({super.key});
@@ -45,41 +46,73 @@ class _SharingPageState extends State<SharingPage> {
     });
   }
 
-void _showContactOverlay(Contact contact) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(contact.name),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircleAvatar(
-            radius: 40,
-            backgroundImage: contact.avatarUrl.isNotEmpty
-                ? NetworkImage(contact.avatarUrl)
-                : null,
-            child: contact.avatarUrl.isEmpty ? Icon(Icons.person, size: 40) : null,
+  Future<void> _sendLocation(Contact contact) async {
+    try {
+      final locData = await LocationHelper.getCurrentCoordinates();
+      if (locData == null || locData.latitude == null || locData.longitude == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Unable to fetch location.")),
+        );
+        return;
+      }
+
+      final message = "My current location is: https://maps.google.com/?q=${locData.latitude},${locData.longitude}";
+      final smsUrl = Uri.parse("sms:${contact.number}?body=$message");
+
+      if (await canLaunchUrl(smsUrl)) {
+        await launchUrl(smsUrl);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to send SMS.")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    }
+  }
+
+  void _showContactOverlay(Contact contact) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(contact.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundImage: contact.avatarUrl != null && contact.avatarUrl!.isNotEmpty
+                  ? NetworkImage(contact.avatarUrl!)
+                  : null,
+              child: contact.avatarUrl == null || contact.avatarUrl!.isEmpty
+                // Default icon if no avatar
+                  ? Icon(Icons.person, size: 40)
+                  : null,
+            ),
+            SizedBox(height: 10),
+            Text('Phone: ${contact.number}'),
+            SizedBox(height: 10),
+            Text('Share your location with this contact?'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _sendLocation(contact);
+            },
+            child: Text('Yes'),
           ),
-          SizedBox(height: 10),
-          Text('Phone: ${contact.number}'),
-          SizedBox(height: 10),
-          Text('Share your location to him/her/they?'),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Close'),
+          ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: null, // No action for now
-          child: Text('Yes'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text('Close'),
-        ),
-      ],
-    ),
-  );
-}
-
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +127,8 @@ void _showContactOverlay(Contact contact) {
           children: [
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: LocationWidget(), // Add the location widget
+              // Add the location widget
+              child: LocationWidget(),
             ),
             Divider(),
             contacts.isEmpty
