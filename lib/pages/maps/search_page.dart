@@ -164,7 +164,6 @@ class OfflineMap {
   }
 }
 
-// Main Search Page Widget
 class SearchPage extends StatefulWidget {
   final LatLng? endLocation;
 
@@ -175,6 +174,7 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
+
   // Controllers
   final TextEditingController _startController = TextEditingController();
   final TextEditingController _endController = TextEditingController();
@@ -191,6 +191,7 @@ class _SearchPageState extends State<SearchPage> {
   
   LatLng? _startLocation;
   LatLng? _endLocation;
+
   CameraPosition _initialCameraPosition = CameraPosition(
     target: LatLng(0, 0),
     zoom: 10,
@@ -204,6 +205,7 @@ class _SearchPageState extends State<SearchPage> {
       _fetchAddressForLocation(_endLocation!, isEnd: true);
     }
     _getCurrentLocation();
+
     _fetchMembershipDetails();
     _loadSavedMaps();
   }
@@ -224,8 +226,24 @@ class _SearchPageState extends State<SearchPage> {
           _offlineMapsCount = userDoc.data()?['offline_maps_count'] ?? 0;
           _isLoadingMembership = false;
         });
+
       }
+      
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+      );
+      
+      setState(() {
+        _startLocation = LatLng(position.latitude, position.longitude);
+        _initialCameraPosition = CameraPosition(
+          target: _startLocation!,
+          zoom: 12,
+        );
+      });
+      
+      _fetchAddressForLocation(_startLocation!, isEnd: false);
     } catch (e) {
+
       print('Error fetching membership: $e');
       setState(() => _isLoadingMembership = false);
     }
@@ -282,11 +300,13 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> _performSearch(String query, bool isStart) async {
     if (query.isEmpty) return;
 
+
     try {
       final response = await http.get(
         Uri.parse(
           'https://maps.googleapis.com/maps/api/place/textsearch/json?query=$query&key=${Config.googleApiKey}',
         ),
+
       );
 
       if (response.statusCode == 200) {
@@ -331,10 +351,9 @@ class _SearchPageState extends State<SearchPage> {
         Uri.parse(
           'https://maps.googleapis.com/maps/api/directions/json?origin=${_startLocation!.latitude},${_startLocation!.longitude}&destination=${_endLocation!.latitude},${_endLocation!.longitude}&key=${Config.googleApiKey}',
         ),
-      );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+
+
         
         if (data['routes'].isNotEmpty) {
           setState(() {
@@ -925,6 +944,7 @@ Widget _buildSearchInputs() {
       ),
     );
   }
+
 
   @override
   void dispose() {

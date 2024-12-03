@@ -7,7 +7,8 @@ class LocationCard extends StatelessWidget {
   final bool isChecked;
   final ValueChanged<bool?>? onChecked;
 
-  const LocationCard({super.key, 
+  const LocationCard({
+    super.key,
     required this.imageUrl,
     required this.title,
     required this.subtitle,
@@ -38,27 +39,29 @@ class LocationCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Text section
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                // Prevent overflow
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                // Checkbox section
+                
                 Checkbox(
                   value: isChecked,
                   onChanged: onChecked,

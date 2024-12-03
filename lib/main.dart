@@ -74,6 +74,12 @@ class MyApp extends StatelessWidget {
                 builder: (context, state) => HomeScreen(),
               ),
               GoRoute(
+                path: Paths.locationDetails,
+                builder: (context, state) {
+                  var location = state.extra as String;
+                  return LocationDetailsPage(locationId: location);
+              }),
+              GoRoute(
                 path: Paths.connect,
                 builder: (context, state) => Connect(tab: 'local'),
                 routes: [
@@ -137,10 +143,10 @@ class MyApp extends StatelessWidget {
                     routes: [
                       GoRoute(
                         path: Paths.post,
-                        parentNavigatorKey: rootNavigatorKey, // open it not in the inner Navigator, but in a root Navigator
+                        // parentNavigatorKey: rootNavigatorKey, // open it not in the inner Navigator, but in a root Navigator
                         builder: (context, state) {
                           LocationDetails? location = state.extra as LocationDetails?;
-                          return UploadPost(location: location);
+                          return UploadPostInitial(location: location);
                         },
                         routes: [
                           GoRoute(
@@ -234,12 +240,7 @@ class MyApp extends StatelessWidget {
               ),
             ],
           ),
-          GoRoute(
-              path: Paths.locationDetails,
-              builder: (context, state) {
-                var location = state.extra as String;
-                return LocationDetailsPage(locationId: location);
-              }),
+        
           GoRoute(
             path: Paths.loginPage,
             builder: (context, state) => LoginPage(),
