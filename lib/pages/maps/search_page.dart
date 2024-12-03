@@ -5,26 +5,139 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/config.dart';
-import 'package:path_provider/path_provider.dart';
-
-import 'dart:io' show Platform, File, Directory;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../profile/manage_membership.dart';
 
+// Membership Handler Class
+class MembershipHandler {
+  static const Map<String, int> _mapLimits = {
+    'BASIC': 3,
+    'PREMIUM': 5,
+    'ELITE': -1, // Unlimited
+  };
+
+  static Future<DownloadPermissionResult> checkDownloadPermission({
+    required String memberType,
+    required int currentMapCount,
+    required BuildContext context,
+  }) async {
+    final effectiveMemberType = memberType.toUpperCase();
+    final limit = _mapLimits[effectiveMemberType] ?? _mapLimits['BASIC']!;
+    
+    if (limit == -1) {
+      return DownloadPermissionResult(
+        canDownload: true,
+        message: 'Download permitted - Elite membership',
+      );
+    }
+
+    if (currentMapCount >= limit) {
+      final shouldUpgrade = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Map Download Limit Reached'),
+          content: Text(
+            'You have reached your limit of $limit saved maps for your '
+            '$effectiveMemberType membership.\n\n'
+            'Would you like to upgrade your membership to save more maps?'
+          ),
+          actions: [
+            TextButton(
+              child: Text('Not Now'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            ElevatedButton(
+              child: Text('Upgrade Membership'),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        ),
+      ) ?? false;
+
+      if (shouldUpgrade) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ManageMembership(),
+          ),
+        );
+      }
+
+      return DownloadPermissionResult(
+        canDownload: false,
+        message: 'Save limit reached for $effectiveMemberType membership ($currentMapCount/$limit)',
+      );
+    }
+
+    return DownloadPermissionResult(
+      canDownload: true,
+      message: 'Save permitted ($currentMapCount/$limit maps used)',
+    );
+  }
+
+  static int getMembershipLimit(String memberType) {
+    return _mapLimits[memberType.toUpperCase()] ?? _mapLimits['BASIC']!;
+  }
+
+  static String formatLimitDisplay(String memberType, int currentCount) {
+    final limit = getMembershipLimit(memberType);
+    return '$currentCount/${limit == -1 ? '∞' : limit}';
+  }
+}
+
+class DownloadPermissionResult {
+  final bool canDownload;
+  final String message;
+
+  DownloadPermissionResult({
+    required this.canDownload,
+    required this.message,
+  });
+}
+
+// Direction Step Model
+class DirectionStep {
+  final String instructions;
+  final String distance;
+  final String duration;
+
+  DirectionStep({
+    required this.instructions,
+    required this.distance,
+    required this.duration,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'instructions': instructions,
+      'distance': distance,
+      'duration': duration,
+    };
+  }
+
+  static DirectionStep fromMap(Map<String, dynamic> map) {
+    return DirectionStep(
+      instructions: map['instructions'],
+      distance: map['distance'],
+      duration: map['duration'],
+    );
+  }
+}
+
+// Offline Map Model
 class OfflineMap {
   final String id;
   final String startLocation;
   final String endLocation;
-  final String filePath;
+  final List<DirectionStep> steps;
   final DateTime createdAt;
 
   OfflineMap({
     required this.id,
     required this.startLocation,
     required this.endLocation,
-    required this.filePath,
+    required this.steps,
     required this.createdAt,
   });
 
@@ -33,7 +146,7 @@ class OfflineMap {
       'id': id,
       'startLocation': startLocation,
       'endLocation': endLocation,
-      'filePath': filePath,
+      'steps': steps.map((step) => step.toMap()).toList(),
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -43,12 +156,13 @@ class OfflineMap {
       id: map['id'],
       startLocation: map['startLocation'],
       endLocation: map['endLocation'],
-      filePath: map['filePath'],
+      steps: (map['steps'] as List)
+          .map((step) => DirectionStep.fromMap(step as Map<String, dynamic>))
+          .toList(),
       createdAt: DateTime.parse(map['createdAt']),
     );
   }
 }
-
 
 class SearchPage extends StatefulWidget {
   final LatLng? endLocation;
@@ -72,7 +186,6 @@ class _SearchPageState extends State<SearchPage> {
   int _offlineMapsCount = 0;
   bool _isLoadingMembership = true;
   List<OfflineMap> _offlineMaps = [];
-  List<dynamic> _searchResults = [];
   List<dynamic> _directions = [];
   Set<Polyline> _polylines = {};
   
@@ -94,21 +207,7 @@ class _SearchPageState extends State<SearchPage> {
     _getCurrentLocation();
 
     _fetchMembershipDetails();
-    _loadOfflineMaps();
-  }
-
-  // Membership methods
-  int getOfflineMapsLimit(String memberType) {
-    switch (memberType.toUpperCase()) {
-      case 'BASIC':
-        return 3;
-      case 'PREMIUM':
-        return 5;
-      case 'ELITE':
-        return -1; // Unlimited
-      default:
-        return 0;
-    }
+    _loadSavedMaps();
   }
 
   Future<void> _fetchMembershipDetails() async {
@@ -150,44 +249,8 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  Future<bool> _canDownloadOfflineMap() async {
-    if (_memberType == null) return false;
-    final limit = getOfflineMapsLimit(_memberType!);
-    if (limit == -1) return true;
-    return _offlineMapsCount < limit;
-  }
-
-  Future<void> _incrementOfflineMapCount() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception("No user logged in");
-
-      await FirebaseFirestore.instance
-          .collection('User')
-          .doc(user.uid)
-          .update({'offline_maps_count': _offlineMapsCount + 1});
-
-      setState(() => _offlineMapsCount++);
-    } catch (e) {
-      print('Error updating offline maps count: $e');
-      throw e;
-    }
-  }
-
-  // Location and navigation methods
   Future<void> _getCurrentLocation() async {
     try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Location permissions are denied')),
-          );
-          return;
-        }
-      }
-      
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.best,
       );
@@ -275,7 +338,6 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
-  // Directions and route methods
   Future<void> _searchDirections() async {
     if (_startLocation == null || _endLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -363,8 +425,10 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   LatLngBounds _boundsFromLatLngList(List<LatLng> list) {
-    double x0 = list[0].latitude, x1 = list[0].latitude;
-    double y0 = list[0].longitude, y1 = list[0].longitude;
+    double x0 = list[0].latitude;
+    double x1 = list[0].latitude;
+    double y0 = list[0].longitude;
+    double y1 = list[0].longitude;
     
     for (LatLng latLng in list) {
       if (latLng.latitude > x1) x1 = latLng.latitude;
@@ -384,13 +448,12 @@ class _SearchPageState extends State<SearchPage> {
     return htmlText.replaceAll(exp, '');
   }
 
-  // Offline maps methods
-  Future<void> _loadOfflineMaps() async {
+  Future<void> _loadSavedMaps() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      final offlineMapsDoc = await FirebaseFirestore.instance
+      final savedMapsDoc = await FirebaseFirestore.instance
           .collection('User')
           .doc(user.uid)
           .collection('offline_maps')
@@ -398,95 +461,52 @@ class _SearchPageState extends State<SearchPage> {
           .get();
 
       setState(() {
-        _offlineMaps = offlineMapsDoc.docs
+        _offlineMaps = savedMapsDoc.docs
             .map((doc) => OfflineMap.fromMap(doc.data()))
             .toList();
       });
     } catch (e) {
-      print('Error loading offline maps: $e');
+      print('Error loading saved maps: $e');
     }
   }
 
-  Future<void> _downloadDirections() async {
+  Future<void> _saveMap() async {
     if (_directions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No directions to download')),
+        SnackBar(content: Text('No directions to save')),
       );
       return;
-    }
+      }
 
     try {
-      final canDownload = await _canDownloadOfflineMap();
-      if (!canDownload) {
-        final limit = getOfflineMapsLimit(_memberType ?? 'BASIC');
-        String message = limit == -1 
-            ? 'Error checking download permissions' 
-            : 'You have reached your offline maps limit ($limit maps). Upgrade your membership to download more maps.';
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(
-  content: Text(message),
-  action: SnackBarAction(
-    label: 'Upgrade',
-    onPressed: () {
-      // Replace Navigator.pushNamed with direct navigation
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const ManageMembership(),
-        ),
+      final permissionResult = await MembershipHandler.checkDownloadPermission(
+        memberType: _memberType ?? 'BASIC',
+        currentMapCount: _offlineMapsCount,
+        context: context,
       );
-    },
-  ),
-),
+
+      if (!permissionResult.canDownload) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(permissionResult.message)),
         );
         return;
       }
 
-      if (Platform.isAndroid) {
-        final status = await Permission.storage.request();
-        if (!status.isGranted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Storage permission required')),
-          );
-          return;
-        }
-      }
-
-      final directionsText = StringBuffer();
-      directionsText.writeln('Directions from ${_startController.text} to ${_endController.text}\n');
-      
-      for (int i = 0; i < _directions.length; i++) {
-        final step = _directions[i];
-        directionsText.writeln('${i + 1}. ${_stripHtmlTags(step['html_instructions'])}');
-        directionsText.writeln('   Distance: ${step['distance']['text']}');
-        directionsText.writeln('   Duration: ${step['duration']['text']}\n');
-      }
-
-      final directory = Platform.isAndroid
-          ? await getExternalStorageDirectory()
-          : await getApplicationDocumentsDirectory();
-
-      if (directory == null) {
-        throw Exception('Could not get storage directory');
-      }
-
-      final mapsDirectory = Directory('${directory.path}/offline_maps');
-      if (!await mapsDirectory.exists()) {
-        await mapsDirectory.create(recursive: true);
-      }
-
-      final mapId = DateTime.now().millisecondsSinceEpoch.toString();
-      final file = File('${mapsDirectory.path}/directions_$mapId.txt');
-      await file.writeAsString(directionsText.toString());
+      // Convert directions to DirectionStep objects
+      final steps = _directions.map((step) => DirectionStep(
+        instructions: _stripHtmlTags(step['html_instructions']),
+        distance: step['distance']['text'],
+        duration: step['duration']['text'],
+      )).toList();
 
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
+        final mapId = DateTime.now().millisecondsSinceEpoch.toString();
         final offlineMap = OfflineMap(
           id: mapId,
           startLocation: _startController.text,
           endLocation: _endController.text,
-          filePath: file.path,
+          steps: steps,
           createdAt: DateTime.now(),
         );
 
@@ -497,8 +517,13 @@ class _SearchPageState extends State<SearchPage> {
             .doc(mapId)
             .set(offlineMap.toMap());
 
-        await _incrementOfflineMapCount();
-        await _loadOfflineMaps();
+        await FirebaseFirestore.instance
+            .collection('User')
+            .doc(user.uid)
+            .update({'offline_maps_count': _offlineMapsCount + 1});
+
+        setState(() => _offlineMapsCount++);
+        await _loadSavedMaps();
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -506,9 +531,9 @@ class _SearchPageState extends State<SearchPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Map saved for offline use'),
+                Text('Map saved successfully'),
                 Text(
-                  'Maps used: $_offlineMapsCount/${getOfflineMapsLimit(_memberType ?? 'BASIC') == -1 ? '∞' : getOfflineMapsLimit(_memberType ?? 'BASIC')}',
+                  MembershipHandler.formatLimitDisplay(_memberType ?? 'BASIC', _offlineMapsCount),
                   style: TextStyle(fontSize: 12),
                 ),
               ],
@@ -519,20 +544,15 @@ class _SearchPageState extends State<SearchPage> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving offline map: $e')),
+        SnackBar(content: Text('Error saving map: $e')),
       );
     }
   }
 
-  Future<void> _deleteOfflineMap(OfflineMap map) async {
+  Future<void> _deleteMap(OfflineMap map) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
-
-      final file = File(map.filePath);
-      if (await file.exists()) {
-        await file.delete();
-      }
 
       await FirebaseFirestore.instance
           .collection('User')
@@ -547,16 +567,34 @@ class _SearchPageState extends State<SearchPage> {
           .update({'offline_maps_count': _offlineMapsCount - 1});
 
       setState(() => _offlineMapsCount--);
-      await _loadOfflineMaps();
+      await _loadSavedMaps();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Offline map deleted')),
+        SnackBar(content: Text('Map deleted successfully')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting offline map: $e')),
+        SnackBar(content: Text('Error deleting map: $e')),
       );
     }
+  }
+
+  void _showSavedDirections(OfflineMap map) {
+    // Clear any existing route
+    setState(() {
+      _startController.text = map.startLocation;
+      _endController.text = map.endLocation;
+      
+      // Convert saved steps back to directions format
+      _directions = map.steps.map((step) => {
+        'html_instructions': step.instructions,
+        'distance': {'text': step.distance},
+        'duration': {'text': step.duration},
+      }).toList();
+    });
+
+    // Close the bottom sheet
+    Navigator.pop(context);
   }
 
   @override
@@ -571,7 +609,7 @@ class _SearchPageState extends State<SearchPage> {
               padding: const EdgeInsets.only(right: 16.0),
               child: Center(
                 child: Text(
-                  'Maps: $_offlineMapsCount/${getOfflineMapsLimit(_memberType ?? 'BASIC') == -1 ? '∞' : getOfflineMapsLimit(_memberType ?? 'BASIC')}',
+                  MembershipHandler.formatLimitDisplay(_memberType ?? 'BASIC', _offlineMapsCount),
                   style: TextStyle(fontSize: 14),
                 ),
               ),
@@ -579,15 +617,15 @@ class _SearchPageState extends State<SearchPage> {
           if (_directions.isNotEmpty)
             IconButton(
               icon: Icon(Icons.download),
-              onPressed: _downloadDirections,
-              tooltip: 'Save for Offline Use',
+              onPressed: _saveMap,
+              tooltip: 'Save Map',
             ),
           IconButton(
-            icon: Icon(Icons.storage),
+            icon: Icon(Icons.map),
             onPressed: () {
               showModalBottomSheet(
                 context: context,
-                builder: (context) => _buildOfflineMapsSheet(),
+                builder: (context) => _buildSavedMapsSheet(),
                 isScrollControlled: true,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -609,11 +647,95 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Widget _buildSearchInputs() {
+  Widget _buildSavedMapsSheet() {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.6,
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Saved Maps',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Using ${MembershipHandler.formatLimitDisplay(_memberType ?? 'BASIC', _offlineMapsCount)}',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          SizedBox(height: 16),
+          Expanded(
+            child: _offlineMaps.isEmpty
+                ? Center(child: Text('No saved maps'))
+                : ListView.builder(
+                    itemCount: _offlineMaps.length,
+                    itemBuilder: (context, index) {
+                      final map = _offlineMaps[index];
+                      return ExpansionTile(
+                        title: Text('${map.startLocation} to ${map.endLocation}'),
+                        subtitle: Text(
+                          'Saved on ${map.createdAt.toString().split('.')[0]}',
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.directions),
+                              onPressed: () => _showSavedDirections(map),
+                              tooltip: 'Show Directions',
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.delete),
+                              onPressed: () => _deleteMap(map),
+                              tooltip: 'Delete Map',
+                            ),
+                          ],
+                        ),
+                        children: [
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: NeverScrollableScrollPhysics(),
+                            itemCount: map.steps.length,
+                            itemBuilder: (context, stepIndex) {
+                              final step = map.steps[stepIndex];
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: Colors.teal,
+                                  child: Text(
+                                    '${stepIndex + 1}',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                                title: Text(step.instructions),
+                                subtitle: Text(
+                                  '${step.distance} - ${step.duration}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+Widget _buildSearchInputs() {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Row(
         children: [
+          // Start Location TextField
           Expanded(
             child: TextField(
               controller: _startController,
@@ -644,6 +766,7 @@ class _SearchPageState extends State<SearchPage> {
               },
             ),
           ),
+          // Swap Button
           IconButton(
             icon: Icon(Icons.swap_vert),
             onPressed: () {
@@ -659,6 +782,7 @@ class _SearchPageState extends State<SearchPage> {
               });
             },
           ),
+          // End Location TextField
           Expanded(
             child: TextField(
               controller: _endController,
@@ -763,6 +887,7 @@ class _SearchPageState extends State<SearchPage> {
         ),
         child: Column(
           children: [
+            // Header for Directions List
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
@@ -779,6 +904,7 @@ class _SearchPageState extends State<SearchPage> {
                 ],
               ),
             ),
+            // List of Direction Steps
             Expanded(
               child: ListView.builder(
                 itemCount: _directions.length,
@@ -815,126 +941,6 @@ class _SearchPageState extends State<SearchPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildOfflineMapsSheet() {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.6,
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Saved Offline Maps',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Using $_offlineMapsCount of ${getOfflineMapsLimit(_memberType ?? 'BASIC') == -1 ? '∞' : getOfflineMapsLimit(_memberType ?? 'BASIC')} maps',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          SizedBox(height: 16),
-          Expanded(
-            child: _offlineMaps.isEmpty
-                ? Center(
-                    child: Text('No offline maps saved'),
-                  )
-                : ListView.builder(
-                    itemCount: _offlineMaps.length,
-                    itemBuilder: (context, index) {
-                      final map = _offlineMaps[index];
-                      return Card(
-                        child: ListTile(
-                          title: Text('${map.startLocation} to ${map.endLocation}'),
-                          subtitle: Text('Saved on ${map.createdAt.toString().split('.')[0]}'),
-                          trailing: IconButton(
-                            icon: Icon(Icons.delete),
-                            onPressed: () => _deleteOfflineMap(map),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-          ),
-          if (_directions.isNotEmpty)
-            Expanded(
-              flex: 1,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.3),
-                      spreadRadius: 1,
-                      blurRadius: 5,
-                      offset: Offset(0, -3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        children: [
-                          Icon(Icons.directions, color: Colors.teal),
-                          SizedBox(width: 8),
-                          Text(
-                            'Directions',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: _directions.length,
-                        itemBuilder: (context, index) {
-                          final step = _directions[index];
-                          return Card(
-                            margin: EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: Colors.teal,
-                                child: Text(
-                                  '${index + 1}',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              title: Text(
-                                _stripHtmlTags(step['html_instructions']),
-                                style: TextStyle(fontSize: 14),
-                              ),
-                              subtitle: Text(
-                                '${step['distance']['text']} - ${step['duration']['text']}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }
