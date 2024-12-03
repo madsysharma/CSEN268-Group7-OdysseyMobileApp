@@ -6,56 +6,43 @@ class ContactItem extends StatelessWidget {
   final Contact contact;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onCall; 
 
   const ContactItem({
-    super.key,
     required this.contact,
     required this.onEdit,
     required this.onDelete,
-  });
+    required this.onCall, 
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      padding: EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Color.fromARGB(255, 189, 220, 204),
-        borderRadius: BorderRadius.circular(20),
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundImage: contact.avatarUrl.isNotEmpty
+            ? NetworkImage(contact.avatarUrl)
+            : null,
+        child: contact.avatarUrl.isEmpty ? Icon(Icons.person) : null,
       ),
-      child: ListTile(
-        leading: CircleAvatar(
-          radius: 25, 
-          backgroundImage: contact.avatarUrl.isNotEmpty
-              ? (Uri.parse(contact.avatarUrl).isAbsolute
-                  ? NetworkImage(contact.avatarUrl) 
-                  : FileImage(File(contact.avatarUrl))) 
-              : null,
-          child: contact.avatarUrl.isEmpty
-              ? Icon(Icons.person, size: 30, color: Colors.grey)
-              : null, 
-        ),
-        title: Text(
-          contact.name,
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          contact.number,
-          style: TextStyle(color: Colors.black87),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: Icon(Icons.edit, color: Colors.black54),
-              onPressed: onEdit,
-            ),
-            IconButton(
-              icon: Icon(Icons.delete, color: Colors.red),
-              onPressed: onDelete,
-            ),
-          ],
-        ),
+      title: Text(contact.name),
+      subtitle: Text(contact.number),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(Icons.phone),
+            onPressed: onCall, 
+          ),
+          IconButton(
+            icon: Icon(Icons.edit),
+            onPressed: onEdit,
+          ),
+          IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: onDelete,
+          ),
+        ],
       ),
     );
   }
