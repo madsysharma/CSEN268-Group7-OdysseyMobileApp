@@ -196,7 +196,7 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  Future<void> _searchLocation() async {
+   Future<void> _searchLocation() async {
     if (_searchQuery.isEmpty) return;
 
     try {
@@ -212,6 +212,9 @@ class _MapPageState extends State<MapPage> {
           final location = data['results'][0]['geometry']['location'];
           final LatLng searchLocation = LatLng(location['lat'], location['lng']);
           final address = data['results'][0]['formatted_address'];
+          
+          // Clear existing search marker if any
+          _markers.removeWhere((marker) => marker.markerId.value == 'searchLocation');
           
           setState(() {
             _markers.add(
@@ -230,7 +233,7 @@ class _MapPageState extends State<MapPage> {
             CameraUpdate.newLatLngZoom(searchLocation, 15),
           );
 
-          _showLocationDetailsOverlay(address);
+          _showLocationDetailsOverlay(address, searchLocation);
         }
       }
     } catch (e) {
@@ -372,7 +375,7 @@ class _MapPageState extends State<MapPage> {
   }
 
 
-  void _showLocationDetailsOverlay(String address) {
+    void _showLocationDetailsOverlay(String address, LatLng position) {
     showModalBottomSheet(
       context: context,
       builder: (context) => Container(
@@ -398,17 +401,12 @@ class _MapPageState extends State<MapPage> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    final searchLocationMarker = _markers.firstWhere(
-                      (marker) => marker.markerId.value == 'searchLocation',
-                      orElse: () => _markers.first,
-                    );
-                    
                     Navigator.pop(context);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => SearchPage(
-                          endLocation: searchLocationMarker.position,
+                          endLocation: position,
                         ),
                       ),
                     );
@@ -421,10 +419,8 @@ class _MapPageState extends State<MapPage> {
           ],
         ),
       ),
-
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
