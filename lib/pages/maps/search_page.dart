@@ -429,27 +429,40 @@ class _SearchPageState extends State<SearchPage> {
     return htmlText.replaceAll(exp, '');
   }
 
-  Future<void> _loadSavedMaps() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+Future<void> _loadSavedMaps() async {
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-      final savedMapsDoc = await FirebaseFirestore.instance
+    final savedMapsDoc = await FirebaseFirestore.instance
+        .collection('User')
+        .doc(user.uid)
+        .collection('offline_maps')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    // Update the offline maps list
+    setState(() {
+      _offlineMaps = savedMapsDoc.docs
+          .map((doc) => OfflineMap.fromMap(doc.data()))
+          .toList();
+    });
+
+    // If there are no saved maps, reset count to 0
+    if (_offlineMaps.isEmpty) {
+      await FirebaseFirestore.instance
           .collection('User')
           .doc(user.uid)
-          .collection('offline_maps')
-          .orderBy('createdAt', descending: true)
-          .get();
-
+          .update({'offline_maps_count': 0});
+      
       setState(() {
-        _offlineMaps = savedMapsDoc.docs
-            .map((doc) => OfflineMap.fromMap(doc.data()))
-            .toList();
+        _offlineMapsCount = 0;
       });
-    } catch (e) {
-      print('Error loading saved maps: $e');
     }
+  } catch (e) {
+    print('Error loading saved maps: $e');
   }
+}
 
   Future<void> _saveMap() async {
     if (_directions.isEmpty) {
@@ -529,36 +542,61 @@ class _SearchPageState extends State<SearchPage> {
       );
     }
   }
+  
 
-  Future<void> _deleteMap(OfflineMap map) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+ Future<void> _deleteMap(OfflineMap map) async {
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
+    // Get current document to verify the count
+    final userDoc = await FirebaseFirestore.instance
+        .collection('User')
+        .doc(user.uid)
+        .get();
+    
+    // Reset count to 0 if it's negative or invalid
+    if (_offlineMapsCount < 0) {
       await FirebaseFirestore.instance
           .collection('User')
           .doc(user.uid)
-          .collection('offline_maps')
-          .doc(map.id)
-          .delete();
-
-      await FirebaseFirestore.instance
-          .collection('User')
-          .doc(user.uid)
-          .update({'offline_maps_count': _offlineMapsCount - 1});
-
-      setState(() => _offlineMapsCount--);
-      await _loadSavedMaps();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Map deleted successfully')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting map: $e')),
-      );
+          .update({'offline_maps_count': 0});
+          
+      setState(() => _offlineMapsCount = 0);
+      return;
     }
+
+    // Delete the map document
+    await FirebaseFirestore.instance
+        .collection('User')
+        .doc(user.uid)
+        .collection('offline_maps')
+        .doc(map.id)
+        .delete();
+
+    // Calculate new count
+    final newCount = _offlineMapsCount > 0 ? _offlineMapsCount - 1 : 0;
+
+    // Update the count in Firestore
+    await FirebaseFirestore.instance
+        .collection('User')
+        .doc(user.uid)
+        .update({'offline_maps_count': newCount});
+
+    // Update local state
+    setState(() => _offlineMapsCount = newCount);
+    
+    await _loadSavedMaps();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Map deleted successfully')),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error deleting map: $e')),
+    );
   }
+}
 
   void _showSavedDirections(OfflineMap map) {
     // Clear any existing route
