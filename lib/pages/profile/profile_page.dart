@@ -9,7 +9,6 @@ import 'package:odyssey/components/alerts/alert_dialog.dart';
 import 'package:odyssey/components/navigation/app_bar.dart';
 import 'package:odyssey/utils/paths.dart';
 import 'package:odyssey/utils/spaces.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
