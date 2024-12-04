@@ -125,7 +125,7 @@ class UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMix
     //GlobalKey<LocationListBarState>? listBarKey = GlobalKey<LocationListBarState>();
 
     return Scaffold(
-      appBar: AppBar(title: Text("New Post"),),
+      appBar: AppBar(title: Text("New Post"), backgroundColor: const Color.fromARGB(255, 189, 220, 204),),
       body: Align(
           alignment: Alignment.centerLeft,
           child: SingleChildScrollView(

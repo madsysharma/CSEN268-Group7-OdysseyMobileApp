@@ -93,9 +93,10 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
               SizedBox(height: 10.0,),
               ElevatedButton(
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF006A68),
+                    foregroundColor: Colors.white,
                     side: BorderSide(
                       width: 0.3,
-                      color: Color(0xFF006A68),
                     ),
                   ),
                   onPressed: (){

@@ -38,6 +38,7 @@ class NotificationsState extends State<Notifications> with AutomaticKeepAliveCli
     return Scaffold(
       appBar: AppBar(
         title: Text("Notifications"),
+        backgroundColor: const Color.fromARGB(255, 189, 220, 204),
       ),
       body: Column(
         children: [

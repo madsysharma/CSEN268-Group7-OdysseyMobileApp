@@ -186,7 +186,7 @@ class FriendRequestState extends State<FriendRequest> with AutomaticKeepAliveCli
   Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
-      appBar: AppBar(title: Text("Friend Request",)),
+      appBar: AppBar(title: Text("Friend Request",), backgroundColor: const Color.fromARGB(255, 189, 220, 204),),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
@@ -213,15 +213,7 @@ class FriendRequestState extends State<FriendRequest> with AutomaticKeepAliveCli
                     },
                   );
                 },
-                separatorBuilder: (context, index){
-                  if(index < this.searchResults.length - 1){
-                    return Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,);
-                  }
-                  else
-                  {
-                    return Divider(indent: 0.0, endIndent: 0.0, thickness: 0.0,);
-                  }
-                },
+                separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
               )
             )
           ],

@@ -55,7 +55,7 @@ class NotifCardState extends State<NotifCard> with AutomaticKeepAliveClientMixin
         if(widget.type == 'friendRequest' && widget.acceptStatus == 'Not yet'){
           GoRouter.of(context).go('/connect/${widget.fromScreen}'+'/notifications/acceptreq?q=${widget.sentBy}');
         }
-        else if(widget.type == 'friendRequest' && (widget.acceptStatus == 'Accepted' || widget.acceptStatus == 'Declined')){
+        else if(widget.type == 'friendRequest' && (widget.acceptStatus == 'Yes' || widget.acceptStatus == 'No')){
           GoRouter.of(context).go('/connect/${widget.fromScreen}'+'/notifications/expiredreq');
         }
       },

@@ -14,7 +14,7 @@ class AcceptRequest extends StatelessWidget{
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Accept Friend Request?"),),
+      appBar: AppBar(title: Text("Accept Friend Request?"), backgroundColor: const Color.fromARGB(255, 189, 220, 204),),
       body: Padding(
         padding: EdgeInsets.all(12.0),
         child: Column(
@@ -26,7 +26,6 @@ class AcceptRequest extends StatelessWidget{
                 ElevatedButton(
                   onPressed: () async{
                     String? firstName = this.requesterName?.split(" ").first;
-                    String? lastName = this.requesterName?.split(" ").last;
                     String username = "";
                     String email = "";
                     DocumentSnapshot<Map<String, dynamic>> querysnap = await this.firestore.collection('User').doc(this.auth.currentUser?.uid).get();
@@ -53,7 +52,6 @@ class AcceptRequest extends StatelessWidget{
                           'accepted': "Yes",
                         }
                       );
-                      final snapUpdate = await this.firestore.collection('User').doc(userDoc.id).collection('Notifications').get();
                       final senderDocRef = this.firestore.collection('User').doc(this.auth.currentUser?.uid);
                       final recvDocRef = this.firestore.collection('User').doc(userDoc.id);
                       final sendData = await senderDocRef.get();
