@@ -7,14 +7,14 @@ class LoggedOut extends AuthState {}
 
 class Logging extends AuthState {}
 
-class LoggedIn extends AuthState {
-  final User user;
-
-  LoggedIn({required this.user});
-}
-
 class LoggingError extends AuthState {
   final String error;
 
   LoggingError({required this.error});
+}
+
+class LoggedIn extends AuthState {
+  final User user;
+
+  LoggedIn({required this.user});
 }

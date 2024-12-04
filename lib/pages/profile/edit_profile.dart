@@ -1,15 +1,16 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:email_validator/email_validator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:odyssey/components/alerts/alert_dialog.dart';
-import 'package:odyssey/components/alerts/snack_bar.dart';
 import 'package:odyssey/components/forms/input.dart';
 import 'package:odyssey/components/navigation/app_bar.dart';
 import 'package:odyssey/utils/spaces.dart';
 import 'package:odyssey/utils/image_picker_utils.dart';
-import 'package:path_provider/path_provider.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -20,6 +21,7 @@ class EditProfilePage extends StatefulWidget {
 
 class EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
+  // ignore: unused_field
   PhoneNumber? _phoneNumber;
 
   final TextEditingController _firstNameController = TextEditingController();
@@ -36,6 +38,87 @@ class EditProfilePageState extends State<EditProfilePage> {
   final FocusNode locationFocus = FocusNode();
   final FocusNode passwordFocus = FocusNode();
   Key avatarKey = UniqueKey();
+  String? getCurrentUserId() {
+    final User? user = FirebaseAuth.instance.currentUser;
+    return user?.uid;
+  }
+
+  Future<void> _checkAndSaveProfile() async {
+    try {
+      final email = _emailController.text.trim();
+      final phoneNumber = _numberController.text.trim();
+
+      // Get current user ID
+      final userId = getCurrentUserId();
+      if (userId == null) {
+        _showSnackBar("User not logged in. Please log in again.");
+        return;
+      }
+
+      // Query Firestore for existing email
+      final emailQuery = await FirebaseFirestore.instance
+          .collection('User')
+          .where('email', isEqualTo: email)
+          .get();
+
+      // Query Firestore for existing phone number
+      final phoneQuery = await FirebaseFirestore.instance
+          .collection('User')
+          .where('phonenumber', isEqualTo: phoneNumber)
+          .get();
+
+      // Check for duplicate email
+      if (emailQuery.docs.isNotEmpty && emailQuery.docs.first.id != userId) {
+        _showSnackBar("Email is already in use by another account.");
+        return;
+      }
+
+      // Check for duplicate phone number
+      if (phoneQuery.docs.isNotEmpty && phoneQuery.docs.first.id != userId) {
+        _showSnackBar("Phone number is already in use by another account.");
+        return;
+      }
+
+      // If no duplicates, save the profile
+      await _saveProfile(userId);
+    } catch (e) {
+      _showSnackBar("An error occurred: ${e.toString()}");
+    }
+  }
+
+  Future<void> _saveProfile(String userId) async {
+    // Save updated profile information to Firestore
+    await FirebaseFirestore.instance.collection('User').doc(userId).update({
+      'firstname': _firstNameController.text.trim(),
+      'lastname': _lastNameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'phonenumber': _numberController.text.trim(),
+      'location': _locationController.text.trim(),
+    });
+
+    _showSnackBar("Profile updated successfully!");
+  }
+
+  Future<String?> _uploadImage(File imageFile, String userId) async {
+    try {
+      final storageRef =
+          FirebaseStorage.instance.ref().child('profile_images/$userId.png');
+      final uploadTask = await storageRef.putFile(imageFile);
+
+      // Get the download URL
+      final downloadUrl = await uploadTask.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      _showSnackBar("Failed to upload image: $e");
+      return null;
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
   @override
   void initState() {
@@ -47,15 +130,20 @@ class EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _loadSavedImage() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final imagePath = '${directory.path}/profile_image.png';
+    final userId = getCurrentUserId();
+    if (userId == null) return;
 
-    final savedImage = File(imagePath);
+    final docSnapshot =
+        await FirebaseFirestore.instance.collection('User').doc(userId).get();
+    if (docSnapshot.exists && docSnapshot.data() != null) {
+      final data = docSnapshot.data()!;
+      final imageUrl = data['imageUrl'] as String?;
 
-    if (await savedImage.exists()) {
-      setState(() {
-        image = savedImage;
-      });
+      if (imageUrl != null) {
+        setState(() {
+          image = File(imageUrl);
+        });
+      }
     }
   }
 
@@ -79,62 +167,87 @@ class EditProfilePageState extends State<EditProfilePage> {
   File? image;
 
   Future<void> _pickImage(ImageSource source) async {
-    /*try {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(source: source);
-
-      if (pickedFile != null) {
-        print("Picked file path: ${pickedFile.path}");
-        File tempImage = File(pickedFile.path);
-        final savedImage = await _saveImage(tempImage);
-
-        setState(() {
-          image = savedImage;
-          avatarKey = UniqueKey();
-        });
-
-        PaintingBinding.instance.imageCache.clear();
-      } else {
-        showMessageSnackBar(context, "No image was selected");
-      }
-    } catch (e) {
-      showMessageSnackBar(context, "Error loading image");
-    }*/
     try {
       final File? imageSaved = await pickImage(context, source);
+
       if (imageSaved != null) {
         setState(() {
-          image = imageSaved as File?;
+          image = imageSaved;
           avatarKey = UniqueKey();
         });
-        PaintingBinding.instance.imageCache.clear();
+
+        final userId = getCurrentUserId();
+        if (userId == null) {
+          _showSnackBar("User not logged in. Please log in again.");
+          return;
+        }
+
+        final imageUrl = await _uploadImage(imageSaved, userId);
+        if (imageUrl != null) {
+          final userRef =
+              FirebaseFirestore.instance.collection('User').doc(userId);
+          final docSnapshot = await userRef.get();
+
+          if (docSnapshot.exists) {
+            // Update existing document
+            await updateImageUrl(userId, imageUrl);
+          } else {
+            // Create a new document
+            await createUserWithImage(userId, imageUrl);
+          }
+
+          _showSnackBar("Profile image saved successfully!");
+        }
       } else {
-        showMessageSnackBar(context, "No image was selected");
+        _showSnackBar("No image was selected.");
       }
     } catch (e) {
-      showMessageSnackBar(context, "Error loading image");
+      _showSnackBar("Error: $e");
     }
   }
 
-  final List<String> _bayAreaAreaCodes = ['408', '415', '510', '650', '925'];
+  Future<void> createUserWithImage(String userId, String imageUrl) async {
+  final userRef = FirebaseFirestore.instance.collection('User').doc(userId);
+
+  // Create a new document with the `imageUrl` field and other required fields
+  await userRef.set({
+    'firstname': '', // You can include other default fields
+    'lastname': '',
+    'email': '',
+    'phonenumber': '',
+    'homelocation': '',
+    'imageUrl': imageUrl, // Add the imageUrl
+    'interests': ['', '', ''], // Add default interests or remove if unnecessary
+    'membertype': '',
+    'password': '',
+  });
+}
+
+Future<void> updateImageUrl(String userId, String imageUrl) async {
+  final userRef = FirebaseFirestore.instance.collection('User').doc(userId);
+
+  // Update the `imageUrl` field in the existing document
+  await userRef.update({
+    'imageUrl': imageUrl, // Add or update the imageUrl field
+  });
+}
+
+
 
   String? validatePhoneNumber(String? value) {
     if (value == null || value.isEmpty) {
       return 'Phone number is required';
     }
 
-    // Prepend +1 if missing
     String formattedValue = value.startsWith('+1') ? value : '+1$value';
 
-    // Remove all non-digit characters for validation
     String digitsOnly = formattedValue.replaceAll(RegExp(r'\D'), '');
 
-    // Check for valid USA phone number length
     if (!digitsOnly.startsWith('1') || digitsOnly.length != 11) {
       return 'Enter a valid 10-digit USA phone number';
     }
 
-    return null; // Number is valid
+    return null;
   }
 
   void _showImageSourceDialog() {
@@ -184,6 +297,7 @@ class EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
         appBar: MyAppBar(title: "Profile"),
         body: SingleChildScrollView(
+          padding: pagePadding,
           child: Column(
             children: [
               largeVertical,
@@ -246,6 +360,7 @@ class EditProfilePageState extends State<EditProfilePage> {
                           return null;
                         },
                       ),
+                      mediumVertical,
                       MyTextField(
                         label: 'Last Name',
                         controller: _lastNameController,
@@ -258,6 +373,7 @@ class EditProfilePageState extends State<EditProfilePage> {
                           return null;
                         },
                       ),
+                      mediumVertical,
                       MyTextField(
                         label: 'Email',
                         controller: _emailController,
@@ -274,40 +390,48 @@ class EditProfilePageState extends State<EditProfilePage> {
                           return null;
                         },
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 20),
-                        child: Focus(
-                          focusNode: numberFocus,
-                          child: InternationalPhoneNumberInput(
-                            onInputChanged: (PhoneNumber number) {
-                              setState(() {
-                                _phoneNumber = number;
-                              });
-                            },
-                            selectorConfig: const SelectorConfig(
-                              selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
-                              showFlags: false,
-                            ),
-                            ignoreBlank: false,
-                            autoValidateMode: AutovalidateMode.disabled,
-                            initialValue:
-                                PhoneNumber(isoCode: 'US', dialCode: '+1'),
-                            countries: const ['US'],
-                            textFieldController: _numberController,
-                            formatInput: true,
-                            inputDecoration: InputDecoration(
-                              border: const OutlineInputBorder(),
-                              hintText: 'Enter phone number',
-                              labelText: 'Phone Number',
-                            ),
-                            validator: validatePhoneNumber,
-                            onFieldSubmitted: (_) {
-                              FocusScope.of(context)
-                                  .requestFocus(locationFocus);
-                            },
+                      mediumVertical,
+                      Focus(
+                        focusNode: numberFocus,
+                        child: InternationalPhoneNumberInput(
+                          onInputChanged: (PhoneNumber number) {
+                            setState(() {
+                              _phoneNumber = number;
+                            });
+                          },
+                          selectorConfig: const SelectorConfig(
+                            selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+                            showFlags: false,
                           ),
+                          ignoreBlank: false,
+                          autoValidateMode: AutovalidateMode.disabled,
+                          initialValue:
+                              PhoneNumber(isoCode: 'US', dialCode: '+1'),
+                          countries: const ['US'],
+                          textFieldController: _numberController,
+                          formatInput: true,
+                          inputDecoration: InputDecoration(
+                            hintText: 'Phone Number',
+                            hintStyle: TextStyle(
+                              fontSize: 16,
+                            ),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: colorScheme.shadow),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(
+                                width: 2,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                          validator: validatePhoneNumber,
+                          onFieldSubmitted: (_) {
+                            FocusScope.of(context).requestFocus(locationFocus);
+                          },
                         ),
                       ),
+                      mediumVertical,
                       MyTextField(
                         label: 'Location',
                         controller: _locationController,
@@ -320,36 +444,23 @@ class EditProfilePageState extends State<EditProfilePage> {
                           return null;
                         },
                       ),
-                      MyTextField(
-                        label: 'Password',
-                        controller: _passwordController,
-                        focusNode: passwordFocus,
-                        nextFocusNode: null,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Password is required';
-                          }
-                          return null;
-                        },
-                      ),
                     ],
                   )),
-              smallVertical,
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  FloatingActionButton.extended(
-                    backgroundColor: colorScheme.primary,
-                    onPressed: () {
-                      final isValid = _formKey.currentState!.validate();
-                      if (isValid == true) {}
-                    },
-                    label: Text("Save",
-                        style: TextStyle(color: colorScheme.onPrimary)),
-                  ),
-                  mediumHorizontal
-                ],
+              largeVertical,
+              Align(
+                alignment: Alignment.centerLeft,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final isValid = _formKey.currentState!.validate();
+                    if (isValid == true) {
+                      await _checkAndSaveProfile();
+                    }
+                  },
+                  child: Text("Save",
+                      style: TextStyle(color: colorScheme.onPrimary)),
+                ),
               ),
+              mediumHorizontal,
               smallVertical
             ],
           ),

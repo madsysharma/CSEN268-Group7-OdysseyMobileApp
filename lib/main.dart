@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,13 +15,13 @@ import 'package:odyssey/pages/home.dart';
 //import 'package:odyssey/pages/locc3
 import 'package:odyssey/pages/maps/map_page.dart';
 import 'package:odyssey/pages/location_details/location_details.dart';
-import 'package:odyssey/pages/profile.dart';
-import 'package:odyssey/pages/profile/forgot_password.dart';
-import 'package:odyssey/pages/profile/login.dart';
+import 'package:odyssey/pages/profile/forgotpass_page.dart';
+import 'package:odyssey/pages/profile/main_page.dart';
+import 'package:odyssey/pages/profile/login_page.dart';
 import 'package:odyssey/pages/profile/manage_membership.dart';
 import 'package:odyssey/pages/profile/profile_page.dart';
 import 'package:odyssey/pages/profile/saved_locations.dart';
-import 'package:odyssey/pages/profile/signup.dart';
+import 'package:odyssey/pages/profile/signup_page.dart';
 import 'package:odyssey/pages/safety/safety.dart';
 import 'package:odyssey/pages/safety/safety_checkin.dart';
 import 'package:odyssey/pages/safety/safety_emer.dart';
@@ -48,9 +49,9 @@ void main() async {
   );
   runApp(MultiBlocProvider(
     providers: [
-      BlocProvider(create: (context) => AuthBloc()),
+      BlocProvider(create: (context) => AuthBloc()..add(CheckAuthEvent())),
       BlocProvider(create: (context) => LocationsBloc()),
-      BlocProvider(create: (context) => LocationDetailsBloc())
+      BlocProvider(create: (context) => LocationDetailsBloc()),
     ],
     child: MyApp(),
   ));
@@ -62,9 +63,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Determine initial location based on authentication state
+    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
+    final initialLocation = isLoggedIn ? Paths.home : Paths.mainPage;
+
+    // Set up GoRouter
     final GoRouter router = GoRouter(
         initialLocation: Paths.loginPage,
-        navigatorKey: rootNavigatorKey,
         routes: [
           ShellRoute(
             builder: (context, state, child) => ShellBottomNavBar(child: child),
@@ -74,112 +79,47 @@ class MyApp extends StatelessWidget {
                 builder: (context, state) => HomeScreen(),
               ),
               GoRoute(
-                path: Paths.locationDetails,
-                builder: (context, state) {
-                  var location = state.extra as String;
-                  return LocationDetailsPage(locationId: location);
-              }),
-              GoRoute(
-                path: Paths.connect,
-                builder: (context, state) => Connect(tab: 'local'),
-                routes: [
-                  GoRoute(
-                    path: 'local',
-                    builder: (context, state) => Connect(tab: 'local',),
-                    routes: [
-                      GoRoute(
-                        path: Paths.friendReq,
-                        builder: (context, state) => FriendRequest(),
-                      ),
-                      GoRoute(
-                        path: Paths.notifs,
-                        builder: (context, state) => Notifications(fromScreen: 'local',),
+                  path: Paths.connect,
+                  builder: (context, state) => Connect(tab: 'local'),
+                  routes: [
+                    GoRoute(
+                        path: 'local',
+                        builder: (context, state) => Connect(
+                              tab: 'local',
+                            ),
                         routes: [
                           GoRoute(
-                            path: Paths.acceptReq,
-                            builder: (context, state){
-                              final query = state.uri.queryParameters['q'];
-                              return AcceptRequest(requesterName: query);
-                            },
+                            path: Paths.friendReq,
+                            builder: (context, state) => FriendRequest(),
                           ),
-                          GoRoute(
-                            path: Paths.expiredReq,
-                            builder: (context, state) => ExpiredRequest()
-                          ),
-                        ],
-                      ),
-                    ]
-                  ),
-                  GoRoute(
-                    path: 'friends',
-                    builder: (context, state) => Connect(tab: 'friends',),
-                    routes: [
-                      GoRoute(
-                        path: Paths.friendReq,
-                        builder: (context, state) => FriendRequest(),
-                      ),
-                      GoRoute(
-                        path: Paths.notifs,
-                        builder: (context, state) => Notifications(fromScreen: 'friends',),
+                        ]),
+                    GoRoute(
+                        path: 'friends',
+                        builder: (context, state) => Connect(
+                              tab: 'friends',
+                            ),
                         routes: [
                           GoRoute(
-                            path: Paths.acceptReq,
-                            builder: (context, state){
-                              final query = state.uri.queryParameters['q'];
-                              return AcceptRequest(requesterName: query);
-                            }
+                            path: Paths.friendReq,
+                            builder: (context, state) => FriendRequest(),
                           ),
-                          GoRoute(
-                            path: Paths.expiredReq,
-                            builder: (context, state) => ExpiredRequest()
-                          ),
-                        ],
-                      ),
-                    ]
-                  ),
-                  GoRoute(
-                    path: 'you',
-                    builder: (context, state) => Connect(tab: 'you',),
-                    routes: [
-                      GoRoute(
-                        path: Paths.post,
-                        // parentNavigatorKey: rootNavigatorKey, // open it not in the inner Navigator, but in a root Navigator
-                        builder: (context, state) {
-                          LocationDetails? location = state.extra as LocationDetails?;
-                          return UploadPostInitial(location: location);
-                        },
+                        ]),
+                    GoRoute(
+                        path: 'you',
+                        builder: (context, state) => Connect(
+                              tab: 'you',
+                            ),
                         routes: [
                           GoRoute(
-                            path: Paths.customGallery,
-                            builder: (context, state) => CustomGallery(imgPaths: state.extra as List<String>),
-                          ),
-                        ]
-                      ),
-                      GoRoute(
-                        path: Paths.friendReq,
-                        builder: (context, state) => FriendRequest(),
-                      ),
-                      GoRoute(
-                        path: Paths.notifs,
-                        builder: (context, state) => Notifications(fromScreen: 'you',),
-                        routes: [
-                          GoRoute(
-                            path: Paths.acceptReq,
-                            builder: (context, state){
-                              final query = state.uri.queryParameters['q'];
-                              return AcceptRequest(requesterName: query);
-                            },
+                            path: Paths.post,
+                            builder: (context, state) => UploadPost(),
                           ),
                           GoRoute(
-                            path: Paths.expiredReq,
-                            builder: (context, state) => ExpiredRequest()
+                            path: Paths.friendReq,
+                            builder: (context, state) => FriendRequest(),
                           ),
-                        ],
-                      ),
-                    ]
-                  ),
-                ]
-              ),
+                        ]),
+                  ]),
               GoRoute(
                 path: Paths.maps,
                 builder: (context, state) => MapPage(),
@@ -240,7 +180,12 @@ class MyApp extends StatelessWidget {
               ),
             ],
           ),
-        
+          GoRoute(
+              path: Paths.locationDetails,
+              builder: (context, state) {
+                var location = state.extra as String;
+                return LocationDetailsPage(locationId: location);
+              }),
           GoRoute(
             path: Paths.loginPage,
             builder: (context, state) => LoginPage(),
@@ -252,17 +197,19 @@ class MyApp extends StatelessWidget {
           var tryingToSignup = state.fullPath == Paths.signupPage;
           var tryingToUpdatePassword = state.fullPath == Paths.forgotPassword;
 
-          if (loggedIn &&
-              (tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
-            return Paths.home;
-          }
+        // Redirect logic based on authentication
+        if (loggedIn &&
+            (tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
+          return Paths.home;
+        }
 
-          if (!loggedIn &&
-              !(tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
-            return Paths.loginPage;
-          }
-          return null;
-        });
+        if (!loggedIn &&
+            !(tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
+          return Paths.mainPage;
+        }
+        return null;
+      },
+    );
 
     return BlocListener<AuthBloc, AuthState>(
       listenWhen: (previous, current) => previous != current,
@@ -270,35 +217,64 @@ class MyApp extends StatelessWidget {
         if (state is LoggedIn) {
           router.go(Paths.home);
         } else if (state is LoggedOut) {
-          router.go(Paths.loginPage);
+          router.go(Paths.mainPage);
         }
       },
       child: MaterialApp.router(
         title: 'Odyssey',
         theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF006A68)),
-            fontFamily: GoogleFonts.lato().fontFamily,
-            useMaterial3: true,
-            floatingActionButtonTheme: FloatingActionButtonThemeData(
-              backgroundColor: Color(0xFF006A68),
-              foregroundColor: Color(0xFFFFFFFF),
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(5),
-              ),
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF006A68)),
+          fontFamily: GoogleFonts.lato().fontFamily,
+          useMaterial3: true,
+          floatingActionButtonTheme: FloatingActionButtonThemeData(
+            backgroundColor: const Color(0xFF006A68),
+            foregroundColor: const Color(0xFFFFFFFF),
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
             ),
-            textButtonTheme: TextButtonThemeData(
-                style: ButtonStyle(
-              foregroundColor: WidgetStateProperty.all(Color(0xFF006A68)),
-              textStyle: WidgetStateProperty.all(
-                TextStyle(
-                  fontSize: 16,
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ButtonStyle(
+              backgroundColor: WidgetStateProperty.all(
+                const Color(0xFF006A68),
+              ),
+              foregroundColor: WidgetStateProperty.all(
+                const Color(0xFFFFFFFF),
+              ),
+              padding: WidgetStateProperty.all<EdgeInsets>(
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+                RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              padding: WidgetStateProperty.all(
-                EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+              minimumSize: WidgetStateProperty.all<Size>(
+                const Size(130, 50),
               ),
-            ))),
+            ),
+          ),
+          textButtonTheme: TextButtonThemeData(
+              style: ButtonStyle(
+            foregroundColor: WidgetStateProperty.all(const Color(0xFF006A68)),
+            padding: WidgetStateProperty.all(
+              const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            ),
+          )),
+          snackBarTheme: SnackBarThemeData(
+            backgroundColor: const Color(0xFF3F4948),
+            actionTextColor: const Color(0xFFF4FBF9),
+            contentTextStyle: const TextStyle(
+              color: Color(0xFFF4FBF9),
+            ),
+            elevation: 4,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
         routerConfig: router,
       ),
     );

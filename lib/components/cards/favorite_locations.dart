@@ -34,6 +34,7 @@ class FavoriteLocations extends StatelessWidget {
                 height: 150,
                 width: double.infinity,
                 errorBuilder: (context, error, stackTrace) {
+                  debugPrint("Failed to load image: $imageUrl");
                   return Container(
                     height: 150,
                     width: double.infinity,
