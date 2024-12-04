@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:odyssey/api/get_locations.dart';
 import 'package:odyssey/api/review.dart';
 import 'package:odyssey/api/upload_file.dart';
-import 'package:odyssey/bloc/auth/auth_bloc.dart';
+import 'package:odyssey/components/shimmer_list.dart';
 import 'package:odyssey/components/alerts/snack_bar.dart';
 import 'package:odyssey/model/review.dart';
 import 'package:odyssey/utils/image_picker_utils.dart';
@@ -47,7 +46,7 @@ class UploadPostInitialState extends State<UploadPostInitial> with AutomaticKeep
       future: _locationsFuture,
       builder: (BuildContext context, AsyncSnapshot<List<LocationDetails>> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return Center(child: ShimmerList());
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
@@ -394,6 +393,14 @@ class UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMix
                   ),
                   SizedBox(height: 28.0,),
                   ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF006A68),
+                      foregroundColor: Colors.white,
+                      textStyle: Theme.of(context).textTheme.labelMedium,
+                      side: BorderSide(
+                        width: 0.3,
+                      ),
+                    ),
                     onPressed: (){
                       showDialog(
                         context: context,
@@ -457,14 +464,14 @@ class UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMix
                         )
                       );
                     },
-                    child: Text("Upload your post", style: Theme.of(context).textTheme.bodyMedium)
+                    child: Text("Upload your post", style: TextStyle(color: Colors.white))
                   )
                 ],
               ),
             ),
           ),
         )
-    );  
+    );
 }
 
   @override

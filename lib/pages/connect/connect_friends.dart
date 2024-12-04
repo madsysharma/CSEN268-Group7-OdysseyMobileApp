@@ -31,7 +31,7 @@ class _ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAlive
   }
 
   Future<List<ReviewCard>> _loadFriendReviews(String? uid) async{
-    await Future.delayed(Duration(seconds: 5));
+    await Future.delayed(Duration(seconds: 3));
     final snap = await firestore.collection('User').doc(uid).get();
     if (!snap.exists || snap.data()?['friends'] == null) {
       print("No friends found for user: $uid");
@@ -95,6 +95,7 @@ class _ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAlive
                   separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
                   itemCount: snap.data!.length),
               ),
+              SizedBox(height: 20.0,),
             ],
           );
         }

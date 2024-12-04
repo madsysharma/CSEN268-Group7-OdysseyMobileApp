@@ -35,7 +35,7 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
   }
 
   Future<List<ReviewCard>> _load(String? email) async{
-    await Future.delayed(Duration(seconds: 5));
+    await Future.delayed(Duration(seconds: 3));
     List<LocationReview> reviews = await fetchReviews(userEmail: email);
     return reviews
         .map((review) => ReviewCard(pageName: "ConnectYou", imgUrls: review.images ?? [], posterName: "You", locationName: review.locationName ?? "", dayDiff: getDayDifference(review.postedOn!), reviewText: review.reviewText!,))
@@ -90,11 +90,12 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
                   separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
                   itemCount: snap.data!.length)
               ),
-              SizedBox(height: 10.0,),
+              SizedBox(height: 20.0,),
               ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF006A68),
                     foregroundColor: Colors.white,
+                    textStyle: Theme.of(context).textTheme.headlineSmall,
                     side: BorderSide(
                       width: 0.3,
                     ),
@@ -102,7 +103,7 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
                   onPressed: (){
                     GoRouter.of(context).go('/connect/you'+Paths.post);
                   },
-                  child: Text("Create new post", style: Theme.of(context).textTheme.headlineSmall)
+                  child: Text("Create new post", style: TextStyle(color: Colors.white),)
               ),
               SizedBox(height: 5.0),
             ],

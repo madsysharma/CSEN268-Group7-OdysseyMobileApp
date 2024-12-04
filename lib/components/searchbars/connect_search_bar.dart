@@ -45,9 +45,11 @@ class ConnectSearchBarState extends State<ConnectSearchBar> with AutomaticKeepAl
         children: [
           Flexible(
             child: SearchBar(
-              hintText: "Search for posts",
+              hintText: "Filter posts",
               leading: Icon(Icons.search),
+              trailing: [Icon(Icons.filter)],
               constraints: BoxConstraints(minHeight: 56.0),
+              onTap: (){},
             ),
           ),
           SizedBox(width: 10.0,),

@@ -7,12 +7,13 @@ import 'package:go_router/go_router.dart';
 class AcceptRequest extends StatelessWidget{
   final String? requesterName;
   AcceptRequest({super.key, required this.requesterName});
-
-  FirebaseAuth auth = FirebaseAuth.instance;
-  FirebaseFirestore firestore = FirebaseFirestore.instance;
-
+  
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
       appBar: AppBar(title: Text("Accept Friend Request?"), backgroundColor: const Color.fromARGB(255, 189, 220, 204),),
       body: Padding(

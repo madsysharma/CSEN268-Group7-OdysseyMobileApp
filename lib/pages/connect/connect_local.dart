@@ -31,7 +31,7 @@ class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClie
   }
 
   Future<List<ReviewCard>> _loadLocalUserReviews(String? uid) async{
-    await Future.delayed(Duration(seconds: 5));
+    await Future.delayed(Duration(seconds: 3));
     try {
       if(uid == null){
         print("UID is null!");
@@ -59,7 +59,7 @@ class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClie
       for(String n in names){
         final localReviewQuerySnap = await this.firestore.collection('Review').where('username'.toLowerCase(),isEqualTo: n.toLowerCase().split(" ").first).get();
         for(var doc in localReviewQuerySnap.docs){
-          final images = List<String>.from(doc.data()['images']) ?? [];
+          final images = List<String>.from(doc.data()['images']);
           final postedDate = doc.data()['postedOn'] ?? "";
           final dayDifference = getDayDifference(postedDate.toDate());
           final revText = doc.data()['reviewtext'] ?? "";
@@ -112,6 +112,7 @@ class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClie
                 separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
                 itemCount: snap.data!.length)
               ),
+              SizedBox(height: 20.0,),
             ]
           );
         }

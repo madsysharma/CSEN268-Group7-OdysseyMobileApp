@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/components/cards/notif_card.dart';
-import 'package:go_router/go_router.dart';
 
 class Notifications extends StatefulWidget{
   final String fromScreen;
@@ -42,13 +41,21 @@ class NotificationsState extends State<Notifications> with AutomaticKeepAliveCli
       ),
       body: Column(
         children: [
-          Expanded(
+          this.notifs.length !=0 ? Flexible(
             child: ListView.builder(
               itemCount: this.notifs.length,
               itemBuilder: (context, index){
                 Map<String, dynamic> notif = this.notifs[index];
                 return NotifCard(text: notif['notificationText'], type: notif['type'], unread: notif['unread'], fromScreen: widget.fromScreen, sentBy: notif['sentBy'], sentAt: notif['sentAt'].toDate(), acceptStatus: notif['accepted'],);
               }
+            )
+          ) :
+          Flexible(
+            child: Center(
+              child: Text(
+                "You have no notifications at this time.",
+                style: TextStyle(fontWeight: FontWeight.bold)
+              ),
             )
           )
         ],

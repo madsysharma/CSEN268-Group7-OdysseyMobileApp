@@ -83,7 +83,7 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin{
             collectUnreadNotifs(uid);
           } else if(toScreen == 'Friends'){
             dest = Paths.friendReq;
-            GoRouter.of(context).go('/connect/${_tabRoutes[_tabController.index]}'+dest);
+            await GoRouter.of(context).push('/connect/${_tabRoutes[_tabController.index]}'+dest);
           }
         },
         numUnread: this.unreadNotifsNum,
