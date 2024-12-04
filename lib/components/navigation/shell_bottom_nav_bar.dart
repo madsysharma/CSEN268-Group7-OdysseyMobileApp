@@ -26,7 +26,7 @@ class _ShellBottomNavBarState extends State<ShellBottomNavBar> {
           fixedColor: colorScheme.onSurfaceVariant,
           unselectedItemColor: colorScheme.onSurfaceVariant,
           selectedIconTheme: IconThemeData(color: colorScheme.onSurface, size: 26),
-          selectedLabelStyle: TextStyle(color: colorScheme.onSurface, fontSize: 14),
+          selectedLabelStyle: TextStyle(color: colorScheme.onSurface, fontSize: 14,),
           currentIndex: selectedIndex,
           type: BottomNavigationBarType.fixed,
           items: [

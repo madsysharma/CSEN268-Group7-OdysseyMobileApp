@@ -14,10 +14,10 @@ Future<List<LocationReview>> fetchReviews({String? userEmail, String? locationId
 
   // Build query with optional filters using where clauses (chained if necessary)
   if (userEmail != null) {
-    locationRef = locationRef.where('email', isEqualTo: userEmail);
+    locationRef = locationRef.where('email', isEqualTo: userEmail).orderBy('postedOn', descending: true);
   }
   if (locationId != null) {
-    locationRef = locationRef.where('locationId', isEqualTo: locationId);
+    locationRef = locationRef.where('locationId', isEqualTo: locationId).orderBy('postedOn', descending: true);
   }
   final querySnapshot = await locationRef.get();
   print(querySnapshot);
