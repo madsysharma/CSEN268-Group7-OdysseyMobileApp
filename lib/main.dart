@@ -132,6 +132,14 @@ class MyApp extends StatelessWidget {
                   builder: (context, state) => Connect(tab: 'you'),
                   routes: [
                     GoRoute(
+                      path: Paths.friendReq,
+                      builder: (context, state) => FriendRequest(),
+                    ),
+                    GoRoute(
+                      path: Paths.notifs,
+                      builder: (context, state) => Notifications(fromScreen: 'friends'),
+                    ),
+                    GoRoute(
                       path: Paths.post,
                       builder: (context, state) {
                         final location = state.extra as LocationDetails?;
