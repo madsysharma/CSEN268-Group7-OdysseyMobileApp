@@ -50,6 +50,7 @@ class AcceptRequest extends StatelessWidget{
                           'sentAt': FieldValue.serverTimestamp(),
                           'sentBy': username,
                           'unread': true,
+                          'accepted': "Yes",
                         }
                       );
                       final snapUpdate = await this.firestore.collection('User').doc(userDoc.id).collection('Notifications').get();

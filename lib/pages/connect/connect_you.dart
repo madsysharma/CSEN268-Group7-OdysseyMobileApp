@@ -80,29 +80,30 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
           print("You have posted these reviews");
           return Column(
             children: [
-              Expanded(
+              Flexible(
                 child: ListView.separated(
                   padding: const EdgeInsets.all(8.0),
                   shrinkWrap: true,
                   itemBuilder: (context, index){
                     return snap.data![index];
                   },
-                  separatorBuilder: (context, index){
-                    if(index < snap.data!.length){
-                      return Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,);
-                    }
-                    else{
-                      return Divider(indent: 0.0, endIndent: 0.0, thickness: 0.0,);
-                    }
-                  },
+                  separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
                   itemCount: snap.data!.length)
               ),
               SizedBox(height: 10.0,),
               ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    side: BorderSide(
+                      width: 0.3,
+                      color: Color(0xFF006A68),
+                    ),
+                  ),
                   onPressed: (){
                     GoRouter.of(context).go('/connect/you'+Paths.post);
                   },
-                  child: Text("Create new post", style: Theme.of(context).textTheme.headlineSmall)),
+                  child: Text("Create new post", style: Theme.of(context).textTheme.headlineSmall)
+              ),
+              SizedBox(height: 5.0),
             ],
           );
         }

@@ -102,8 +102,9 @@ class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClie
         } else {
           return Column(
             children: [
-              Expanded(
+              Flexible(
               child: ListView.separated(
+                padding: const EdgeInsets.all(8.0),
                 shrinkWrap: true,
                 itemBuilder: (context, index){
                   return snap.data![index];
