@@ -65,6 +65,7 @@ class MyApp extends StatelessWidget {
     final initialLocation = isLoggedIn ? Paths.home : Paths.loginPage;
 
     final GoRouter router = GoRouter(
+      navigatorKey: rootNavigatorKey,
       initialLocation: initialLocation,
       routes: [
         ShellRoute(

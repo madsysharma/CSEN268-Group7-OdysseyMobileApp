@@ -12,18 +12,27 @@ Future<void> addReview(LocationReview review) {
 Future<List<LocationReview>> fetchReviews({String? userEmail, String? locationId}) async {
   Query<Map<String, dynamic>> locationRef = firestore.collection('Review');
 
-  // Build query with optional filters using where clauses (chained if necessary)
   if (userEmail != null) {
-    locationRef = locationRef.where('email', isEqualTo: userEmail).orderBy('postedOn', descending: true);
+    locationRef = locationRef.where('email', isEqualTo: userEmail);
   }
   if (locationId != null) {
-    locationRef = locationRef.where('locationId', isEqualTo: locationId).orderBy('postedOn', descending: true);
+    locationRef = locationRef.where('locationId', isEqualTo: locationId);
   }
+
+  locationRef = locationRef.orderBy('postedOn', descending: true);
+
   final querySnapshot = await locationRef.get();
-  print(querySnapshot);
+
+  // Log documents properly
+  for (var doc in querySnapshot.docs) {
+    print('Document ID: ${doc.id}');
+    print('Document Data: ${doc.data()}');
+  }
+
+  // Map documents to LocationReview objects
   return querySnapshot.docs.map((doc) {
-    Map<String, dynamic> data = doc.data();
-    data['id'] = doc.id;
+    final data = doc.data();
+    data['id'] = doc.id; // Add document ID to the data map
     return LocationReview.fromJson(data);
   }).toList();
 }
