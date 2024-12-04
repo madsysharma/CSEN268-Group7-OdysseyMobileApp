@@ -20,7 +20,19 @@ class ConnectSearchBarState extends State<ConnectSearchBar> with AutomaticKeepAl
   @override
   void initState() {
     super.initState();
-    this.unreadChanging = widget.numUnread;
+    setState(() {
+      this.unreadChanging = widget.numUnread;
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant ConnectSearchBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.numUnread != oldWidget.numUnread) {
+      setState(() {
+        unreadChanging = widget.numUnread;
+      });
+    }
   }
 
   @override

@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "eslint": "^9.16.0",
     "jetifier": "^2.0.0"
   }
 }

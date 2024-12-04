@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:odyssey/components/cards/review_card.dart';
+import 'package:odyssey/components/shimmer_list.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/utils/date_time_utils.dart';
@@ -14,8 +15,23 @@ class ConnectLocal extends StatefulWidget{
 class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClientMixin{
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  late Future<List<ReviewCard>> _futureCards;
+
+  @override
+  void initState() {
+    super.initState();
+    reloadReviews();
+  }
+
+  void reloadReviews(){
+    String? uid = this.auth.currentUser?.uid;
+    setState(() {
+      _futureCards = _loadLocalUserReviews(uid);
+    });
+  }
 
   Future<List<ReviewCard>> _loadLocalUserReviews(String? uid) async{
+    await Future.delayed(Duration(seconds: 5));
     try {
       if(uid == null){
         print("UID is null!");
@@ -62,12 +78,11 @@ class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClie
   @override
   Widget build(BuildContext context){
     super.build(context);
-    String? uid = this.auth.currentUser?.uid;
     return FutureBuilder<List<ReviewCard>>(
-      future: _loadLocalUserReviews(uid),
+      future: _futureCards,
       builder: (context, snap){
         if(snap.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return ShimmerList();
         } else if (snap.hasError) {
           print("Error in FutureBuilder: ${snap.error}");
           return Center(child: Text("An error occurred: ${snap.error}"));

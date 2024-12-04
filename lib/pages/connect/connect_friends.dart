@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:odyssey/components/cards/review_card.dart';
+import 'package:odyssey/components/shimmer_list.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/utils/date_time_utils.dart';
@@ -14,26 +15,44 @@ class ConnectFriends extends StatefulWidget{
 class _ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAliveClientMixin{
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  late Future<List<ReviewCard>> _futureCards;
+
+  @override
+  void initState() {
+    super.initState();
+    reloadReviews();
+  }
+
+  void reloadReviews(){
+    String? uid = this.auth.currentUser?.uid;
+    setState(() {
+      _futureCards = _loadFriendReviews(uid);
+    });
+  }
 
   Future<List<ReviewCard>> _loadFriendReviews(String? uid) async{
+    await Future.delayed(Duration(seconds: 5));
     final snap = await firestore.collection('User').doc(uid).get();
     if (!snap.exists || snap.data()?['friends'] == null) {
       print("No friends found for user: $uid");
       return [];
     }
-    List<String> friendlist = List<String>.from(snap.data()?['friends']);
+    List<String> friendlist = List<String>.from((snap.data()?['friends'] ?? []).where((e) => e!=null));
     print('Processed friend list: $friendlist');
     List<ReviewCard> reviews = [];
     for(String f in friendlist){
-      print("Query name: ${f.toLowerCase().split(" ").first}");
-      Query<Map<String, dynamic>> friendsQuery = await this.firestore.collection('Review').where('username',isEqualTo: f.split(" ").first);
+      //print("Query name: ${f.toLowerCase().split(" ").first}");
+      /*if(f == null || f.isEmpty){
+        continue;
+      }*/
+      Query<Map<String, dynamic>> friendsQuery = await this.firestore.collection('Review').where('username',isEqualTo: f);
       QuerySnapshot<Map<String, dynamic>> querySnap = await friendsQuery.get();
       for(var doc in querySnap.docs){
         final postedDate = doc.data()['postedOn'] ?? "";
         final dayDifference = getDayDifference(postedDate.toDate());
-        final revText = doc.data()['reviewtext'] ?? "";
+        final revText = doc.data()['reviewText'] ?? "";
         print("Posted date: $postedDate, day difference: $dayDifference, review text: $revText");
-        reviews.add(ReviewCard(pageName: "ConnectFriends",imgUrls: List<String>.from(doc.data()['images']), posterName: f.split(" ").first, locationName: doc.data()['locationname'], dayDiff: dayDifference, reviewText: revText,));
+        reviews.add(ReviewCard(pageName: "ConnectFriends",imgUrls: List<String>.from(doc.data()['images']), posterName: f, locationName: doc.data()['locationName'], dayDiff: dayDifference, reviewText: revText,));
       }
     }
     print("Reviews: $reviews");
@@ -43,12 +62,11 @@ class _ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAlive
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    String? uid = this.auth.currentUser?.uid;
     return FutureBuilder(
-      future: _loadFriendReviews(uid),
+      future: _futureCards,
       builder: (context, snap){
         if(snap.connectionState == ConnectionState.waiting){
-          return Center(child: CircularProgressIndicator());
+          return ShimmerList();
         }
         else if(snap.hasError){
           return Center(child: Text("An error occurred: ${snap.error}"));

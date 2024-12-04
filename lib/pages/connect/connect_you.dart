@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import 'package:odyssey/components/shimmer_list.dart';
 import 'package:odyssey/api/review.dart';
 import 'package:odyssey/components/cards/review_card.dart';
 import 'package:odyssey/model/review.dart';
@@ -24,15 +24,21 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
   @override
   void initState() {
     super.initState();
-    //String? uid = this.auth.currentUser?.uid;
+    reloadReviews();
+  }
+
+  void reloadReviews(){
     String? email = this.auth.currentUser?.email;
-    _futureCards = _load(email);
+    setState(() {
+      _futureCards = _load(email);
+    });
   }
 
   Future<List<ReviewCard>> _load(String? email) async{
+    await Future.delayed(Duration(seconds: 5));
     List<LocationReview> reviews = await fetchReviews(userEmail: email);
     return reviews
-        .map((review) => ReviewCard(pageName: "ConnectYou", imgUrls: review.images ?? [], posterName: "You", locationName: review.locationName, dayDiff: getDayDifference(review.postedOn!), reviewText: review.reviewText!,))
+        .map((review) => ReviewCard(pageName: "ConnectYou", imgUrls: review.images ?? [], posterName: "You", locationName: review.locationName ?? "", dayDiff: getDayDifference(review.postedOn!), reviewText: review.reviewText!,))
         .toList();
   }
 
@@ -43,15 +49,7 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
       future: _futureCards,
       builder: (context, snap) {
         if(snap.connectionState == ConnectionState.waiting){
-          return Center(
-            child: Column(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 20.0,),
-                Text("Loading...")
-              ],
-            )
-          );
+          return ShimmerList();
         }
         else if(snap.hasError){
           print('Error: ${snap.error}');
@@ -69,8 +67,9 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
                 Text("Looks like you haven't posted anything yet. Your travelogue awaits!", textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
                 SizedBox(height: 20.0,),
                 ElevatedButton(
-                  onPressed: (){
-                    GoRouter.of(context).go('/connect/you'+Paths.post);
+                  onPressed: () async{
+                    await GoRouter.of(context).push('/connect/you'+Paths.post);
+                    reloadReviews();
                   },
                   child: Text("Create new post", style: Theme.of(context).textTheme.headlineSmall))
               ],
@@ -83,20 +82,27 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
             children: [
               Expanded(
                 child: ListView.separated(
+                  padding: const EdgeInsets.all(8.0),
                   shrinkWrap: true,
                   itemBuilder: (context, index){
                     return snap.data![index];
                   },
-                  separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
+                  separatorBuilder: (context, index){
+                    if(index < snap.data!.length){
+                      return Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,);
+                    }
+                    else{
+                      return Divider(indent: 0.0, endIndent: 0.0, thickness: 0.0,);
+                    }
+                  },
                   itemCount: snap.data!.length)
               ),
-              SizedBox(height: 20.0,),
+              SizedBox(height: 10.0,),
               ElevatedButton(
                   onPressed: (){
                     GoRouter.of(context).go('/connect/you'+Paths.post);
                   },
-                  child: Text("Create new post", style: Theme.of(context).textTheme.headlineSmall)
-              )
+                  child: Text("Create new post", style: Theme.of(context).textTheme.headlineSmall)),
             ],
           );
         }

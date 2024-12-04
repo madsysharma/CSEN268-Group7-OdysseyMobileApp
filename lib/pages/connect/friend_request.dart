@@ -111,14 +111,14 @@ class FriendRequestState extends State<FriendRequest> with AutomaticKeepAliveCli
                         onPressed: () async{
                           if(recepientEmail.isNotEmpty){
                             final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('sendFriendRequestEmail');
-                            final idToken = await FirebaseAuth.instance.currentUser?.getIdToken(true);
-                            print("ID token: $idToken");
                             try
                             {
                               print("Sender name: $username");
                               print("Sender email: ${this.auth.currentUser?.email}");
                               print("Recipient email: $recepientEmail");
-                              final data = {'email':recepientEmail, 'senderName':username, 'senderEmail':this.auth.currentUser?.email};
+                              final idToken = await this.auth.currentUser?.getIdToken(true);
+                              print("ID token: $idToken");
+                              final data = {'email':recepientEmail, 'senderName':username, 'senderEmail':this.auth.currentUser?.email, 'authToken': idToken};
                               print("Data: $data");
                               final response = await callable.call(data);
                               if(response.data['success']){

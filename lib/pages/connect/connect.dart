@@ -65,6 +65,7 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin{
     print("Notification count: $notifCount");
     if(mounted){
       setState(() {
+        print("Notification count set!");
         this.unreadNotifsNum = notifCount;
       });
     }
@@ -74,16 +75,18 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin{
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: ConnectSearchBar(
-        onNavigate: (toScreen){
+        onNavigate: (toScreen) async{
           String dest = "";
           if(toScreen == 'Notifications'){
             dest = Paths.notifs;
+            await GoRouter.of(context).push('/connect/${_tabRoutes[_tabController.index]}'+dest,);
+            collectUnreadNotifs(uid);
           } else if(toScreen == 'Friends'){
             dest = Paths.friendReq;
+            GoRouter.of(context).go('/connect/${_tabRoutes[_tabController.index]}'+dest);
           }
-          GoRouter.of(context).go('/connect/${_tabRoutes[_tabController.index]}'+dest);
         },
-        numUnread: unreadNotifsNum,
+        numUnread: this.unreadNotifsNum,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

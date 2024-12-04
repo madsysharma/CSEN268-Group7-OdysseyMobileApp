@@ -15,6 +15,24 @@ class ReviewCard extends StatelessWidget{
     String cardTitle= this.posterName;
     return Container(
       padding: EdgeInsets.only(left:20.0,right:20.0,top:10.0,bottom:10.0),
+      decoration: BoxDecoration(
+        border: Border.all(color: Color(0xFF030303), width: 0.1),
+        borderRadius: BorderRadius.all(Radius.circular(5.0)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0xFF030303),
+            offset: const Offset(1.0, 1.0),
+            blurRadius: 0.1,
+            spreadRadius: 0.01,
+          ),
+          BoxShadow(
+            color: Colors.white,
+            offset: const Offset(0.0, 0.0),
+            blurRadius: 0.0,
+            spreadRadius: 0.0,
+          ),
+        ]
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

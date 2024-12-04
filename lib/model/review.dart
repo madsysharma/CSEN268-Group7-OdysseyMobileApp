@@ -6,12 +6,12 @@ part 'review.g.dart';
 @JsonSerializable()
 class LocationReview {
   String? reviewId;
-  String userId;
-  String email;
-  String username;
+  String? userId;
+  String? email;
+  String? username;
   List<String>? images;
-  String locationName;
-  String locationId;
+  String? locationName;
+  String? locationId;
   double? rating;
   String? reviewText;
   List<String>? tags;

@@ -69,7 +69,7 @@ class _ReviewList extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              reviews[i].email,
+                              reviews[i].email ?? "",
                               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
