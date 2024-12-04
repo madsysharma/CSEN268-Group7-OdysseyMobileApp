@@ -117,6 +117,7 @@ class MyApp extends StatelessWidget {
                   builder: (context, state) => Connect(tab: 'friends'),
                   routes: [
                     GoRoute(
+
                       path: Paths.friendReq,
                       builder: (context, state) => FriendRequest(),
                     ),
@@ -214,6 +215,7 @@ class MyApp extends StatelessWidget {
         final tryingToLogin = state.matchedLocation == Paths.loginPage;
         final tryingToSignup = state.matchedLocation == Paths.signupPage;
         final tryingToUpdatePassword = state.matchedLocation == Paths.forgotPassword;
+
 
         if (loggedIn && (tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
           return Paths.home;
