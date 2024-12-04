@@ -112,7 +112,10 @@ class MyApp extends StatelessWidget {
                         routes: [
                           GoRoute(
                             path: Paths.post,
-                            builder: (context, state) => UploadPost(),
+                            builder: (context, state) {
+                              LocationDetails? location = state.extra as LocationDetails?;
+                              return UploadPostInitial(location: location);
+                            },
                           ),
                           GoRoute(
                             path: Paths.friendReq,
@@ -148,7 +151,7 @@ class MyApp extends StatelessWidget {
               ),
               GoRoute(
                 path: Paths.profile,
-                builder: (context, state) => ProfileScreen(),
+                builder: (context, state) => ProfilePage(),
               ),
               GoRoute(
                 path: Paths.profilePage,

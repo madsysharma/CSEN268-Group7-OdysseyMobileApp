@@ -77,7 +77,6 @@ dependencies:
   geolocator: ^13.0.2
   app_settings: ^5.1.1
   flutter_contacts: ^1.1.9
-  firebase_storage: ^12.3.6
   geocoding : ^3.0.0
   flutter_typeahead: ^5.2.0
   avatar_glow: ^3.0.1
@@ -87,7 +86,6 @@ dependencies:
   screenshot: ^3.0.0
   flutter_cache_manager: ^3.4.1
 
-  
   
   
 
@@ -145,6 +143,7 @@ flutter:
   - assets/location/TaylorCreekVisitorsCenter.jpg
   - assets/location/TaylorCreekVisitorsCenter2.jpg
   - assets/location/TaylorCreekVisitorsCenter3.jpg
+  - assets/icons/car_icon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
