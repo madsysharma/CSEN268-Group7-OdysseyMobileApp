@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math';
+import 'dart:math' show asin, cos, sqrt, pi, max,min, sin, atan2;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -14,95 +14,60 @@ import 'dart:ui' as ui;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 
+// Models
+class NearbyUser {
+  final String id;
+  final String name;
+  final LatLng location;
+  final double distance;
+  final DateTime lastUpdated;
 
-// Membership Handler Class
-class MembershipHandler {
-  static const Map<String, int> _mapLimits = {
-    'BASIC': 3,
-    'PREMIUM': 5,
-    'ELITE': -1, // Unlimited
-  };
+  NearbyUser({
+    required this.id,
+    required this.name,
+    required this.location,
+    required this.distance,
+    required this.lastUpdated,
+  });
 
-  static Future<DownloadPermissionResult> checkDownloadPermission({
-    required String memberType,
-    required int currentMapCount,
-    required BuildContext context,
-  }) async {
-    final effectiveMemberType = memberType.toUpperCase();
-    final limit = _mapLimits[effectiveMemberType] ?? _mapLimits['BASIC']!;
+  factory NearbyUser.fromFirestore(DocumentSnapshot doc, LatLng currentLocation) {
+    final data = doc.data() as Map<String, dynamic>;
+    final GeoPoint geoPoint = data['location'];
+    final userLocation = LatLng(geoPoint.latitude, geoPoint.longitude);
     
-    if (limit == -1) {
-      return DownloadPermissionResult(
-        canDownload: true,
-        message: 'Download permitted - Elite membership',
-      );
-    }
-
-    if (currentMapCount >= limit) {
-      final shouldUpgrade = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Map Download Limit Reached'),
-          content: Text(
-            'You have reached your limit of $limit saved maps for your '
-            '$effectiveMemberType membership.\n\n'
-            'Would you like to upgrade your membership to save more maps?'
-          ),
-          actions: [
-            TextButton(
-              child: const Text('Not Now'),
-              onPressed: () => Navigator.of(context).pop(false),
-            ),
-            ElevatedButton(
-              child: const Text('Upgrade Membership'),
-              onPressed: () => Navigator.of(context).pop(true),
-            ),
-          ],
-        ),
-      ) ?? false;
-
-      if (shouldUpgrade) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const ManageMembership(),
-          ),
-        );
-      }
-
-      return DownloadPermissionResult(
-        canDownload: false,
-        message: 'Save limit reached for $effectiveMemberType membership ($currentMapCount/$limit)',
-      );
-    }
-
-    return DownloadPermissionResult(
-      canDownload: true,
-      message: 'Save permitted ($currentMapCount/$limit maps used)',
+    return NearbyUser(
+      id: doc.id,
+      name: data['name'] ?? 'Unknown User',
+      location: userLocation,
+      distance: _calculateDistance(
+        currentLocation.latitude,
+        currentLocation.longitude,
+        geoPoint.latitude,
+        geoPoint.longitude,
+      ),
+      lastUpdated: (data['lastUpdated'] as Timestamp).toDate(),
     );
   }
 
-  static int getMembershipLimit(String memberType) {
-    return _mapLimits[memberType.toUpperCase()] ?? _mapLimits['BASIC']!;
+  static double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371; // Radius of Earth in kilometers
+    
+    double dLat = _toRadians(lat2 - lat1);
+    double dLon = _toRadians(lon2 - lon1);
+    
+    double a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_toRadians(lat1)) * cos(_toRadians(lat2)) *
+        sin(dLon / 2) * sin(dLon / 2);
+    
+    double c = 2 * asin(sqrt(a));
+    return earthRadius * c;
   }
 
-  static String formatLimitDisplay(String memberType, int currentCount) {
-    final limit = getMembershipLimit(memberType);
-    return '$currentCount/${limit == -1 ? '∞' : limit}';
+  static double _toRadians(double degree) {
+    return degree * pi / 180;
   }
 }
 
-class DownloadPermissionResult {
-  final bool canDownload;
-  final String message;
-
-  DownloadPermissionResult({
-    required this.canDownload,
-    required this.message,
-  });
-}
-
-// Direction Step Model
 class DirectionStep {
   final String instructions;
   final String distance;
@@ -131,7 +96,6 @@ class DirectionStep {
   }
 }
 
-// Offline Map Model
 class OfflineMap {
   final String id;
   final String startLocation;
@@ -170,7 +134,65 @@ class OfflineMap {
   }
 }
 
-// Main Search Page Widget
+class MembershipHandler {
+  static const Map<String, int> _mapLimits = {
+    'BASIC': 3,
+    'PREMIUM': 5,
+    'ELITE': -1, // Unlimited
+  };
+
+  static Future<bool> checkDownloadPermission({
+    required String memberType,
+    required int currentMapCount,
+    required BuildContext context,
+  }) async {
+    final effectiveMemberType = memberType.toUpperCase();
+    final limit = _mapLimits[effectiveMemberType] ?? _mapLimits['BASIC']!;
+    
+    if (limit == -1) return true;
+
+    if (currentMapCount >= limit) {
+      final shouldUpgrade = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Map Download Limit Reached'),
+          content: Text(
+            'You have reached your limit of $limit saved maps for your '
+            '$effectiveMemberType membership.\n\n'
+            'Would you like to upgrade your membership to save more maps?'
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Not Now'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            ElevatedButton(
+              child: const Text('Upgrade Membership'),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        ),
+      ) ?? false;
+
+      if (shouldUpgrade) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ManageMembership(),
+          ),
+        );
+      }
+      return false;
+    }
+    return true;
+  }
+
+  static String formatLimitDisplay(String memberType, int currentCount) {
+    final limit = _mapLimits[memberType.toUpperCase()] ?? _mapLimits['BASIC']!;
+    return '$currentCount/${limit == -1 ? '∞' : limit}';
+  }
+}
+
 class SearchPage extends StatefulWidget {
   final LatLng? endLocation;
 
@@ -185,11 +207,8 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   final TextEditingController _startController = TextEditingController();
   final TextEditingController _endController = TextEditingController();
   final stt.SpeechToText _speech = stt.SpeechToText();
-  bool _isListening = false;
-  TextEditingController? _activeController;
-  Timer? _debounceTimer;
   late GoogleMapController _mapController;
-
+  
   // Animation Controllers
   late AnimationController _mapExpandController;
   late AnimationController _directionsListController;
@@ -207,13 +226,6 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   late Animation<double> _pulseAnimation;
   late Animation<double> _bounceAnimation;
   late Animation<double> _routeProgress;
-  BitmapDescriptor? _carIcon;
-
-  // Car Animation
-  Marker? _carMarker;
-  Timer? _carAnimationTimer;
-  int _carAnimationIndex = 0;
-  double _carRotation = 0.0;
 
   // State Variables
   String? _memberType;
@@ -226,6 +238,24 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   List<Polyline> _animatedRoute = [];
   List<LatLng> _routePoints = [];
   bool _isNavigating = false;
+  bool _isListening = false;
+  TextEditingController? _activeController;
+  Timer? _debounceTimer;
+  
+  // Car Animation
+  BitmapDescriptor? _carIcon;
+  Marker? _carMarker;
+  Timer? _carAnimationTimer;
+  int _carAnimationIndex = 0;
+  double _carRotation = 0.0;
+  
+  // Nearby Users
+  List<NearbyUser> _nearbyUsers = [];
+  StreamSubscription<QuerySnapshot>? _nearbyUsersSubscription;
+  final double _searchRadius = 5.0; // 5km radius
+  BitmapDescriptor? _userMarkerIcon;
+  bool _showNearbyUsers = true;
+  Timer? _locationUpdateTimer;
   
   // Location Variables
   LatLng? _startLocation;
@@ -238,12 +268,23 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _initializeComponents();
     _createCarIcon();
-    _loadCarIcon();
+    _createUserMarkerIcon();
     _initializeAnimationControllers();
     _setupAnimations();
     _startInitialAnimations();
-    _initializeComponents();
+    _startLocationUpdates();
+  }
+
+  void _initializeComponents() {
+    if (widget.endLocation != null) {
+      _endLocation = widget.endLocation;
+      _fetchAddressForLocation(_endLocation!, isStart: false);
+    }
+    _getCurrentLocation();
+    _fetchMembershipDetails();
+    _loadSavedMaps();
   }
 
   void _initializeAnimationControllers() {
@@ -283,38 +324,40 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
     );
   }
 
-  void _setupAnimations() {
-    _mapHeightAnimation = Tween<double>(
-      begin: 0.6,
-      end: 0.4,
-    ).animate(CurvedAnimation(
-      parent: _mapExpandController,
-      curve: Curves.easeInOut,
-    ));
-    
-    _directionsOpacity = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _directionsListController,
-      curve: Curves.easeIn,
-    ));
-    
-    _searchBarSlideAnimation = Tween<Offset>(
-      begin: const Offset(-1.0, 0.0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _searchBarController,
-      curve: Curves.easeOutBack,
-    ));
-    
-    _markerScaleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _markerAnimationController,
-      curve: Curves.elasticOut,
-    ));
+void _setupAnimations() {
+  _mapHeightAnimation = Tween<double>(
+    begin: 0.6,
+    end: 0.4,
+  ).animate(CurvedAnimation(
+    parent: _mapExpandController,
+    curve: Curves.easeInOut,
+  ));
+  
+  _directionsOpacity = Tween<double>(
+    begin: 0.0,
+    end: 1.0,
+  ).animate(CurvedAnimation(
+    parent: _directionsListController,
+    curve: Curves.easeIn,
+  ));
+  
+  _searchBarSlideAnimation = Tween<Offset>(
+    begin: const Offset(-1.0, 0.0),
+    end: Offset.zero,
+  ).animate(CurvedAnimation(
+    parent: _searchBarController,
+    curve: Curves.easeOutBack,
+  ));
+  
+  // Ensure marker scale animation stays between 0.0 and 1.0
+  _markerScaleAnimation = Tween<double>(
+    begin: 0.0,
+    end: 1.0,
+  ).animate(CurvedAnimation(
+    parent: _markerAnimationController,
+    curve: Curves.elasticOut,
+  ));
+
 
     _pulseAnimation = Tween<double>(
       begin: 30,
@@ -340,7 +383,6 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
       curve: Curves.easeInOut,
     ));
 
-    // Add animation listeners
     _pulseAnimation.addListener(_updateRippleEffect);
     _routeProgress.addListener(_updateRouteAnimation);
   }
@@ -349,31 +391,254 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
     _searchBarController.forward();
   }
 
-  void _initializeComponents() {
-    if (widget.endLocation != null) {
-      _endLocation = widget.endLocation;
-      _fetchAddressForLocation(_endLocation!, isEnd: true);
+  Future<void> _createCarIcon() async {
+    const double size = 50;
+    
+    final pictureRecorder = ui.PictureRecorder();
+    final canvas = Canvas(pictureRecorder);
+    final paint = Paint()..color = Colors.blue;
+    
+    // Draw a simple car icon
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, size, size * 0.6),
+        const Radius.circular(8),
+      ),
+      paint,
+    );
+    
+    // Add wheels
+    paint.color = Colors.black;
+    canvas.drawCircle(Offset(size * 0.25, size * 0.6), size * 0.1, paint);
+    canvas.drawCircle(Offset(size * 0.75, size * 0.6), size * 0.1, paint);
+    
+    final picture = pictureRecorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    
+    if (bytes != null) {
+      setState(() {
+        _carIcon = BitmapDescriptor.fromBytes(bytes.buffer.asUint8List());
+      });
     }
-    _getCurrentLocation();
-    _fetchMembershipDetails();
-    _loadSavedMaps();
+  }
+
+  Future<void> _createUserMarkerIcon() async {
+    const double size = 40;
+    
+    final pictureRecorder = ui.PictureRecorder();
+    final canvas = Canvas(pictureRecorder);
+    
+    // Draw circle background
+    final bgPaint = Paint()..color = Colors.purple;
+    canvas.drawCircle(
+      Offset(size / 2, size / 2),
+      size / 2,
+      bgPaint,
+    );
+    
+    // Draw user icon
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    
+    // Head
+    canvas.drawCircle(
+      Offset(size / 2, size * 0.3),
+      size * 0.15,
+      paint,
+    );
+    
+    // Body
+    final bodyPath = Path()
+      ..moveTo(size / 2, size * 0.45)
+      ..lineTo(size / 2, size * 0.7);
+    canvas.drawPath(bodyPath, paint);
+    
+    // Arms
+    // Continuing from the _createUserMarkerIcon method...
+    canvas.drawLine(
+      Offset(size * 0.3, size * 0.55),
+      Offset(size * 0.7, size * 0.55),
+      paint,
+    );
+    
+    // Legs
+    canvas.drawLine(
+      Offset(size / 2, size * 0.7),
+      Offset(size * 0.3, size * 0.85),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size / 2, size * 0.7),
+      Offset(size * 0.7, size * 0.85),
+      paint,
+    );
+    
+    final picture = pictureRecorder.endRecording();
+    final image = await picture.toImage(size.toInt(), size.toInt());
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    
+    if (bytes != null) {
+      setState(() {
+        _userMarkerIcon = BitmapDescriptor.fromBytes(bytes.buffer.asUint8List());
+      });
+    }
+  }
+  Future<void> _updateUserLocation() async {
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Get current location
+    final position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+      timeLimit: const Duration(seconds: 5),
+    );
+    
+    // Update location in Firestore
+    await FirebaseFirestore.instance
+        .collection('User')
+        .doc(user.uid)
+        .update({
+      'location': GeoPoint(position.latitude, position.longitude),
+      'lastUpdated': FieldValue.serverTimestamp(),
+    });
+
+    if (!mounted) return;
+
+    // Update local state if this is the first location update
+    if (_startLocation == null) {
+      final newLocation = LatLng(position.latitude, position.longitude);
+      setState(() {
+        _startLocation = newLocation;
+      });
+
+      // Update map camera position
+      _mapController.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: newLocation,
+            zoom: 15,
+          ),
+        ),
+      );
+
+      // Get address for the location
+      await _fetchAddressForLocation(newLocation, isStart: true);
+    }
+
+    // Update nearby users
+    _startNearbyUsersListener();
+
+  } catch (e) {
+    debugPrint('Error updating location: $e');
+  }
+}
+
+void _startNearbyUsersListener() {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+
+  // Cancel existing subscription if any
+  _nearbyUsersSubscription?.cancel();
+
+  // Start listening for nearby users
+  _nearbyUsersSubscription = FirebaseFirestore.instance
+      .collection('User')
+      .where('lastUpdated', 
+          isGreaterThan: DateTime.now().subtract(const Duration(minutes: 5)))
+      .snapshots()
+      .listen((snapshot) {
+        if (!mounted || _startLocation == null) return;
+
+        setState(() {
+          _nearbyUsers = snapshot.docs
+              .where((doc) => doc.id != user.uid) // Exclude current user
+              .map((doc) => NearbyUser.fromFirestore(doc, _startLocation!))
+              .where((user) => user.distance <= _searchRadius)
+              .toList();
+        });
+      });
+}
+
+  Future<void> _startLocationUpdates() async {
+    // Request location permission
+    final permission = await Geolocator.requestPermission();
+    if (permission != LocationPermission.always && 
+        permission != LocationPermission.whileInUse) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission is required')),
+        );
+      }
+      return;
+    }
+
+    // Get current location
+    try {
+      final position = await Geolocator.getCurrentPosition();
+      if (!mounted) return;
+
+      setState(() {
+        _startLocation = LatLng(position.latitude, position.longitude);
+        _initialCameraPosition = CameraPosition(
+          target: _startLocation!,
+          zoom: 15,
+        );
+      });
+
+      // Start periodic location updates
+      _locationUpdateTimer = Timer.periodic(
+        const Duration(seconds: 30),
+        (_) => _updateUserLocation(),
+      );
+
+      // Listen for nearby users
+      _startNearbyUsersListener();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error getting location: $e')),
+        );
+      }
+    }
   }
 
   void _updateRippleEffect() {
-    if (!mounted || _startLocation == null) return;
+    if (!mounted || _routePoints.isEmpty) return;
     
     setState(() {
       _rippleEffects.clear();
-      _rippleEffects.add(
-        Circle(
-          circleId: const CircleId('ripple'),
-          center: _startLocation!,
-          radius: _pulseAnimation.value,
-          strokeWidth: 2,
-          strokeColor: Colors.blue.withOpacity(0.5),
-          fillColor: Colors.blue.withOpacity(0.2),
-        ),
-      );
+      
+      // Add ripple effect for start location
+      if (_startLocation != null) {
+        _rippleEffects.add(
+          Circle(
+            circleId: const CircleId('start_ripple'),
+            center: _startLocation!,
+            radius: _pulseAnimation.value,
+            strokeWidth: 2,
+            strokeColor: Colors.blue.withOpacity(0.5),
+            fillColor: Colors.blue.withOpacity(0.2),
+          ),
+        );
+      }
+      
+      // Add ripple effect for end location
+      if (_endLocation != null) {
+        _rippleEffects.add(
+          Circle(
+            circleId: const CircleId('end_ripple'),
+            center: _endLocation!,
+            radius: _pulseAnimation.value,
+            strokeWidth: 2,
+            strokeColor: Colors.red.withOpacity(0.5),
+            fillColor: Colors.red.withOpacity(0.2),
+          ),
+        );
+      }
     });
   }
 
@@ -398,7 +663,101 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
     });
   }
 
-  Future<void> _fetchMembershipDetails() async {
+  Future<void> _initSpeech() async {
+    final status = await Permission.microphone.request();
+    if (status != PermissionStatus.granted) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Microphone permission is required for speech input')),
+        );
+      }
+      return;
+    }
+
+    try {
+      bool available = await _speech.initialize(
+        onStatus: (status) => debugPrint('Speech recognition status: $status'),
+        onError: (errorNotification) => debugPrint('Speech recognition error: $errorNotification'),
+      );
+
+      if (mounted) {
+        if (!available) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Speech recognition is not available on this device')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error initializing speech recognition: $e')),
+        );
+      }
+    }
+  }
+
+  Set<Marker> _buildAnimatedMarkers() {
+  Set<Marker> markers = {};
+  
+  // Add start location marker if available
+  if (_startLocation != null) {
+    // Ensure alpha value is clamped between 0.0 and 1.0
+    final alpha = _markerScaleAnimation.value.clamp(0.0, 1.0);
+    
+    markers.add(
+      Marker(
+        markerId: const MarkerId('start'),
+        position: _startLocation!,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: const InfoWindow(title: 'Start Location'),
+        alpha: alpha,
+      ),
+    );
+  }
+
+  // Add end location marker if available
+  if (_endLocation != null) {
+    // Ensure alpha value is clamped between 0.0 and 1.0
+    final alpha = _markerScaleAnimation.value.clamp(0.0, 1.0);
+    
+    markers.add(
+      Marker(
+        markerId: const MarkerId('end'),
+        position: _endLocation!,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: const InfoWindow(title: 'End Location'),
+        alpha: alpha,
+      ),
+    );
+  }
+
+  // Add car marker if available during navigation
+  if (_carMarker != null) {
+    markers.add(_carMarker!);
+  }
+
+  // Add nearby user markers if enabled
+  if (_showNearbyUsers) {
+    for (var user in _nearbyUsers) {
+      markers.add(
+        Marker(
+          markerId: MarkerId('user_${user.id}'),
+          position: user.location,
+          icon: _userMarkerIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+          infoWindow: InfoWindow(
+            title: user.name,
+            snippet: 'Distance: ${user.distance.toStringAsFixed(1)} km',
+          ),
+          alpha: 1.0,  // Explicitly set alpha to 1.0 for nearby user markers
+        ),
+      );
+    }
+  }
+
+  return markers;
+}
+
+Future<void> _fetchMembershipDetails() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception("No user logged in");
@@ -424,634 +783,6 @@ class _SearchPageState extends State<SearchPage> with TickerProviderStateMixin {
       }
     }
   }
-  Future<void> _initSpeech() async {
-    await _requestPermission();
-    await _speech.initialize(
-      onStatus: (status) {
-        if (status == 'notListening') {
-          setState(() => _isListening = false);
-        }
-      },
-      onError: (error) => debugPrint('Error: $error'),
-    );
-  }
-
-  Future<void> _requestPermission() async {
-    final status = await Permission.microphone.request();
-    if (status != PermissionStatus.granted) {
-      throw 'Microphone permission not granted';
-    }
-  }
-
-
-  Future<void> _getCurrentLocation() async {
-    try {
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      
-      if (!mounted) return;
-
-      setState(() {
-        _startLocation = LatLng(position.latitude, position.longitude);
-        _initialCameraPosition = CameraPosition(
-          target: _startLocation!,
-          zoom: 12,
-        );
-      });
-      
-      _fetchAddressForLocation(_startLocation!, isEnd: false);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error getting current location: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _fetchAddressForLocation(LatLng location, {required bool isEnd}) async {
-    try {
-      final response = await http.get(
-        Uri.parse(
-          'https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.latitude},${location.longitude}&key=${Config.googleApiKey}',
-        ),
-      );
-
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['results'].isNotEmpty) {
-          final address = _formatAddress(data['results'][0]);
-          
-          setState(() {
-            if (isEnd) {
-              _endController.text = address;
-              _endLocation = location;
-            } else {
-              _startController.text = address;
-              _startLocation = location;
-            }
-          });
-        } else {
-          _handleGeocodeError('No address found for this location');
-        }
-      } else {
-        _handleGeocodeError('Failed to fetch address: ${response.statusCode}');
-      }
-    } catch (e) {
-      _handleGeocodeError('Error fetching address: $e');
-    }
-  }
-
-  String _formatAddress(Map<String, dynamic> result) {
-    final List<dynamic> components = result['address_components'];
-    String formattedAddress = result['formatted_address'];
-    
-    try {
-      final streetNumber = _getAddressComponent(components, 'street_number');
-      final route = _getAddressComponent(components, 'route');
-      final locality = _getAddressComponent(components, 'locality');
-      final area = _getAddressComponent(components, 'administrative_area_level_1');
-      
-      if (streetNumber.isNotEmpty && route.isNotEmpty) {
-        formattedAddress = '$streetNumber $route';
-        if (locality.isNotEmpty) {
-          formattedAddress += ', $locality';
-        }
-        if (area.isNotEmpty) {
-          formattedAddress += ', $area';
-        }
-      }
-    } catch (e) {
-      debugPrint('Error formatting address: $e');
-      // Fall back to full formatted address if there's an error
-    }
-    
-    return formattedAddress;
-  }
-
-  String _getAddressComponent(List<dynamic> components, String type) {
-    try {
-      return components
-          .firstWhere(
-            (component) => component['types'].contains(type),
-            orElse: () => {'long_name': ''},
-          )['long_name'];
-    } catch (e) {
-      return '';
-    }
-  }
-
-  void _handleGeocodeError(String message) {
-    if (!mounted) return;
-    debugPrint(message);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-  Future<void> _listen(TextEditingController controller) async {
-    if (!_speech.isAvailable) {
-      await _initSpeech();
-    }
-
-    if (!_isListening) {
-      setState(() {
-        _isListening = true;
-        _activeController = controller;
-      });
-
-      await _speech.listen(
-        onResult: (result) {
-          setState(() {
-            _activeController?.text = result.recognizedWords;
-            if (!result.hasConfidenceRating || result.confidence > 0) {
-              _performSearch(result.recognizedWords, _activeController == _startController);
-            }
-          });
-        },
-        listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 3),
-        partialResults: true,
-        cancelOnError: true,
-        listenMode: stt.ListenMode.confirmation,
-      );
-    } else {
-      setState(() => _isListening = false);
-      await _speech.stop();
-    }
-  }
-
-  Future<void> _searchDirections() async {
-    if (_startLocation == null || _endLocation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select start and end locations')),
-      );
-      return;
-    }
-
-    _stopCarAnimation();
-    _pulseController.reset();
-    _bounceController.reset();
-    _routeController.reset();
-
-    try {
-      final response = await http.get(
-        Uri.parse(
-          'https://maps.googleapis.com/maps/api/directions/json?origin=${_startLocation!.latitude},${_startLocation!.longitude}&destination=${_endLocation!.latitude},${_endLocation!.longitude}&key=${Config.googleApiKey}',
-        ),
-      );
-
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        
-        if (data['routes'].isNotEmpty) {
-          setState(() {
-            _directions = data['routes'][0]['legs'][0]['steps'];
-            _routePoints = _decodePolyline(data['routes'][0]['overview_polyline']['points']);
-            
-            _polylines.clear();
-            _polylines.add(
-              Polyline(
-                polylineId: const PolylineId('route'),
-                color: Colors.blue,
-                width: 5,
-                points: _routePoints,
-                endCap: Cap.roundCap,
-                startCap: Cap.roundCap,
-                geodesic: true,
-                patterns: [
-                  PatternItem.dash(20),
-                  PatternItem.gap(10),
-                ],
-              ),
-            );
-          });
-
-          // Start animations
-          _startAnimations();
-
-          if (!mounted) return;
-
-          _mapController.animateCamera(
-            CameraUpdate.newLatLngBounds(
-              _boundsFromLatLngList(_getRouteLatLngs(data['routes'][0]['legs'][0]['steps'])),
-              50,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error finding directions: $e')),
-      );
-    }
-  }
-
-  void _startAnimations() async {
-    _isNavigating = true;
-    _pulseController.repeat();
-    _bounceController.repeat(reverse: true);
-    _routeController.forward();
-    _startCarAnimation();
-    
-    await _markerAnimationController.forward();
-    await _mapExpandController.forward();
-    await _directionsListController.forward();
-  }
-
-  void _startCarAnimation() {
-    _carAnimationIndex = 0;
-    _updateCarMarker();
-    
-    _carAnimationTimer = Timer.periodic(
-      const Duration(milliseconds: 100), 
-      (timer) {
-        if (!mounted) {
-          timer.cancel();
-          return;
-        }
-        
-        if (_carAnimationIndex < _routePoints.length - 1) {
-          setState(() {
-            _carAnimationIndex++;
-            _updateCarMarker();
-          });
-        } else {
-          _stopCarAnimation();
-        }
-      }
-    );
-  }
-
-  void _stopCarAnimation() {
-    _carAnimationTimer?.cancel();
-    _carAnimationTimer = null;
-    if (mounted) {
-      setState(() {
-        _carMarker = null;
-        _carAnimationIndex = 0;
-      });
-    }
-  }
-
-Future<void> _createCarIcon() async {
-  const double width = 30;  // Swapped width and height
-  const double height = 60; // to orient car vertically
-  
-  final pictureRecorder = ui.PictureRecorder();
-  final canvas = Canvas(pictureRecorder);
-  final Paint paint = Paint()
-    ..color = Colors.blue[600] ?? Colors.blue
-    ..style = PaintingStyle.fill
-    ..strokeWidth = 1.5;
-
-  // Car body (rotated 90 degrees)
-  final bodyPath = Path()
-    ..moveTo(width * 0.25, height * 0.1)  // Start at top left
-    ..lineTo(width * 0.75, height * 0.1)  // Top of car
-    ..lineTo(width * 0.75, height * 0.9)  // Right side
-    ..lineTo(width * 0.25, height * 0.9)  // Bottom
-    ..close();  // Back to start
-
-  // Draw shadow
-  final shadowPath = Path()
-    ..addPath(bodyPath, Offset(2, 2));
-  canvas.drawPath(
-    shadowPath,
-    Paint()
-      ..color = Colors.black.withOpacity(0.3)
-      ..style = PaintingStyle.fill
-  );
-
-  // Draw car body
-  canvas.drawPath(bodyPath, paint);
-
-  // Windows
-  final windowPaint = Paint()
-    ..color = Colors.white.withOpacity(0.9)
-    ..style = PaintingStyle.fill;
-
-  // Front windshield
-  canvas.drawPath(
-    Path()
-      ..moveTo(width * 0.3, height * 0.15)
-      ..lineTo(width * 0.7, height * 0.15)
-      ..lineTo(width * 0.7, height * 0.3)
-      ..lineTo(width * 0.3, height * 0.3)
-      ..close(),
-    windowPaint
-  );
-
-  // Back windshield
-  canvas.drawPath(
-    Path()
-      ..moveTo(width * 0.3, height * 0.7)
-      ..lineTo(width * 0.7, height * 0.7)
-      ..lineTo(width * 0.7, height * 0.85)
-      ..lineTo(width * 0.3, height * 0.85)
-      ..close(),
-    windowPaint
-  );
-
-  // Wheels
-  final wheelPaint = Paint()
-    ..color = Colors.black
-    ..style = PaintingStyle.fill;
-
-  // Left wheel
-  canvas.drawCircle(
-    Offset(width * 0.2, height * 0.35),
-    width * 0.15,
-    wheelPaint
-  );
-  canvas.drawCircle(
-    Offset(width * 0.2, height * 0.35),
-    width * 0.1,
-    Paint()..color = Colors.grey[800]!
-  );
-
-  // Right wheel
-  canvas.drawCircle(
-    Offset(width * 0.2, height * 0.65),
-    width * 0.15,
-    wheelPaint
-  );
-  canvas.drawCircle(
-    Offset(width * 0.2, height * 0.65),
-    width * 0.1,
-    Paint()..color = Colors.grey[800]!
-  );
-
-  // Left wheel
-  canvas.drawCircle(
-    Offset(width * 0.8, height * 0.35),
-    width * 0.15,
-    wheelPaint
-  );
-  canvas.drawCircle(
-    Offset(width * 0.8, height * 0.35),
-    width * 0.1,
-    Paint()..color = Colors.grey[800]!
-  );
-
-  // Right wheel
-  canvas.drawCircle(
-    Offset(width * 0.8, height * 0.65),
-    width * 0.15,
-    wheelPaint
-  );
-  canvas.drawCircle(
-    Offset(width * 0.8, height * 0.65),
-    width * 0.1,
-    Paint()..color = Colors.grey[800]!
-  );
-
-  // Headlights
-  canvas.drawCircle(
-    Offset(width * 0.3, height * 0.1),
-    width * 0.08,
-    Paint()..color = Colors.yellow.withOpacity(0.8)
-  );
-  canvas.drawCircle(
-    Offset(width * 0.7, height * 0.1),
-    width * 0.08,
-    Paint()..color = Colors.yellow.withOpacity(0.8)
-  );
-
-  // Taillights
-  canvas.drawCircle(
-    Offset(width * 0.3, height * 0.9),
-    width * 0.08,
-    Paint()..color = Colors.red.withOpacity(0.8)
-  );
-  canvas.drawCircle(
-    Offset(width * 0.7, height * 0.9),
-    width * 0.08,
-    Paint()..color = Colors.red.withOpacity(0.8)
-  );
-
-  // Convert to image
-  final picture = pictureRecorder.endRecording();
-  final img = await picture.toImage(width.toInt(), height.toInt());
-  final data = await img.toByteData(format: ui.ImageByteFormat.png);
-  
-  if (data != null) {
-    setState(() {
-      _carIcon = BitmapDescriptor.fromBytes(data.buffer.asUint8List());
-    });
-  }
-}
-
-// Update the marker creation to use a better anchor point
-void _updateCarMarker() {
-  if (_carAnimationIndex >= _routePoints.length) return;
-  
-  final currentPoint = _routePoints[_carAnimationIndex];
-  LatLng? nextPoint;
-  
-  if (_carAnimationIndex < _routePoints.length - 1) {
-    nextPoint = _routePoints[_carAnimationIndex + 1];
-    _carRotation = _calculateRotation(currentPoint, nextPoint);
-  }
-
-  setState(() {
-    _carMarker = Marker(
-      markerId: const MarkerId('car'),
-      position: currentPoint,
-      rotation: _carRotation,
-      icon: _carIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-      flat: true,
-      anchor: const Offset(0.5, 0.5), // Center the icon
-      alpha: 1.0,
-      zIndex: 2,
-    );
-  });
-}
-  double _calculateRotation(LatLng from, LatLng to) {
-  final double deltaLng = to.longitude - from.longitude;
-  final double deltaLat = to.latitude - from.latitude;
-  final double rotation = (atan2(deltaLng, deltaLat) * 180.0 / pi); // Removed the + 180
-  return rotation;
-}
-
-  List<LatLng> _decodePolyline(String encoded) {
-    List<LatLng> points = [];
-    int index = 0, len = encoded.length;
-    int lat = 0, lng = 0;
-
-    while (index < len) {
-      int result = 1;
-      int shift = 0;
-      int b;
-      do {
-        b = encoded.codeUnitAt(index++) - 63 - 1;
-        result += b << shift;
-        shift += 5;
-      } while (b >= 0x1f);
-      lat += (result & 1 != 0 ? ~(result >> 1) : (result >> 1));
-
-      result = 1;
-      shift = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63 - 1;
-        result += b << shift;
-        shift += 5;
-      } while (b >= 0x1f);
-      lng += (result & 1 != 0 ? ~(result >> 1) : (result >> 1));
-
-      points.add(LatLng(lat / 1e5, lng / 1e5));
-    }
-    return points;
-  }
-
-  LatLngBounds _boundsFromLatLngList(List<LatLng> points) {
-    double? minLat, maxLat, minLng, maxLng;
-    
-    for (final point in points) {
-      if (minLat == null || point.latitude < minLat) {
-        minLat = point.latitude;
-      }
-      if (maxLat == null || point.latitude > maxLat) {
-        maxLat = point.latitude;
-      }
-      if (minLng == null || point.longitude < minLng) {
-        minLng = point.longitude;
-      }
-      if (maxLng == null || point.longitude > maxLng) {
-        maxLng = point.longitude;
-      }
-    }
-
-    // Add padding to the bounds
-    final latPadding = (maxLat! - minLat!) * 0.1;
-    final lngPadding = (maxLng! - minLng!) * 0.1;
-    
-    return LatLngBounds(
-      southwest: LatLng(minLat! - latPadding, minLng! - lngPadding),
-      northeast: LatLng(maxLat! + latPadding, maxLng! + lngPadding),
-    );
-  }
-
-  List<LatLng> _getRouteLatLngs(List<dynamic> steps) {
-    final List<LatLng> points = [];
-    
-    for (final step in steps) {
-      // Add start location of each step
-      points.add(LatLng(
-        step['start_location']['lat'],
-        step['start_location']['lng'],
-      ));
-      
-      // Add end location of each step
-      points.add(LatLng(
-        step['end_location']['lat'],
-        step['end_location']['lng'],
-      ));
-      
-      // If the step has a polyline, decode and add those points too
-      if (step['polyline'] != null && step['polyline']['points'] != null) {
-        points.addAll(_decodePolyline(step['polyline']['points']));
-      }
-    }
-    
-    return points;
-  }
-
-  Future<void> _performSearch(String query, bool isStart) async {
-    if (query.isEmpty) return;
-
-    try {
-      final response = await http.get(
-        Uri.parse(
-          'https://maps.googleapis.com/maps/api/place/textsearch/json?query=$query&key=${Config.googleApiKey}',
-        ),
-      );
-
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['results'].isNotEmpty) {
-          final result = data['results'][0];
-          final location = result['geometry']['location'];
-          final address = result['formatted_address'] ?? result['name'] ?? '';
-          
-          setState(() {
-            if (isStart) {
-              _startLocation = LatLng(location['lat'], location['lng']);
-              _startController.text = address;
-            } else {
-              _endLocation = LatLng(location['lat'], location['lng']);
-              _endController.text = address;
-            }
-          });
-
-          _mapController.animateCamera(
-            CameraUpdate.newLatLng(
-              LatLng(location['lat'], location['lng'])
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('Error searching locations: $e');
-    }
-  }
-
-  String _stripHtmlTags(String htmlText) {
-    RegExp exp = RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
-    return htmlText.replaceAll(exp, '');
-  }
-
-  void _showSavedDirections(OfflineMap map) async {
-  Navigator.pop(context);
-
-  if (!mounted) return;
-
-  // Reset animations
-  _mapExpandController.reset();
-  _directionsListController.reset();
-  _markerAnimationController.reset();
-
-  setState(() {
-    _startController.text = map.startLocation;
-    _endController.text = map.endLocation;
-    _directions = map.steps.map((step) => {
-      'html_instructions': step.instructions,
-      'distance': {'text': step.distance},
-      'duration': {'text': step.duration},
-    }).toList();
-  });
-
-  if (!mounted) return;
-
-  // Replay animations
-  await _markerAnimationController.forward();
-  await _mapExpandController.forward();
-  await _directionsListController.forward();
-}
-
-Future<void> _loadCarIcon() async {
-    try {
-      _carIcon = await BitmapDescriptor.fromAssetImage(
-        const ImageConfiguration(size: Size(64, 64)),
-        'assets/car_icon.png', // Make sure to add this in pubspec.yaml
-      );
-      setState(() {}); // Trigger rebuild if needed
-    } catch (e) {
-      debugPrint('Error loading car icon: $e');
-      // Fallback to default marker if loading fails
-      _carIcon = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
-    }
-  }
 
   Future<void> _loadSavedMaps() async {
     try {
@@ -1072,17 +803,6 @@ Future<void> _loadCarIcon() async {
             .map((doc) => OfflineMap.fromMap(doc.data()))
             .toList();
       });
-
-      if (_offlineMaps.isEmpty) {
-        await FirebaseFirestore.instance
-            .collection('User')
-            .doc(user.uid)
-            .update({'offline_maps_count': 0});
-        
-        setState(() {
-          _offlineMapsCount = 0;
-        });
-      }
     } catch (e) {
       debugPrint('Error loading saved maps: $e');
     }
@@ -1097,18 +817,13 @@ Future<void> _loadCarIcon() async {
     }
 
     try {
-      final permissionResult = await MembershipHandler.checkDownloadPermission(
+      final canDownload = await MembershipHandler.checkDownloadPermission(
         memberType: _memberType ?? 'BASIC',
         currentMapCount: _offlineMapsCount,
         context: context,
       );
 
-      if (!permissionResult.canDownload) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(permissionResult.message)),
-        );
-        return;
-      }
+      if (!canDownload) return;
 
       final steps = _directions.map((step) => DirectionStep(
         instructions: _stripHtmlTags(step['html_instructions']),
@@ -1127,9 +842,6 @@ Future<void> _loadCarIcon() async {
           createdAt: DateTime.now(),
         );
 
-        // Save with animation
-        await _directionsListController.reverse();
-        
         await FirebaseFirestore.instance
             .collection('User')
             .doc(user.uid)
@@ -1137,31 +849,11 @@ Future<void> _loadCarIcon() async {
             .doc(mapId)
             .set(offlineMap.toMap());
 
-        await FirebaseFirestore.instance
-            .collection('User')
-            .doc(user.uid)
-            .update({'offline_maps_count': _offlineMapsCount + 1});
-
         setState(() => _offlineMapsCount++);
         await _loadSavedMaps();
-        
-        await _directionsListController.forward();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Map saved successfully'),
-                Text(
-                  MembershipHandler.formatLimitDisplay(_memberType ?? 'BASIC', _offlineMapsCount),
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ],
-            ),
-            duration: const Duration(seconds: 3),
-          ),
+          const SnackBar(content: Text('Map saved successfully')),
         );
       }
     } catch (e) {
@@ -1172,131 +864,468 @@ Future<void> _loadCarIcon() async {
   }
 
   Future<void> _deleteMap(OfflineMap map) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-      // Animate out
-      await _directionsListController.reverse();
+    await FirebaseFirestore.instance
+        .collection('User')
+        .doc(user.uid)
+        .collection('offline_maps')
+        .doc(map.id)
+        .delete();
 
-     await FirebaseFirestore.instance
-          .collection('User')
-          .doc(user.uid)
-          .collection('offline_maps')
-          .doc(map.id)
-          .delete();
+    // Ensure count doesn't go below 0
+    final newCount = max(0, _offlineMapsCount - 1);
+    
+    await FirebaseFirestore.instance
+        .collection('User')
+        .doc(user.uid)
+        .update({'offline_maps_count': newCount});
 
-      final newCount = _offlineMapsCount > 0 ? _offlineMapsCount - 1 : 0;
-      
-      await FirebaseFirestore.instance
-          .collection('User')
-          .doc(user.uid)
-          .update({'offline_maps_count': newCount});
+    setState(() => _offlineMapsCount = newCount);
+    await _loadSavedMaps();
 
-      setState(() => _offlineMapsCount = newCount);
-      await _loadSavedMaps();
-      
-      // Animate back in
-      await _directionsListController.forward();
-
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Map deleted successfully')),
       );
-    } catch (e) {
+    }
+  } catch (e) {
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error deleting map: $e')),
       );
     }
   }
+}
 
-  void _animatedSwapLocations() async {
-    // Fade out
-    await _searchBarController.reverse();
-    
-    final tempLocation = _startLocation;
-    final tempText = _startController.text;
-    
+  Future<void> _getCurrentLocation() async {
+  try {
+    final permission = await Geolocator.requestPermission();
+    if (permission != LocationPermission.always && 
+        permission != LocationPermission.whileInUse) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission is required')),
+        );
+      }
+      return;
+    }
+
+    final position = await Geolocator.getCurrentPosition();
+    if (!mounted) return;
+
+    final newLocation = LatLng(position.latitude, position.longitude);
+
     setState(() {
-      _startLocation = _endLocation;
-      _startController.text = _endController.text;
-      
-      _endLocation = tempLocation;
-      _endController.text = tempText;
+      _startLocation = newLocation;
+      _initialCameraPosition = CameraPosition(
+        target: newLocation,
+        zoom: 15,
+      );
     });
-    
-    // Fade back in
-    await _searchBarController.forward();
-  }
 
-  Set<Marker> _buildAnimatedMarkers() {
-    final markers = <Marker>{};
-    final markerAlpha = _markerScaleAnimation.value.clamp(0.0, 1.0);
-    final bounceOffset = _isNavigating ? _bounceAnimation.value : 0.0;
-    
-    if (_startLocation != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('start'),
-        position: _startLocation!,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        infoWindow: const InfoWindow(title: 'Start Location'),
-        alpha: markerAlpha,
-        anchor: Offset(0.5, 1.0 + bounceOffset / 100),
-      ));
-    }
-    
-    if (_endLocation != null) {
-      markers.add(Marker(
-        markerId: const MarkerId('end'),
-        position: _endLocation!,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: const InfoWindow(title: 'End Location'),
-        alpha: markerAlpha,
-        anchor: Offset(0.5, 1.0 + bounceOffset / 100),
-      ));
-    }
-    
-    if (_carMarker != null) {
-      markers.add(_carMarker!.copyWith(
-        alphaParam: 1.0,
-        anchorParam: Offset(0.5, 0.5 + bounceOffset / 100),
-      ));
-    }
-    
-    return markers;
-  }
+    // Update map camera
+    _mapController.animateCamera(
+      CameraUpdate.newCameraPosition(_initialCameraPosition),
+    );
 
-  void _showAnimatedBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => _buildAnimatedSavedMapsSheet(),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    // Get and set the address
+    await _fetchAddressForLocation(newLocation, isStart: true);
+
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error getting current location: $e')),
+      );
+    }
+  }
+}
+
+Future<void> _fetchAddressForLocation(LatLng location, {required bool isStart}) async {
+  try {
+    final response = await http.get(
+      Uri.parse(
+        'https://maps.googleapis.com/maps/api/geocode/json'
+        '?latlng=${location.latitude},${location.longitude}'
+        '&key=${Config.googleApiKey}',
       ),
     );
+
+    if (!mounted) return;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['results'].isNotEmpty) {
+        final address = data['results'][0]['formatted_address'];
+        setState(() {
+          if (isStart) {
+            _startController.text = address;
+          } else {
+            _endController.text = address;
+          }
+        });
+      }
+    }
+  } catch (e) {
+    debugPrint('Error fetching address: $e');
+  }
+}
+Future<void> _searchDirections() async {
+  if (_startLocation == null || _endLocation == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please select start and end locations')),
+    );
+    return;
   }
 
-  Widget _buildAnimatedSavedMapsSheet() {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(0, 100 * (1 - value)),
-          child: Opacity(
-            opacity: value,
-            child: Container(
-              height: MediaQuery.of(context).size.height * 0.6,
-              padding: const EdgeInsets.all(16),
-              child: _buildSavedMapsContent(),
+  // Reset any existing animations
+  _stopCarAnimation();
+  _pulseController.reset();
+  _bounceController.reset();
+  _routeController.reset();
+
+  try {
+    final response = await http.get(
+      Uri.parse(
+        'https://maps.googleapis.com/maps/api/directions/json'
+        '?origin=${_startLocation!.latitude},${_startLocation!.longitude}'
+        '&destination=${_endLocation!.latitude},${_endLocation!.longitude}'
+        '&key=${Config.googleApiKey}',
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      
+      if (data['routes'].isNotEmpty) {
+        setState(() {
+          _directions = data['routes'][0]['legs'][0]['steps'];
+          _routePoints = _decodePolyline(data['routes'][0]['overview_polyline']['points']);
+          
+          _polylines.clear();
+          _polylines.add(
+            Polyline(
+              polylineId: const PolylineId('route'),
+              color: Colors.blue,
+              width: 5,
+              points: _routePoints,
+              endCap: Cap.roundCap,
+              startCap: Cap.roundCap,
+              geodesic: true,
+              patterns: [
+                PatternItem.dash(20),
+                PatternItem.gap(10),
+              ],
             ),
+          );
+        });
+
+        // Start animations
+        await _startAnimations();
+
+        // Adjust map bounds to show the entire route
+        if (!mounted) return;
+        _mapController.animateCamera(
+          CameraUpdate.newLatLngBounds(
+            _boundsFromLatLngList(_getRouteLatLngs(data['routes'][0]['legs'][0]['steps'])),
+            50, // padding
           ),
         );
-      },
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No route found')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${response.statusCode}')),
+      );
+    }
+  } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error finding directions: $e')),
     );
   }
+}
 
+List<LatLng> _getRouteLatLngs(List<dynamic> steps) {
+  final List<LatLng> points = [];
+  
+  for (final step in steps) {
+    points.add(LatLng(
+      step['start_location']['lat'],
+      step['start_location']['lng'],
+    ));
+    
+    points.add(LatLng(
+      step['end_location']['lat'],
+      step['end_location']['lng'],
+    ));
+    
+    if (step['polyline'] != null && step['polyline']['points'] != null) {
+      points.addAll(_decodePolyline(step['polyline']['points']));
+    }
+  }
+  
+  return points;
+}
+
+List<LatLng> _decodePolyline(String encoded) {
+  List<LatLng> points = [];
+  int index = 0, len = encoded.length;
+  int lat = 0, lng = 0;
+
+  while (index < len) {
+    int b, shift = 0, result = 0;
+    
+    do {
+      b = encoded.codeUnitAt(index++) - 63;
+      result |= (b & 0x1F) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    
+    int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+    lat += dlat;
+
+    shift = 0;
+    result = 0;
+    
+    do {
+      b = encoded.codeUnitAt(index++) - 63;
+      result |= (b & 0x1F) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    
+    int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+    lng += dlng;
+
+    points.add(LatLng(lat * 1e-5, lng * 1e-5));
+  }
+
+  return points;
+}
+
+LatLngBounds _boundsFromLatLngList(List<LatLng> points) {
+  double? minLat, maxLat, minLng, maxLng;
+  
+  for (final point in points) {
+    if (minLat == null || point.latitude < minLat) {
+      minLat = point.latitude;
+    }
+    if (maxLat == null || point.latitude > maxLat) {
+      maxLat = point.latitude;
+    }
+    if (minLng == null || point.longitude < minLng) {
+      minLng = point.longitude;
+    }
+    if (maxLng == null || point.longitude > maxLng) {
+      maxLng = point.longitude;
+    }
+  }
+
+  return LatLngBounds(
+    southwest: LatLng(minLat! - 0.1, minLng! - 0.1),
+    northeast: LatLng(maxLat! + 0.1, maxLng! + 0.1),
+  );
+}
+
+Future<void> _startAnimations() async {
+  _isNavigating = true;
+  _pulseController.repeat();
+  _bounceController.repeat(reverse: true);
+  _routeController.forward();
+  _startCarAnimation();
+  
+  await _markerAnimationController.forward();
+  await _mapExpandController.forward();
+  await _directionsListController.forward();
+}
+void _stopCarAnimation() {
+  _carAnimationTimer?.cancel();
+  _carAnimationTimer = null;
+  if (mounted) {
+    setState(() {
+      _carMarker = null;
+      _carAnimationIndex = 0;
+    });
+  }
+}
+
+void _startCarAnimation() {
+  _carAnimationIndex = 0;
+  _updateCarMarker();
+  
+  _carAnimationTimer = Timer.periodic(
+    const Duration(milliseconds: 100), 
+    (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
+      if (_carAnimationIndex < _routePoints.length - 1) {
+        setState(() {
+          _carAnimationIndex++;
+          _updateCarMarker();
+        });
+      } else {
+        _stopCarAnimation();
+      }
+    }
+  );
+}
+
+void _updateCarMarker() {
+  if (_carAnimationIndex >= _routePoints.length) return;
+  
+  final currentPoint = _routePoints[_carAnimationIndex];
+  LatLng? nextPoint;
+  
+  if (_carAnimationIndex < _routePoints.length - 1) {
+    nextPoint = _routePoints[_carAnimationIndex + 1];
+    _carRotation = _calculateRotation(currentPoint, nextPoint);
+  }
+
+  setState(() {
+    _carMarker = Marker(
+      markerId: const MarkerId('car'),
+      position: currentPoint,
+      rotation: _carRotation,
+      icon: _carIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+      flat: true,
+      anchor: const Offset(0.5, 0.5),
+      alpha: 1.0,  // Explicitly set alpha to 1.0 for car marker
+      zIndex: 2,
+    );
+  });
+}
+double _calculateRotation(LatLng from, LatLng to) {
+  final double deltaLng = to.longitude - from.longitude;
+  final double deltaLat = to.latitude - from.latitude;
+  return (atan2(deltaLng, deltaLat) * 180.0 / pi);
+}
+Future<void> _listen(TextEditingController controller) async {
+  if (!_speech.isAvailable) {
+    await _initSpeech();
+  }
+
+  if (!_isListening) {
+    setState(() {
+      _isListening = true;
+      _activeController = controller;
+    });
+
+    try {
+      await _speech.listen(
+        onResult: (result) {
+          setState(() {
+            _activeController?.text = result.recognizedWords;
+            if (result.hasConfidenceRating && result.confidence > 0) {
+              // Perform search when we have confident result
+              _performSearch(
+                result.recognizedWords, 
+                _activeController == _startController
+              );
+            }
+          });
+        },
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 3),
+        partialResults: true,
+        cancelOnError: true,
+        listenMode: stt.ListenMode.confirmation,
+      );
+    } catch (e) {
+      debugPrint('Error starting speech recognition: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error starting voice input: $e')),
+        );
+      }
+    }
+  } else {
+    // Stop listening
+    setState(() => _isListening = false);
+    await _speech.stop();
+  }
+}
+
+Future<void> _performSearch(String query, bool isStart) async {
+  if (query.isEmpty) return;
+
+  try {
+    final response = await http.get(
+      Uri.parse(
+        'https://maps.googleapis.com/maps/api/place/textsearch/json'
+        '?query=${Uri.encodeComponent(query)}'
+        '&key=${Config.googleApiKey}'
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['results'].isNotEmpty) {
+        final result = data['results'][0];
+        final location = result['geometry']['location'];
+        final address = result['formatted_address'] ?? result['name'] ?? '';
+        
+        setState(() {
+          if (isStart) {
+            _startLocation = LatLng(location['lat'], location['lng']);
+            if (_startController.text != address) {
+              _startController.text = address;
+            }
+          } else {
+            _endLocation = LatLng(location['lat'], location['lng']);
+            if (_endController.text != address) {
+              _endController.text = address;
+            }
+          }
+        });
+
+        // Only animate camera if both locations aren't set yet
+        if (_startLocation == null || _endLocation == null) {
+          _mapController.animateCamera(
+            CameraUpdate.newLatLngZoom(
+              LatLng(location['lat'], location['lng']),
+              15,
+            ),
+          );
+        } else {
+          // If both locations are set, show the full route
+          LatLngBounds bounds = LatLngBounds(
+            southwest: LatLng(
+              min(_startLocation!.latitude, _endLocation!.latitude),
+              min(_startLocation!.longitude, _endLocation!.longitude),
+            ),
+            northeast: LatLng(
+              max(_startLocation!.latitude, _endLocation!.latitude),
+              max(_startLocation!.longitude, _endLocation!.longitude),
+            ),
+          );
+          
+          _mapController.animateCamera(
+            CameraUpdate.newLatLngBounds(bounds, 50),
+          );
+        }
+      }
+    }
+  } catch (e) {
+    debugPrint('Error searching location: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error searching location: $e')),
+      );
+    }
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1316,468 +1345,425 @@ Future<void> _loadCarIcon() async {
     );
   }
 
-  List<Widget> _buildAppBarActions() {
-    return [
-      if (!_isLoadingMembership)
-        FadeTransition(
-          opacity: _searchBarController,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Center(
-              child: Text(
-                MembershipHandler.formatLimitDisplay(
-                  _memberType ?? 'BASIC',
-                  _offlineMapsCount,
-                ),
-                style: const TextStyle(fontSize: 14),
-              ),
+  // Add this to the AppBar actions in _buildAppBarActions method
+List<Widget> _buildAppBarActions() {
+  return [
+    if (!_isLoadingMembership)
+      FadeTransition(
+        opacity: _searchBarController,
+        child: Padding(
+          padding: const EdgeInsets.only(right: 16.0),
+          child: Text(
+            MembershipHandler.formatLimitDisplay(
+              _memberType ?? 'BASIC',
+              _offlineMapsCount,
             ),
           ),
         ),
-      if (_directions.isNotEmpty)
-        ScaleTransition(
-          scale: _directionsOpacity,
-          child: IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: _saveMap,
-            tooltip: 'Save Map',
-          ),
-        ),
+      ),
+    if (_directions.isNotEmpty)
       IconButton(
-        icon: const Icon(Icons.map),
-        onPressed: () => _showAnimatedBottomSheet(),
-        tooltip: 'Saved Maps',
+        icon: const Icon(Icons.download),
+        onPressed: _saveMap,
+        tooltip: 'Save Map',
       ),
-    ];
-  }
-
-  Widget _buildSearchInputs() {
-    return SlideTransition(
-      position: _searchBarSlideAnimation,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: _buildAnimatedTextField(
-                controller: _startController,
-                label: 'Start Location',
-                isStart: true,
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.swap_vert),
-              onPressed: _animatedSwapLocations,
-            ),
-            Expanded(
-              child: _buildAnimatedTextField(
-                controller: _endController,
-                label: 'End Location',
-                isStart: false,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAnimatedTextField({
-    required TextEditingController controller,
-    required String label,
-    required bool isStart,
-  }) {
-    final bool isActiveController = controller == _activeController;
-    
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        suffixIcon: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (controller.text.isNotEmpty)
-              IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () {
-                  setState(() {
-                    if (isStart) {
-                      _startLocation = null;
-                      _startController.clear();
-                    } else {
-                      _endLocation = null;
-                      _endController.clear();
-                    }
-                    _polylines.clear();
-                    _directions = [];
-                  });
-                },
-              ),
-            IconButton(
-              icon: Icon(
-                _isListening && isActiveController ? Icons.mic : Icons.mic_none,
-                color: _isListening && isActiveController ? Colors.red : null,
-              ),
-              onPressed: () => _listen(controller),
-            ),
-          ],
-        ),
-      ),
-      onChanged: (value) {
-        if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
-        _debounceTimer = Timer(
-          const Duration(milliseconds: 1000),
-          () => _performSearch(value, isStart),
-        );
+    IconButton(
+      icon: Icon(_showNearbyUsers ? Icons.people : Icons.people_outline),
+      onPressed: () {
+        setState(() => _showNearbyUsers = !_showNearbyUsers);
       },
-    );
-  }
+      tooltip: 'Toggle Nearby Users',
+    ),
+    // Add this IconButton for saved maps
+    IconButton(
+      icon: const Icon(Icons.folder),
+      onPressed: _showAnimatedBottomSheet,
+      tooltip: 'View Saved Maps',
+    ),
+  ];
+}
 
-  Widget _buildDirectionsButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: ElevatedButton.icon(
-        onPressed: _searchDirections,
-        icon: const Icon(Icons.directions),
-        label: const Text('Get Directions'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.teal,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+void _showAnimatedBottomSheet() {
+  final limit = MembershipHandler._mapLimits[_memberType?.toUpperCase() ?? 'BASIC'] ?? 
+                MembershipHandler._mapLimits['BASIC']!;
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => AnimatedPadding(
+      padding: MediaQuery.of(context).viewInsets,
+      duration: const Duration(milliseconds: 200),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.teal,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.3),
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Saved Maps',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    '${min(_offlineMapsCount, limit)}/${limit == -1 ? '∞' : limit}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Maps List
+            Expanded(
+              child: _offlineMaps.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.map_outlined,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No saved maps yet',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Search for directions and tap save to add maps',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _offlineMaps.length,
+                    padding: const EdgeInsets.all(8),
+                    itemBuilder: (context, index) {
+                      final map = _offlineMaps[index];
+                      final isAccessible = index < limit || limit == -1;
+
+                      return Stack(
+                        children: [
+                          Card(
+                            elevation: 2,
+                            margin: const EdgeInsets.symmetric(
+                              vertical: 4,
+                              horizontal: 8,
+                            ),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: isAccessible ? Colors.teal : Colors.grey,
+                                child: const Icon(
+                                  Icons.map,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              title: Text(
+                                '${map.startLocation} → ${map.endLocation}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              subtitle: Text(
+                                'Saved on ${DateFormat('MMM d, y').format(map.createdAt)}',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (isAccessible) ...[
+                                    IconButton(
+                                      icon: const Icon(Icons.directions),
+                                      color: Colors.teal,
+                                      onPressed: () {
+                                        setState(() {
+                                          _startController.text = map.startLocation;
+                                          _endController.text = map.endLocation;
+                                        });
+                                        Navigator.pop(context);
+                                        _performSearch(map.startLocation, true);
+                                        _performSearch(map.endLocation, false);
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline),
+                                      color: Colors.red[400],
+                                      onPressed: () => _deleteMap(map),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (!isAccessible)
+                            Positioned.fill(
+                              child: GestureDetector(
+                                onTap: () => _showUpgradeDialog(),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: BackdropFilter(
+                                    filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                                    child: Container(
+                                      color: Colors.white.withOpacity(0.6),
+                                      child: const Center(
+                                        child: Text(
+                                          'Upgrade membership to access',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+void _showUpgradeDialog() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Upgrade Membership'),
+      content: Text(
+        'Upgrade your membership to access more saved maps.\n\n'
+        'Current plan: ${_memberType ?? "BASIC"}'
+      ),
+      actions: [
+        TextButton(
+          child: const Text('Cancel'),
+          onPressed: () => Navigator.pop(context),
+        ),
+        ElevatedButton(
+          child: const Text('Upgrade Now'),
+          onPressed: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ManageMembership(),
+              ),
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
+  Widget _buildSearchInputs() {
+  return SlideTransition(
+    position: _searchBarSlideAnimation,
+    child: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          TextField(
+            controller: _startController,
+            decoration: InputDecoration(
+              labelText: 'Start Location',
+              border: const OutlineInputBorder(),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_startController.text.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() {
+                          _startLocation = null;
+                          _startController.clear();
+                        });
+                      },
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.my_location),
+                    onPressed: _getCurrentLocation,
+                  ),
+                  IconButton(
+                    icon: Icon(_isListening && _activeController == _startController 
+                      ? Icons.mic : Icons.mic_none),
+                    onPressed: () => _listen(_startController),
+                  ),
+                ],
+              ),
+            ),
+            onChanged: (value) {
+              if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+              _debounceTimer = Timer(
+                const Duration(milliseconds: 1000),
+                () => _performSearch(value, true),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _endController,
+            decoration: InputDecoration(
+              labelText: 'End Location',
+              border: const OutlineInputBorder(),
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_endController.text.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() {
+                          _endLocation = null;
+                          _endController.clear();
+                        });
+                      },
+                    ),
+                  IconButton(
+                    icon: Icon(_isListening && _activeController == _endController 
+                      ? Icons.mic : Icons.mic_none),
+                    onPressed: () => _listen(_endController),
+                  ),
+                ],
+              ),
+            ),
+            onChanged: (value) {
+              if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+              _debounceTimer = Timer(
+                const Duration(milliseconds: 1000),
+                () => _performSearch(value, false),
+              );
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+  Widget _buildDirectionsButton() {
+    return ElevatedButton.icon(
+      onPressed: _searchDirections,
+      icon: const Icon(Icons.directions),
+      label: const Text('Get Directions'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.teal,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
     );
   }
 
   Widget _buildMap() {
-    return AnimatedBuilder(
-      animation: _mapHeightAnimation,
-      builder: (context, child) {
-        return Expanded(
-          flex: (_mapHeightAnimation.value * 10).round(),
-          child: GoogleMap(
-            initialCameraPosition: _initialCameraPosition,
-            onMapCreated: (GoogleMapController controller) {
-              _mapController = controller;
-            },
-            polylines: {..._polylines, ..._animatedRoute},
-            markers: _buildAnimatedMarkers(),
-            circles: Set<Circle>.from(_rippleEffects),
-            myLocationEnabled: true,
-            myLocationButtonEnabled: true,
-            zoomControlsEnabled: true,
-            zoomGesturesEnabled: true,
-            mapToolbarEnabled: true,
-          ),
-        );
-      },
+    return Expanded(
+      child: GoogleMap(
+        initialCameraPosition: _initialCameraPosition,
+        onMapCreated: (controller) => _mapController = controller,
+        markers: _buildAnimatedMarkers(),
+        polylines: {..._polylines, ..._animatedRoute},
+        circles: Set<Circle>.from(_rippleEffects),
+        myLocationEnabled: true,
+        myLocationButtonEnabled: true,
+        zoomControlsEnabled: true,
+      ),
     );
   }
 
   Widget _buildDirectionsList() {
     return FadeTransition(
       opacity: _directionsOpacity,
-      child: SizeTransition(
-        sizeFactor: _directionsOpacity,
-        child: Container(
-          height: MediaQuery.of(context).size.height * 0.4,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.3),
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: const Offset(0, -3),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildDirectionsHeader(),
-              Expanded(
-                child: _buildDirectionsStepsList(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDirectionsHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          const Icon(Icons.directions, color: Colors.teal),
-          const SizedBox(width: 8),
-          const Text(
-            'Directions',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            '${_directions.length} steps',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDirectionsStepsList() {
-    return ListView.builder(
-      itemCount: _directions.length,
-      itemBuilder: (context, index) {
-        final step = _directions[index];
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 200 + (index * 100)),
-          curve: Curves.easeOut,
-          builder: (context, value, child) {
-            return Transform.translate(
-              offset: Offset(0, 50 * (1 - value)),
-              child: Opacity(
-                opacity: value,
-                child: _buildDirectionStep(step, index),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildDirectionStep(dynamic step, int index) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.teal,
-          child: Text(
-            '${index + 1}',
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-        title: Text(
-          _stripHtmlTags(step['html_instructions']),
-          style: const TextStyle(fontSize: 14),
-        ),
-        subtitle: Text(
-          '${step['distance']['text']} - ${step['duration']['text']}',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSavedMapsContent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Saved Maps',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Using ${MembershipHandler.formatLimitDisplay(_memberType ?? 'BASIC', _offlineMapsCount)}',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: _offlineMaps.isEmpty
-              ? _buildEmptySavedMaps()
-              : _buildSavedMapsList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptySavedMaps() {
-    return Center(
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0.0, end: 1.0),
-        duration: const Duration(milliseconds: 500),
-        builder: (context, value, child) {
-          return Opacity(
-            opacity: value,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.map_outlined,
-                  size: 48,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No saved maps',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildSavedMapsList() {
-    return ListView.builder(
-      itemCount: _offlineMaps.length,
-      itemBuilder: (context, index) {
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 200 + (index * 100)),
-          curve: Curves.easeOut,
-          builder: (context, value, child) {
-            return Transform.translate(
-              offset: Offset(100 * (1 - value), 0),
-              child: Opacity(
-                opacity: value,
-                child: _buildSavedMapItem(_offlineMaps[index]),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildSavedMapItem(OfflineMap map) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ExpansionTile(
-        title: Text(
-          '${map.startLocation} to ${map.endLocation}',
-          style: const TextStyle(fontSize: 14),
-        ),
-        subtitle: Text(
-          'Saved on ${DateFormat('MMM d, y HH:mm').format(map.createdAt)}',
-          style: const TextStyle(fontSize: 12),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.directions, color: Colors.teal),
-              onPressed: () => _showSavedDirections(map),
-              tooltip: 'Show Directions',
-            ),
-            IconButton(
-              icon: Icon(Icons.delete, color: Colors.red[300]),
-              onPressed: () => _deleteMap(map),
-              tooltip: 'Delete Map',
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.3,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.5),
+              spreadRadius: 2,
+              blurRadius: 5,
+              offset: const Offset(0, -3),
             ),
           ],
         ),
-        children: [
-          _buildSavedMapSteps(map.steps),
-        ],
+        child: ListView.builder(
+          itemCount: _directions.length,
+          itemBuilder: (context, index) {
+            final step = _directions[index];
+            return ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Colors.teal,
+                child: Text('${index + 1}'),
+              ),
+              title: Text(_stripHtmlTags(step['html_instructions'])),
+              subtitle: Text(
+                '${step['distance']['text']} - ${step['duration']['text']}',
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildSavedMapSteps(List<DirectionStep> steps) {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: steps.length,
-      itemBuilder: (context, stepIndex) {
-        return TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 150 + (stepIndex * 50)),
-          curve: Curves.easeOut,
-          builder: (context, value, child) {
-            return Transform.translate(
-              offset: Offset(0, 20 * (1 - value)),
-              child: Opacity(
-                opacity: value,
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.teal,
-                    radius: 12,
-                    child: Text(
-                      '${stepIndex + 1}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                  title: Text(
-                    steps[stepIndex].instructions,
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  subtitle: Text(
-                    '${steps[stepIndex].distance} - ${steps[stepIndex].duration}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  dense: true,
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
+  String _stripHtmlTags(String htmlText) {
+    RegExp exp = RegExp(r"<[^>]*>", multiLine: true, caseSensitive: true);
+    return htmlText.replaceAll(exp, '');
   }
 
- @override
-void dispose() {
-  // Cancel all animation controllers
-  _mapController.dispose();
-  _mapExpandController.dispose();
-  _directionsListController.dispose();
-  _searchBarController.dispose();
-  _markerAnimationController.dispose();
-  _pulseController.dispose();
-  _bounceController.dispose();
-  _routeController.dispose();
-   _speech.stop();
-  
-  // Cancel text controllers
-  _startController.dispose();
-  _endController.dispose();
-  
-  // Cancel timers and animations
-  _debounceTimer?.cancel();
-  _carAnimationTimer?.cancel();
-  
-  // Remove animation listeners
-  _pulseAnimation.removeListener(_updateRippleEffect);
-  _routeProgress.removeListener(_updateRouteAnimation);
-  
-  // Clear any pending animations
-  _isNavigating = false;
-  _carMarker = null;
-  _carAnimationIndex = 0;
-  
-  super.dispose();
-}
-
-
-
+  @override
+  void dispose() {
+    _mapController.dispose();
+    _mapExpandController.dispose();
+    _directionsListController.dispose();
+    _searchBarController.dispose();
+    _markerAnimationController.dispose();
+    _pulseController.dispose();
+    _bounceController.dispose();
+    _routeController.dispose();
+    _speech.stop();
+    _startController.dispose();
+    _endController.dispose();
+    _debounceTimer?.cancel();
+    _carAnimationTimer?.cancel();
+    _nearbyUsersSubscription?.cancel();
+    _locationUpdateTimer?.cancel();
+    _pulseAnimation.removeListener(_updateRippleEffect);
+    _routeProgress.removeListener(_updateRouteAnimation);
+    super.dispose();
+  }
 }

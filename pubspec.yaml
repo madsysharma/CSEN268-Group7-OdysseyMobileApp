@@ -85,8 +85,8 @@ dependencies:
   cached_network_image: ^3.4.1
   screenshot: ^3.0.0
   flutter_cache_manager: ^3.4.1
-
-  
+  rxdart: ^0.27.7
+  connectivity_plus: ^6.1.0
   
 
 dev_dependencies:
