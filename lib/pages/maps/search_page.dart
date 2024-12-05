@@ -720,6 +720,7 @@ void _startNearbyUsersListener() {
     // Ensure alpha value is clamped between 0.0 and 1.0
     final alpha = _markerScaleAnimation.value.clamp(0.0, 1.0);
     
+
     markers.add(
       Marker(
         markerId: const MarkerId('end'),
@@ -728,6 +729,7 @@ void _startNearbyUsersListener() {
         infoWindow: const InfoWindow(title: 'End Location'),
         alpha: alpha,
       ),
+
     );
   }
 

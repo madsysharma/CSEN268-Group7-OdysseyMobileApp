@@ -27,7 +27,7 @@ class ProfilePageState extends State<ProfilePage> {
   }
 
   String? imageUrl;
-    String? getCurrentUserId() {
+  String? getCurrentUserId() {
     final User? user = FirebaseAuth.instance.currentUser;
     return user?.uid;
   }
@@ -65,7 +65,7 @@ class ProfilePageState extends State<ProfilePage> {
             mediumVertical,
             ElevatedButton(
                 onPressed: () {
-                  context.read<AuthBloc>().add(LogOutEvent());
+                    GoRouter.of(context).go(Paths.mainPage);
                 },
                 child: Text("Yes, Logout")),
             smallVertical,

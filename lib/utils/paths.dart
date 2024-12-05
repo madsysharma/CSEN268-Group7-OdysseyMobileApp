@@ -15,9 +15,11 @@ class Paths {
   static const String emergencyContact = "/safety/emergency-contact";
   static const String travelTips = "/safety/travel-tips";
   static const String safeSharing = "/safety/sharing";
+  static const String safeRating = "/safety/rating";
 
 
   //AUTH
+  static const String splashScreen = '/splashScreen';
   static const String mainPage = '/mainPage';
   static const String loginPage = '/loginPage';
   static const String signupPage = '/signupPage';
