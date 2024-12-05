@@ -24,6 +24,10 @@ class LoginPageState extends State<LoginPage> {
   final passwordFocus = FocusNode();
 
   bool _isObscured = true;
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -54,175 +58,177 @@ class LoginPageState extends State<LoginPage> {
             if (state is Logging) {
               return const Center(child: CircularProgressIndicator());
             }
-            return SafeArea(
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      image: DecorationImage(
-                        image: AssetImage('assets/images/background.png'),
-                        fit: BoxFit.cover,
-                      ),
+            return Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        colorScheme.primaryContainer,
+                        colorScheme.primary
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                     ),
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.black.withOpacity(0.30),
-                          colorScheme.primary
-                        ],
-                        begin: Alignment.center,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                  SingleChildScrollView(
-                    padding: pagePadding,
-                    child: Column(
-                      children: [
-                        SizedBox(height: screenHeight * 0.25),
-                        Form(
-                          key: formKey,
-                          child: Column(
-                            children: [
-                              TextFormField(
-                                controller: _emailController,
-                                focusNode: emailFocus,
-                                onFieldSubmitted: (_) =>
-                                    passwordFocus.requestFocus(),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return "Email is required";
-                                  }
-                                  if (!EmailValidator.validate(value)) {
-                                    return "Invalid email address";
-                                  }
-                                  return null;
-                                },
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor:
-                                      colorScheme.onSurface.withOpacity(0.875),
-                                  hintText: 'Email',
-                                  hintStyle: TextStyle(
-                                    color: colorScheme.onPrimary.withOpacity(0.6),
-                                    fontSize: 14,
-                                  ),
-                                  enabledBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                        color: colorScheme.onPrimary.withOpacity(0.8)),
-                                  ),
-                                  focusedBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(color: colorScheme.onPrimary),
-                                  ),
-                                ),
-                                style: TextStyle(
-                                    color: colorScheme.onPrimary, fontSize: 16),
-                              ),
-                              const SizedBox(height: 20),
-                              TextFormField(
-                                controller: _passwordController,
-                                focusNode: passwordFocus,
-                                obscureText: _isObscured,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return "Password is required";
-                                  }
-                                  return null;
-                                },
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor:
-                                      colorScheme.onSurface.withOpacity(0.875),
-                                  hintText: 'Password',
-                                  hintStyle: TextStyle(
-                                    color: colorScheme.onPrimary.withOpacity(0.6),
-                                    fontSize: 14,
-                                  ),
-                                  enabledBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                        color: colorScheme.onPrimary.withOpacity(0.8)),
-                                  ),
-                                  focusedBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(color: colorScheme.onPrimary),
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _isObscured
-                                          ? Icons.visibility_off
-                                          : Icons.visibility,
-                                      color: colorScheme.onPrimary.withOpacity(0.8),
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _isObscured = !_isObscured;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                style: TextStyle(
-                                    color: colorScheme.onPrimary, fontSize: 16),
-                              ),
-                            ],
-                          ),
-                        ),
-                        mediumVertical,
-                        ElevatedButton(
-                          style: ButtonStyle(
-                            minimumSize: WidgetStateProperty.all<Size>(
-                              Size(screenWidth, 50),
-                            ),
-                          ),
-                          onPressed: () {
-                            final isValid = formKey.currentState!.validate();
-                            if (isValid) {
-                              final email = _emailController.text.trim();
-                              final password = _passwordController.text.trim();
-                              context.read<AuthBloc>().add(
-                                  LogInEvent(email: email, password: password));
-                            }
-                          },
-                          child: const Text("Login"),
-                        ),
-                        SizedBox(height: screenHeight * 0.30),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                ),
+                Image.asset(
+                  'assets/bridge.png',
+                  height: 450,
+                  fit: BoxFit.contain,
+                ),
+                SizedBox(height: 50),
+                SingleChildScrollView(
+                  padding: pagePadding,
+                  child: Column(
+                    children: [
+                      Form(
+                        key: formKey,
+                        child: Column(
                           children: [
-                            TextButton(
-                              style: ButtonStyle(
-                                foregroundColor: WidgetStateProperty.all(
-                                    colorScheme.onPrimary),
-                              ),
-                              onPressed: () {
-                                GoRouter.of(context).go(Paths.signupPage);
+                            SizedBox(height: screenHeight * 0.45),
+                            mediumVertical,
+                            TextFormField(
+                              controller: _emailController,
+                              focusNode: emailFocus,
+                              onFieldSubmitted: (_) =>
+                                  passwordFocus.requestFocus(),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return "Email is required";
+                                }
+                                if (!EmailValidator.validate(value)) {
+                                  return "Invalid email address";
+                                }
+                                return null;
                               },
-                              child: Text("Create an Account"),
-                            ),
-                            Container(
-                              width: 1,
-                              height: 50,
-                              color: colorScheme.onPrimary,
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 10),
-                            ),
-                            TextButton(
-                              style: ButtonStyle(
-                                foregroundColor: WidgetStateProperty.all(
-                                    colorScheme.onPrimary),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor:
+                                    colorScheme.onSurface.withOpacity(0.875),
+                                hintText: 'Email',
+                                hintStyle: TextStyle(
+                                  color: colorScheme.onPrimary.withOpacity(0.6),
+                                  fontSize: 14,
+                                ),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                      color: colorScheme.onPrimary
+                                          .withOpacity(0.8)),
+                                ),
+                                focusedBorder: UnderlineInputBorder(
+                                  borderSide:
+                                      BorderSide(color: colorScheme.onPrimary),
+                                ),
                               ),
-                              onPressed: () {
-                                GoRouter.of(context).go(Paths.forgotPassword);
+                              style: TextStyle(
+                                  color: colorScheme.onPrimary, fontSize: 16),
+                            ),
+                            const SizedBox(height: 20),
+                            TextFormField(
+                              controller: _passwordController,
+                              focusNode: passwordFocus,
+                              obscureText: _isObscured,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return "Password is required";
+                                }
+                                return null;
                               },
-                              child: Text("Forgot Password"),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor:
+                                    colorScheme.onSurface.withOpacity(0.875),
+                                hintText: 'Password',
+                                hintStyle: TextStyle(
+                                  color: colorScheme.onPrimary.withOpacity(0.6),
+                                  fontSize: 14,
+                                ),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                      color: colorScheme.onPrimary
+                                          .withOpacity(0.8)),
+                                ),
+                                focusedBorder: UnderlineInputBorder(
+                                  borderSide:
+                                      BorderSide(color: colorScheme.onPrimary),
+                                ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _isObscured
+                                        ? Icons.visibility_off
+                                        : Icons.visibility,
+                                    color:
+                                        colorScheme.onPrimary.withOpacity(0.8),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isObscured = !_isObscured;
+                                    });
+                                  },
+                                ),
+                              ),
+                              style: TextStyle(
+                                  color: colorScheme.onPrimary, fontSize: 16),
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      mediumVertical,
+                      ElevatedButton(
+                        style: ButtonStyle(
+                          minimumSize: WidgetStateProperty.all<Size>(
+                            Size(screenWidth, 50),
+                          ),
+                        ),
+                        onPressed: () {
+                          final isValid = formKey.currentState!.validate();
+                          if (isValid) {
+                            final email = _emailController.text.trim();
+                            final password = _passwordController.text.trim();
+                            context.read<AuthBloc>().add(
+                                LogInEvent(email: email, password: password));
+                          }
+                        },
+                        child: const Text("Login"),
+                      ),
+                      SizedBox(height: screenHeight * 0.15),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TextButton(
+                            style: ButtonStyle(
+                              foregroundColor: WidgetStateProperty.all(
+                                  colorScheme.onPrimary),
+                            ),
+                            onPressed: () {
+                              GoRouter.of(context).go(Paths.signupPage);
+                            },
+                            child: Text("Create an Account"),
+                          ),
+                          Container(
+                            width: 1,
+                            height: 50,
+                            color: colorScheme.onPrimary,
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 10),
+                          ),
+                          TextButton(
+                            style: ButtonStyle(
+                              foregroundColor: WidgetStateProperty.all(
+                                  colorScheme.onPrimary),
+                            ),
+                            onPressed: () {
+                              GoRouter.of(context).go(Paths.forgotPassword);
+                            },
+                            child: Text("Forgot Password"),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             );
           },
         ),

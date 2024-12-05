@@ -83,10 +83,10 @@ class _SharingPageState extends State<SharingPage> {
           children: [
             CircleAvatar(
               radius: 40,
-              backgroundImage: contact.avatarUrl != null && contact.avatarUrl!.isNotEmpty
-                  ? NetworkImage(contact.avatarUrl!)
+              backgroundImage: contact.avatarUrl.isNotEmpty
+                  ? NetworkImage(contact.avatarUrl)
                   : null,
-              child: contact.avatarUrl == null || contact.avatarUrl!.isEmpty
+              child: contact.avatarUrl.isEmpty
                 // Default icon if no avatar
                   ? Icon(Icons.person, size: 40)
                   : null,

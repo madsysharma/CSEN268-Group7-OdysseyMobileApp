@@ -25,6 +25,8 @@ import 'package:odyssey/pages/connect/accept_request.dart';
 import 'package:odyssey/pages/connect/expired_request.dart';
 import 'package:odyssey/pages/connect/upload_post.dart';
 import 'package:odyssey/pages/profile/signup_page.dart';
+import 'package:odyssey/pages/splash/main_page.dart';
+import 'package:odyssey/pages/splash/splash_screen.dart';
 import 'package:odyssey/utils/custom_gallery.dart';
 import 'package:odyssey/pages/safety/safety.dart';
 import 'package:odyssey/pages/safety/safety_checkin.dart';
@@ -55,18 +57,16 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+  final GlobalKey<NavigatorState> rootNavigatorKey =
+      GlobalKey<NavigatorState>();
 
   MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
-    final initialLocation = isLoggedIn ? Paths.home : Paths.loginPage;
-
     final GoRouter router = GoRouter(
       navigatorKey: rootNavigatorKey,
-      initialLocation: initialLocation,
+      initialLocation: Paths.splashScreen,
       routes: [
         ShellRoute(
           builder: (context, state, child) => ShellBottomNavBar(child: child),
@@ -96,7 +96,8 @@ class MyApp extends StatelessWidget {
                     ),
                     GoRoute(
                       path: Paths.notifs,
-                      builder: (context, state) => Notifications(fromScreen: 'local'),
+                      builder: (context, state) =>
+                          Notifications(fromScreen: 'local'),
                       routes: [
                         GoRoute(
                           path: Paths.acceptReq,
@@ -118,13 +119,13 @@ class MyApp extends StatelessWidget {
                   builder: (context, state) => Connect(tab: 'friends'),
                   routes: [
                     GoRoute(
-
                       path: Paths.friendReq,
                       builder: (context, state) => FriendRequest(),
                     ),
                     GoRoute(
                       path: Paths.notifs,
-                      builder: (context, state) => Notifications(fromScreen: 'friends'),
+                      builder: (context, state) =>
+                          Notifications(fromScreen: 'friends'),
                     ),
                   ],
                 ),
@@ -138,7 +139,8 @@ class MyApp extends StatelessWidget {
                     ),
                     GoRoute(
                       path: Paths.notifs,
-                      builder: (context, state) => Notifications(fromScreen: 'friends'),
+                      builder: (context, state) =>
+                          Notifications(fromScreen: 'friends'),
                     ),
                     GoRoute(
                       path: Paths.post,
@@ -149,8 +151,8 @@ class MyApp extends StatelessWidget {
                       routes: [
                         GoRoute(
                           path: Paths.customGallery,
-                          builder: (context, state) =>
-                              CustomGallery(imgPaths: state.extra as List<String>),
+                          builder: (context, state) => CustomGallery(
+                              imgPaths: state.extra as List<String>),
                         ),
                       ],
                     ),
@@ -204,60 +206,109 @@ class MyApp extends StatelessWidget {
               path: Paths.manageMembership,
               builder: (context, state) => ManageMembership(),
             ),
-            GoRoute(
-              path: Paths.signupPage,
-              builder: (context, state) => SignUpPage(),
-            ),
-            GoRoute(
-              path: Paths.forgotPassword,
-              builder: (context, state) => ForgotPasswordPage(),
-            ),
           ],
+        ),
+        GoRoute(
+          path: Paths.splashScreen,
+          builder: (context, state) => SplashScreen(),
+        ),
+        GoRoute(
+          path: Paths.mainPage,
+          builder: (context, state) => MainPage(),
         ),
         GoRoute(
           path: Paths.loginPage,
           builder: (context, state) => LoginPage(),
         ),
+        GoRoute(
+          path: Paths.signupPage,
+          builder: (context, state) => SignUpPage(),
+        ),
+        GoRoute(
+          path: Paths.forgotPassword,
+          builder: (context, state) => ForgotPasswordPage(),
+        ),
       ],
       redirect: (context, state) {
-        final loggedIn = context.read<AuthBloc>().state is LoggedIn;
+        final authState = context.read<AuthBloc>().state;
+
+        // Handle AuthInitial (splash screen state)
+        if (authState is AuthInitial) {
+          return Paths.splashScreen; // Stay on splash during initialization
+        }
+
+        // Check if user is logged in
+        final loggedIn = authState is LoggedIn;
+
+        // Identify the current location
+        final onSplash = state.matchedLocation == Paths.splashScreen;
         final tryingToLogin = state.matchedLocation == Paths.loginPage;
         final tryingToSignup = state.matchedLocation == Paths.signupPage;
-        final tryingToUpdatePassword = state.matchedLocation == Paths.forgotPassword;
+        final tryingToUpdatePassword =
+            state.matchedLocation == Paths.forgotPassword;
 
-
-        if (loggedIn && (tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
-          return Paths.home;
+        // Redirect logged-in users away from authentication pages
+        if (loggedIn &&
+            (tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
+          return Paths.home; // Redirect to home if logged in
         }
 
-        if (!loggedIn && !(tryingToLogin || tryingToSignup || tryingToUpdatePassword)) {
-          return Paths.loginPage;
+        // Redirect logged-out users to mainPage if they try to access restricted pages
+        if (!loggedIn &&
+            !(onSplash ||
+                tryingToLogin ||
+                tryingToSignup ||
+                tryingToUpdatePassword)) {
+          return Paths.mainPage; // Redirect to main page
         }
+
+        // Allow navigation to proceed
         return null;
       },
     );
 
     return BlocListener<AuthBloc, AuthState>(
-      listenWhen: (previous, current) => previous != current,
-      listener: (context, state) {
-        if (state is LoggedIn) {
-          router.go(Paths.home);
-        } else if (state is LoggedOut) {
-          router.go(Paths.loginPage);
-        }
-      },
+  listenWhen: (previous, current) => previous != current,
+  listener: (context, state) {
+    final currentLocation = GoRouter.of(context).routerDelegate.currentConfiguration.fullPath;
+
+    if (state is AuthInitial) {
+      // Navigate to splash screen during initialization
+      if (currentLocation != Paths.splashScreen) {
+        GoRouter.of(context).go(Paths.splashScreen);
+      }
+    } else if (state is LoggedIn) {
+      // Navigate to home screen if authenticated
+      if (currentLocation != Paths.home) {
+        GoRouter.of(context).go(Paths.home);
+      }
+    } else if (state is LoggedOut) {
+      // Navigate to main page if not authenticated
+      if (currentLocation != Paths.mainPage) {
+        GoRouter.of(context).go(Paths.mainPage);
+      }
+    }
+  },
       child: MaterialApp.router(
         title: 'Odyssey',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF006A68)),
           fontFamily: GoogleFonts.lato().fontFamily,
           useMaterial3: true,
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(200, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          ),
           floatingActionButtonTheme: FloatingActionButtonThemeData(
             backgroundColor: const Color(0xFF006A68),
             foregroundColor: Colors.white,
             elevation: 4,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(5),
             ),
           ),
         ),

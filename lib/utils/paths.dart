@@ -18,6 +18,7 @@ class Paths {
 
 
   //AUTH
+  static const String splashScreen = '/splashScreen';
   static const String mainPage = '/mainPage';
   static const String loginPage = '/loginPage';
   static const String signupPage = '/signupPage';

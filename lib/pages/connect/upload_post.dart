@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:odyssey/api/get_locations.dart';
 import 'package:odyssey/api/review.dart';
 import 'package:odyssey/api/upload_file.dart';
-import 'package:odyssey/bloc/auth/auth_bloc.dart';
 import 'package:odyssey/components/alerts/snack_bar.dart';
 import 'package:odyssey/model/review.dart';
 import 'package:odyssey/utils/image_picker_utils.dart';

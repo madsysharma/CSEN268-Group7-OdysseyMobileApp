@@ -935,8 +935,8 @@ void _updateCarMarker() {
     final lngPadding = (maxLng! - minLng!) * 0.1;
     
     return LatLngBounds(
-      southwest: LatLng(minLat! - latPadding, minLng! - lngPadding),
-      northeast: LatLng(maxLat! + latPadding, maxLng! + lngPadding),
+      southwest: LatLng(minLat - latPadding, minLng - lngPadding),
+      northeast: LatLng(maxLat + latPadding, maxLng + lngPadding),
     );
   }
 
