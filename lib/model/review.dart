@@ -15,6 +15,7 @@ class LocationReview {
   double? rating;
   String? reviewText;
   List<String>? tags;
+  List<String>? tokens;
   
   @JsonKey(fromJson: _timestampToDateTime, toJson: _dateTimeToTimestamp)
   final DateTime? postedOn;
@@ -29,6 +30,7 @@ class LocationReview {
     this.rating,
     this.reviewText,
     this.tags,
+    this.tokens,
     required this.username,
     this.postedOn,
     this.reviewId

@@ -437,6 +437,7 @@ class UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMix
                                               reviewText: reviewText,
                                               tags: labels,
                                               username: fetchedUsername,
+                                              tokens: reviewText?.split(" "),
                                             ));
                                             context.pop();
                                             showMessageSnackBar(context, "Success! Your post is now uploaded.");

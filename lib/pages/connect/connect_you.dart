@@ -10,13 +10,13 @@ import 'package:odyssey/utils/paths.dart';
 import 'package:odyssey/utils/date_time_utils.dart';
 
 class ConnectYou extends StatefulWidget{
-  ConnectYou({super.key});
+  ConnectYou({Key? key}): super(key: key);
 
   @override
-  State<ConnectYou> createState() => _ConnectYouState();
+  State<ConnectYou> createState() => ConnectYouState();
 }
 
-class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMixin{
+class ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMixin{
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   late Future<List<ReviewCard>> _futureCards;
@@ -24,19 +24,39 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
   @override
   void initState() {
     super.initState();
-    reloadReviews();
+    reloadYourReviews();
   }
 
-  void reloadReviews(){
+  void reloadYourReviews({List<String>? locNames, List<String>? filters, List<double>? stars, String? search}){
     String? email = this.auth.currentUser?.email;
     setState(() {
-      _futureCards = _load(email);
+      _futureCards = _load(email, locations: locNames, appliedFilters: filters, numStars: stars, searchText: search);
     });
   }
 
-  Future<List<ReviewCard>> _load(String? email) async{
+  Future<List<ReviewCard>> _load(String? email, {List<String>? locations, List<String>? appliedFilters, List<double>? numStars, String? searchText}) async{
     await Future.delayed(Duration(seconds: 3));
     List<LocationReview> reviews = await fetchReviews(userEmail: email);
+    if(locations != null){
+      reviews = reviews.where((r){
+        return locations.contains(r.locationName);
+      }).toList();
+    }
+    if(appliedFilters != null){
+      reviews = reviews.where((r){
+        return appliedFilters.toSet().intersection(r.tags!.toSet()).isNotEmpty;
+      }).toList();
+    }
+    if(numStars != null){
+      reviews = reviews.where((r){
+        return numStars.contains(r.rating);
+      }).toList();
+    }
+    if(searchText != null || searchText!.isNotEmpty){
+      reviews = reviews.where((r){
+        return r.reviewText!.contains(searchText);
+      }).toList();
+    }
     return reviews
         .map((review) => ReviewCard(pageName: "ConnectYou", imgUrls: review.images ?? [], posterName: "You", locationName: review.locationName ?? "", dayDiff: getDayDifference(review.postedOn!), reviewText: review.reviewText!,))
         .toList();
@@ -69,7 +89,7 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
                 ElevatedButton(
                   onPressed: () async{
                     await GoRouter.of(context).push('/connect/you'+Paths.post);
-                    reloadReviews();
+                    reloadYourReviews();
                   },
                   child: Text("Create new post", style: Theme.of(context).textTheme.headlineSmall))
               ],
@@ -100,8 +120,9 @@ class _ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMi
                       width: 0.3,
                     ),
                   ),
-                  onPressed: (){
-                    GoRouter.of(context).go('/connect/you'+Paths.post);
+                  onPressed: () async{
+                    await GoRouter.of(context).push('/connect/you'+Paths.post);
+                    reloadYourReviews();
                   },
                   child: Text("Create new post", style: TextStyle(color: Colors.white),)
               ),

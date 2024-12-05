@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+
 //Search bar for the Connect Page
 class ConnectSearchBar extends StatefulWidget implements PreferredSizeWidget{
   final Function(String) onNavigate;
+  final Function() setFilters;
   final int numUnread;
 
-  const ConnectSearchBar({super.key, required this.onNavigate, required this.numUnread});
+  const ConnectSearchBar({super.key, required this.onNavigate, required this.numUnread, required this.setFilters});
 
   @override
   State<ConnectSearchBar> createState() => ConnectSearchBarState();
@@ -45,11 +47,13 @@ class ConnectSearchBarState extends State<ConnectSearchBar> with AutomaticKeepAl
         children: [
           Flexible(
             child: SearchBar(
-              hintText: "Filter posts",
+              hintText: "Search or filter posts.",
               leading: Icon(Icons.search),
               trailing: [Icon(Icons.filter)],
               constraints: BoxConstraints(minHeight: 56.0),
-              onTap: (){},
+              onTap: (){
+                widget.setFilters();
+              },
             ),
           ),
           SizedBox(width: 10.0,),

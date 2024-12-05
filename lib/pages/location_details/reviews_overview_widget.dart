@@ -19,13 +19,13 @@ class ReviewsOverViewWidget extends StatelessWidget {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 10),
-        if (overview != null) ...[
-          _buildRatingRow(5, overview.fiveStar, totalReviews),
-          _buildRatingRow(4, overview.fourStar, totalReviews),
-          _buildRatingRow(3, overview.threeStar, totalReviews),
-          _buildRatingRow(2, overview.twoStar, totalReviews),
-          _buildRatingRow(1, overview.oneStar, totalReviews),
-        ],
+        ...[
+        _buildRatingRow(5, overview.fiveStar, totalReviews),
+        _buildRatingRow(4, overview.fourStar, totalReviews),
+        _buildRatingRow(3, overview.threeStar, totalReviews),
+        _buildRatingRow(2, overview.twoStar, totalReviews),
+        _buildRatingRow(1, overview.oneStar, totalReviews),
+      ],
       ],
     );
   }

@@ -6,13 +6,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/utils/date_time_utils.dart';
 
 class ConnectLocal extends StatefulWidget{
-  ConnectLocal({super.key});
+  ConnectLocal({Key? key}): super(key:key);
 
   @override
-  State<ConnectLocal> createState() => _ConnectLocalState();
+  State<ConnectLocal> createState() => ConnectLocalState();
 }
 
-class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClientMixin{
+class ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClientMixin{
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   late Future<List<ReviewCard>> _futureCards;
@@ -20,17 +20,17 @@ class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClie
   @override
   void initState() {
     super.initState();
-    reloadReviews();
+    reloadLocalReviews();
   }
 
-  void reloadReviews(){
+  void reloadLocalReviews({List<String>? locNames, List<String>? filters, List<double>? stars, String? search}){
     String? uid = this.auth.currentUser?.uid;
     setState(() {
-      _futureCards = _loadLocalUserReviews(uid);
+      _futureCards = _loadLocalUserReviews(uid,locations: locNames, appliedFilters: filters, numStars: stars, searchText: search);
     });
   }
 
-  Future<List<ReviewCard>> _loadLocalUserReviews(String? uid) async{
+  Future<List<ReviewCard>> _loadLocalUserReviews(String? uid, {List<String>? locations, List<String>? appliedFilters, List<double>? numStars, String? searchText}) async{
     await Future.delayed(Duration(seconds: 3));
     try {
       if(uid == null){
@@ -57,8 +57,33 @@ class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClie
         names.add("$firstname $lastname");
       }
       for(String n in names){
-        final localReviewQuerySnap = await this.firestore.collection('Review').where('username'.toLowerCase(),isEqualTo: n.toLowerCase().split(" ").first).get();
-        for(var doc in localReviewQuerySnap.docs){
+        final localReviewQuerySnap = await this.firestore.collection('Review').where('username',isEqualTo: n.split(" ").first).get();
+        var filteredDocs = localReviewQuerySnap.docs;
+        if(searchText != null || searchText!.isNotEmpty){
+          filteredDocs = filteredDocs.where((doc){
+            final data = doc.data();
+            return data['reviewText'].contains(searchText);
+          }).toList();
+        }
+        if(locations != null){
+          filteredDocs = filteredDocs.where((doc){
+            final data = doc.data();
+            return locations.contains(data['locationName']);
+          }).toList();
+        }
+        if(appliedFilters != null){
+          filteredDocs = filteredDocs.where((doc){
+            final data = doc.data();
+            return data['tags'].toSet().intersection(appliedFilters.toSet()).isNotEmpty;
+          }).toList();
+        }
+        if(numStars != null){
+          filteredDocs = filteredDocs.where((doc){
+            final data = doc.data();
+            return numStars.contains(data['rating'].toDouble());
+          }).toList();
+        }
+        for(var doc in filteredDocs){
           final images = List<String>.from(doc.data()['images']);
           final postedDate = doc.data()['postedOn'] ?? "";
           final dayDifference = getDayDifference(postedDate.toDate());
@@ -73,6 +98,12 @@ class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClie
       print(stackTrace);
       return [];
     }
+  }
+
+  @override
+  void didUpdateWidget(covariant ConnectLocal oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    reloadLocalReviews(); // Trigger reload on widget update
   }
 
   @override
@@ -94,7 +125,7 @@ class _ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClie
                 SizedBox(height: 20.0,),
                 Align(
                   alignment: Alignment.center,
-                  child: Text("Follow travelers in your area to get the latest updates!", textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall)),
+                  child: Text("No highlights shared for your location yet. Stay tuned!", textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall)),
                 SizedBox(height: 20.0,),
               ],
             ),

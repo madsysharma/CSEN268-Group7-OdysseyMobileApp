@@ -6,13 +6,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/utils/date_time_utils.dart';
 
 class ConnectFriends extends StatefulWidget{
-  ConnectFriends({super.key});
+  ConnectFriends({Key? key}): super(key:key);
 
   @override
-  State<ConnectFriends> createState() => _ConnectFriendsState();
+  State<ConnectFriends> createState() => ConnectFriendsState();
 }
 
-class _ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAliveClientMixin{
+class ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAliveClientMixin{
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   late Future<List<ReviewCard>> _futureCards;
@@ -20,17 +20,17 @@ class _ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAlive
   @override
   void initState() {
     super.initState();
-    reloadReviews();
+    reloadFriendReviews();
   }
 
-  void reloadReviews(){
+  void reloadFriendReviews({List<String>? locNames, List<String>? filters, List<double>? stars, String? search}){
     String? uid = this.auth.currentUser?.uid;
     setState(() {
-      _futureCards = _loadFriendReviews(uid);
+      _futureCards = _loadFriendReviews(uid, locations: locNames, appliedFilters: filters, numStars: stars, searchText: search);
     });
   }
 
-  Future<List<ReviewCard>> _loadFriendReviews(String? uid) async{
+  Future<List<ReviewCard>> _loadFriendReviews(String? uid, {List<String>? locations, List<String>? appliedFilters, List<double>? numStars, String? searchText}) async{
     await Future.delayed(Duration(seconds: 3));
     final snap = await firestore.collection('User').doc(uid).get();
     if (!snap.exists || snap.data()?['friends'] == null) {
@@ -41,13 +41,34 @@ class _ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAlive
     print('Processed friend list: $friendlist');
     List<ReviewCard> reviews = [];
     for(String f in friendlist){
-      //print("Query name: ${f.toLowerCase().split(" ").first}");
-      /*if(f == null || f.isEmpty){
-        continue;
-      }*/
       Query<Map<String, dynamic>> friendsQuery = await this.firestore.collection('Review').where('username',isEqualTo: f);
       QuerySnapshot<Map<String, dynamic>> querySnap = await friendsQuery.get();
-      for(var doc in querySnap.docs){
+      var filteredDocs = querySnap.docs;
+      if(searchText != null || searchText!.isNotEmpty){
+          filteredDocs = filteredDocs.where((doc){
+            final data = doc.data();
+            return data['reviewText'].contains(searchText);
+          }).toList();
+        }
+        if(locations != null){
+          filteredDocs = filteredDocs.where((doc){
+            final data = doc.data();
+            return locations.contains(data['locationName']);
+          }).toList();
+        }
+        if(appliedFilters != null){
+          filteredDocs = filteredDocs.where((doc){
+            final data = doc.data();
+            return data['tags'].toSet().intersection(appliedFilters.toSet()).isNotEmpty;
+          }).toList();
+        }
+        if(numStars != null){
+          filteredDocs = filteredDocs.where((doc){
+            final data = doc.data();
+            return numStars.contains(data['rating'].toDouble());
+          }).toList();
+        }
+      for(var doc in filteredDocs){
         final postedDate = doc.data()['postedOn'] ?? "";
         final dayDifference = getDayDifference(postedDate.toDate());
         final revText = doc.data()['reviewText'] ?? "";
@@ -57,6 +78,12 @@ class _ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAlive
     }
     print("Reviews: $reviews");
     return reviews;
+  }
+
+  @override
+  void didUpdateWidget(covariant ConnectFriends oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    reloadFriendReviews(); // Trigger reload on widget update
   }
 
   @override
