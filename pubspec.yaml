@@ -87,8 +87,10 @@ dependencies:
   flutter_cache_manager: ^3.4.1
   flutter_rating_bar: ^4.0.0
   wave: ^0.2.2
-
+  rxdart: ^0.27.7
+  connectivity_plus: ^6.1.0
   
+
   
 
 dev_dependencies:
