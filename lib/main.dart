@@ -33,6 +33,7 @@ import 'package:odyssey/pages/safety/safety_checkin.dart';
 import 'package:odyssey/pages/safety/safety_emer.dart';
 import 'package:odyssey/pages/safety/safety_sharing.dart';
 import 'package:odyssey/pages/safety/safety_tips.dart';
+import 'package:odyssey/pages/safety/safety_rating.dart';
 import 'package:odyssey/utils/paths.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -183,6 +184,10 @@ class MyApp extends StatelessWidget {
                 GoRoute(
                   path: 'sharing',
                   builder: (context, state) => SharingPage(),
+                ),
+                GoRoute(
+                  path: 'rating',
+                  builder: (context, state) => LocationRatingPage(),
                 ),
               ],
             ),

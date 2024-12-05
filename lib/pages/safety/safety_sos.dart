@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-void showOverlay(BuildContext context) {
+void showSosOverlay(BuildContext context) {
   late OverlayEntry overlayEntry;
 
-  // Function to make an SOS call
+  // make an SOS call 
   void _makeSOSCall() async {
     const emergencyNumber = 'tel:911';
     if (await canLaunchUrl(Uri.parse(emergencyNumber))) {
@@ -39,6 +39,8 @@ void showOverlay(BuildContext context) {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              FlickeringIcon(),
+              SizedBox(height: 20),
               Text(
                 "Do you want to call SOS?",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -72,4 +74,50 @@ void showOverlay(BuildContext context) {
 
   // Insert the overlay into the Overlay widget
   Overlay.of(context).insert(overlayEntry);
+}
+
+// Flickering icon widget
+class FlickeringIcon extends StatefulWidget {
+  @override
+  _FlickeringIconState createState() => _FlickeringIconState();
+}
+
+class _FlickeringIconState extends State<FlickeringIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 700),
+    )..repeat(reverse: true);
+
+    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _animation.value,
+          child: Icon(
+            Icons.warning_rounded,
+            color: Colors.red,
+            size: 50,
+          ),
+        );
+      },
+    );
+  }
 }
