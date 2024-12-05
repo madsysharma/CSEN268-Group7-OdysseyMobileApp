@@ -44,6 +44,10 @@ class _ContactsPageState extends State<ContactsPage> {
   List<Contact> contacts = [];
   String errorMessage = '';
 
+  String searchQuery = '';
+  String selectedSort = 'Name';
+
+
   @override
   void initState() {
     super.initState();
@@ -310,29 +314,87 @@ class _ContactsPageState extends State<ContactsPage> {
   }
 }
 
-  @override
+@override
 Widget build(BuildContext context) {
+  // Filter contacts based on the search query
+  final filteredContacts = contacts.where((contact) {
+    final query = searchQuery.toLowerCase();
+    return contact.name.toLowerCase().contains(query) ||
+        contact.number.replaceAll(RegExp(r'\D'), '').contains(query);
+  }).toList();
+
+  // Sort contacts based on the selected sort type
+  if (selectedSort == 'Name') {
+    filteredContacts.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  } else if (selectedSort == 'Number') {
+    filteredContacts.sort((a, b) => a.number.compareTo(b.number));
+  }
   return Scaffold(
     appBar: AppBar(
       backgroundColor: Color.fromARGB(255, 189, 220, 204),
       title: Text("Emergency Contact"),
       centerTitle: true,
     ),
-    body: ListView.separated(
-      itemCount: contacts.length,
-      itemBuilder: (context, index) {
-        return ContactItem(
-          contact: contacts[index],
-          onEdit: () => _showContactDialog(contact: contacts[index]),
-          onDelete: () => _deleteContact(contacts[index]),
-          onCall: () => _callContact(contacts[index].number), 
-        );
-      },
-      separatorBuilder: (context, index) => const SizedBox(height: 10),
+    body: Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: SearchBar(
+            leading: const Icon(Icons.search),
+            hintText: 'Search by name or number',
+            onChanged: (value) {
+              setState(() {
+                searchQuery = value;
+              });
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              // Left-aligned sort dropdown
+              Expanded(
+                child: DropdownMenu(
+                  initialSelection: selectedSort,
+                  label: const Text('Sort By'),
+                  dropdownMenuEntries: const [
+                    DropdownMenuEntry(value: 'Name', label: 'Name'),
+                    DropdownMenuEntry(value: 'Number', label: 'Number'),
+                  ],
+                  onSelected: (value) {
+                    if (value != null) {
+                      setState(() {
+                        selectedSort = value;
+                      });
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Contact ListView
+        Expanded(
+          child: ListView.separated(
+            itemCount: contacts.length,
+            itemBuilder: (context, index) {
+              final contact = contacts[index];
+              return ContactItem(
+                contact: contact,
+                onEdit: () => _showContactDialog(contact: contact),
+                onDelete: () => _deleteContact(contact),
+                onCall: () => _callContact(contact.number),
+              );
+            },
+            separatorBuilder: (context, index) => const SizedBox(height: 10),
+          ),
+        ),
+      ],
     ),
     floatingActionButton: FloatingActionButton(
       onPressed: () => _showContactDialog(),
-      child: Icon(Icons.add),
+      child: const Icon(Icons.add),
     ),
   );
 }
