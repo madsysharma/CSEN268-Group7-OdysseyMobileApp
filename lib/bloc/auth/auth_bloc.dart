@@ -11,15 +11,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc({firebase_auth.FirebaseAuth? firebaseAuth})
       : _firebaseAuth = firebaseAuth ?? firebase_auth.FirebaseAuth.instance,
-        super(LoggedOut()) {
+        super(AuthSplash()) {
     on<CheckAuthEvent>(_handleCheckAuthEvent);
     on<LogInEvent>(_handleLogInEvent);
     on<LogOutEvent>(_handleLogOutEvent);
   }
 
-  // Check if the user is already authenticated
+  // Check if the user is authenticated after the splash screen
   Future<void> _handleCheckAuthEvent(
       CheckAuthEvent event, Emitter<AuthState> emit) async {
+    // Simulate splash delay
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Check if the user is authenticated
     final user = _firebaseAuth.currentUser;
     if (user != null) {
       emit(LoggedIn(

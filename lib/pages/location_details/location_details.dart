@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/bloc/locationDetails/location_details_bloc.dart';
 import 'package:odyssey/pages/location_details/image_carousel.dart';
-import 'package:odyssey/pages/location_details/review_list.dart';
+import 'package:odyssey/pages/location_details/review_widget.dart';
 
 class LocationDetailsPage extends StatefulWidget {
   final String locationId;

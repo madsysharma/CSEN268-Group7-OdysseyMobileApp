@@ -13,3 +13,5 @@ class LogInEvent extends AuthEvent {
 }
 
 class LogOutEvent extends AuthEvent {}
+
+class SplashFinishedEvent extends AuthEvent {}
