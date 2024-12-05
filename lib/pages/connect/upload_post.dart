@@ -79,7 +79,7 @@ class UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMix
   List<File?> images = [];
   List<String> imageUrls = [];
   double starRating = 1.0;
-  final List<Map<String, dynamic>> _filtersSelected = [
+  final List<Map<String, bool>> _filtersSelected = [
     {"Arts": false},
     {"Culture": false},
     {"Food": false},
@@ -283,7 +283,7 @@ class UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMix
                             padding: EdgeInsets.symmetric(vertical: 5.0),
                             label: Container(width: 300.0, child: Text(item, style: Theme.of(context).textTheme.labelSmall, textAlign: TextAlign.center,)),
                             avatar: _filtersSelected.firstWhere((filter) => filter.keys.contains(item), orElse: ()=>{item: false})[item] == false ? Icon(Icons.add) : null,
-                            selected: _filtersSelected.firstWhere((filter) => filter.keys.contains(item), orElse: ()=>{item: false})[item],
+                            selected: _filtersSelected.firstWhere((filter) => filter.keys.contains(item), orElse: ()=>{item: false})[item] ?? false,
                             onSelected: (selected) {
                               setState(() {
                                 var updatedResults = _filtersSelected.firstWhere((filter) => filter.keys.contains(item), orElse: () => {item:false});
@@ -314,7 +314,7 @@ class UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMix
                             padding: EdgeInsets.symmetric(vertical: 5.0),
                             label: Container(width: 300.0,child: Text(item, style: Theme.of(context).textTheme.labelSmall, textAlign: TextAlign.center,)),
                             avatar: _filtersSelected.firstWhere((filter) => filter.keys.contains(item), orElse: ()=>{item: false})[item] == false ? Icon(Icons.add) : null,
-                            selected: _filtersSelected.firstWhere((filter) => filter.keys.contains(item), orElse: ()=>{item: false})[item],
+                            selected: _filtersSelected.firstWhere((filter) => filter.keys.contains(item), orElse: ()=>{item: false})[item] ?? false,
                             onSelected: (selected){
                               setState(() {
                                 var updatedResults = _filtersSelected.firstWhere((filter) => filter.keys.contains(item), orElse: () => {item:false});
@@ -345,7 +345,7 @@ class UploadPostState extends State<UploadPost> with AutomaticKeepAliveClientMix
                             padding: EdgeInsets.symmetric(vertical: 5.0),
                             label: Container(width: 300.0, child: Text(item, style: Theme.of(context).textTheme.labelSmall, textAlign: TextAlign.center,)),
                             avatar: _filtersSelected.firstWhere((filter) => filter.keys.contains(item), orElse: ()=>{item: false})[item] == false ? Icon(Icons.add) : null,
-                            selected: _filtersSelected.firstWhere((filter) => filter.keys.contains(item), orElse: ()=>{item: false})[item],
+                            selected: _filtersSelected.firstWhere((filter) => filter.keys.contains(item), orElse: ()=>{item: false})[item] ?? false,
                             onSelected: (selected) {
                               setState(() {
                                 var updatedResults = _filtersSelected.firstWhere((filter) => filter.keys.contains(item), orElse: () => {item:false});

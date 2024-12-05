@@ -49,7 +49,7 @@ class ConnectSearchBarState extends State<ConnectSearchBar> with AutomaticKeepAl
             child: SearchBar(
               hintText: "Search or filter posts.",
               leading: Icon(Icons.search),
-              trailing: [Icon(Icons.filter)],
+              trailing: [Icon(Icons.filter_list)],
               constraints: BoxConstraints(minHeight: 56.0),
               onTap: (){
                 widget.setFilters();

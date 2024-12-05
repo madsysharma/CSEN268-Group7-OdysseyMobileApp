@@ -12,7 +12,7 @@ class ConnectLocal extends StatefulWidget{
   State<ConnectLocal> createState() => ConnectLocalState();
 }
 
-class ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClientMixin{
+class ConnectLocalState extends State<ConnectLocal>{
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   late Future<List<ReviewCard>> _futureCards;
@@ -23,15 +23,24 @@ class ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClien
     reloadLocalReviews();
   }
 
+  void clearState(){
+    setState(() {
+      _futureCards = Future.value([]);
+    });
+  }
+
   void reloadLocalReviews({List<String>? locNames, List<String>? filters, List<double>? stars, String? search}){
     String? uid = this.auth.currentUser?.uid;
     setState(() {
-      _futureCards = _loadLocalUserReviews(uid,locations: locNames, appliedFilters: filters, numStars: stars, searchText: search);
+      _futureCards = Future<List<ReviewCard>>.delayed(
+        const Duration(seconds: 2),
+        () => _loadLocalUserReviews(uid,locations: locNames, appliedFilters: filters, numStars: stars, searchText: search),
+      );
     });
   }
 
   Future<List<ReviewCard>> _loadLocalUserReviews(String? uid, {List<String>? locations, List<String>? appliedFilters, List<double>? numStars, String? searchText}) async{
-    await Future.delayed(Duration(seconds: 3));
+    //await Future.delayed(Duration(seconds: 1));
     try {
       if(uid == null){
         print("UID is null!");
@@ -43,7 +52,7 @@ class ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClien
         return [];
       }
       final homeloc = snap.data()?['homelocation'];
-      if(homeloc.isEmpty){
+      if(homeloc == null || homeloc.isEmpty){
         print("Home location is empty");
         return [];
       }
@@ -52,14 +61,15 @@ class ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClien
       List<String> names = [];
       List<ReviewCard> reviews = [];
       for(var doc in querySnap.docs){
-        final firstname = doc.data()['firstname'] ?? "";
-        final lastname = doc.data()['lastname'] ?? "";
+        final data = doc.data();
+        final firstname = data['firstname'] ?? "";
+        final lastname = data['lastname'] ?? "";
         names.add("$firstname $lastname");
       }
       for(String n in names){
         final localReviewQuerySnap = await this.firestore.collection('Review').where('username',isEqualTo: n.split(" ").first).get();
         var filteredDocs = localReviewQuerySnap.docs;
-        if(searchText != null || searchText!.isNotEmpty){
+        if(searchText != null && searchText.isNotEmpty){
           filteredDocs = filteredDocs.where((doc){
             final data = doc.data();
             return data['reviewText'].contains(searchText);
@@ -86,7 +96,7 @@ class ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClien
         for(var doc in filteredDocs){
           final images = List<String>.from(doc.data()['images']);
           final postedDate = doc.data()['postedOn'] ?? "";
-          final dayDifference = getDayDifference(postedDate.toDate());
+          final dayDifference = postedDate != null ? getDayDifference(postedDate.toDate()) : 0;
           final revText = doc.data()['reviewtext'] ?? "";
           reviews.add(ReviewCard(pageName: "ConnectLocal", imgUrls: images, posterName: n.split(" ").first, locationName: doc.data()['locationname'], dayDiff: dayDifference, reviewText: revText,));
         }
@@ -108,7 +118,6 @@ class ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClien
 
   @override
   Widget build(BuildContext context){
-    super.build(context);
     return FutureBuilder<List<ReviewCard>>(
       future: _futureCards,
       builder: (context, snap){
@@ -150,7 +159,4 @@ class ConnectLocalState extends State<ConnectLocal> with AutomaticKeepAliveClien
       },
     );
   }
-
-  @override
-  bool get wantKeepAlive => true;
 }

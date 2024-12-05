@@ -12,7 +12,7 @@ class ConnectFriends extends StatefulWidget{
   State<ConnectFriends> createState() => ConnectFriendsState();
 }
 
-class ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAliveClientMixin{
+class ConnectFriendsState extends State<ConnectFriends>{
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   late Future<List<ReviewCard>> _futureCards;
@@ -23,6 +23,12 @@ class ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAliveC
     reloadFriendReviews();
   }
 
+  void clearState(){
+    setState(() {
+      _futureCards = Future.value([]);
+    });
+  }
+
   void reloadFriendReviews({List<String>? locNames, List<String>? filters, List<double>? stars, String? search}){
     String? uid = this.auth.currentUser?.uid;
     setState(() {
@@ -31,7 +37,7 @@ class ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAliveC
   }
 
   Future<List<ReviewCard>> _loadFriendReviews(String? uid, {List<String>? locations, List<String>? appliedFilters, List<double>? numStars, String? searchText}) async{
-    await Future.delayed(Duration(seconds: 3));
+    await Future.delayed(Duration(seconds: 1));
     final snap = await firestore.collection('User').doc(uid).get();
     if (!snap.exists || snap.data()?['friends'] == null) {
       print("No friends found for user: $uid");
@@ -44,7 +50,7 @@ class ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAliveC
       Query<Map<String, dynamic>> friendsQuery = await this.firestore.collection('Review').where('username',isEqualTo: f);
       QuerySnapshot<Map<String, dynamic>> querySnap = await friendsQuery.get();
       var filteredDocs = querySnap.docs;
-      if(searchText != null || searchText!.isNotEmpty){
+      if(searchText != null && searchText.isNotEmpty){
           filteredDocs = filteredDocs.where((doc){
             final data = doc.data();
             return data['reviewText'].contains(searchText);
@@ -88,7 +94,6 @@ class ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAliveC
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     return FutureBuilder(
       future: _futureCards,
       builder: (context, snap){
@@ -129,7 +134,4 @@ class ConnectFriendsState extends State<ConnectFriends> with AutomaticKeepAliveC
       }
     );
   }
-
-  @override
-  bool get wantKeepAlive => true;
 }

@@ -16,7 +16,7 @@ class ConnectYou extends StatefulWidget{
   State<ConnectYou> createState() => ConnectYouState();
 }
 
-class ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMixin{
+class ConnectYouState extends State<ConnectYou>{
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   late Future<List<ReviewCard>> _futureCards;
@@ -27,6 +27,12 @@ class ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMix
     reloadYourReviews();
   }
 
+  void clearState(){
+    setState(() {
+      _futureCards = Future.value([]);
+    });
+  }
+
   void reloadYourReviews({List<String>? locNames, List<String>? filters, List<double>? stars, String? search}){
     String? email = this.auth.currentUser?.email;
     setState(() {
@@ -35,7 +41,7 @@ class ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMix
   }
 
   Future<List<ReviewCard>> _load(String? email, {List<String>? locations, List<String>? appliedFilters, List<double>? numStars, String? searchText}) async{
-    await Future.delayed(Duration(seconds: 3));
+    await Future.delayed(Duration(seconds: 1));
     List<LocationReview> reviews = await fetchReviews(userEmail: email);
     if(locations != null){
       reviews = reviews.where((r){
@@ -52,7 +58,7 @@ class ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMix
         return numStars.contains(r.rating);
       }).toList();
     }
-    if(searchText != null || searchText!.isNotEmpty){
+    if(searchText != null && searchText.isNotEmpty){
       reviews = reviews.where((r){
         return r.reviewText!.contains(searchText);
       }).toList();
@@ -64,7 +70,6 @@ class ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMix
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     return FutureBuilder(
       future: _futureCards,
       builder: (context, snap) {
@@ -132,10 +137,5 @@ class ConnectYouState extends State<ConnectYou> with AutomaticKeepAliveClientMix
         }
       }
     );
-  }
-
-  @override
-  bool get wantKeepAlive{
-    return true;
   }
 }
