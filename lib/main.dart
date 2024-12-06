@@ -289,6 +289,7 @@ class MyApp extends StatelessWidget {
       },
       child: MaterialApp.router(
         title: 'Odyssey',
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF006A68)),
           fontFamily: GoogleFonts.lato().fontFamily,

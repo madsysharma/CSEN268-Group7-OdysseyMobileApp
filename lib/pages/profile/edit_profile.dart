@@ -220,7 +220,6 @@ Future<void> updateImageUrl(String userId, String imageUrl) async {
 }
 
 
-
   String? validatePhoneNumber(String? value) {
     if (value == null || value.isEmpty) {
       return 'Phone number is required';
