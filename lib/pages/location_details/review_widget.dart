@@ -44,7 +44,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget> {
       return Center(
         child: Text("Something went wrong. Please try again."),
       );
-    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+    } else if (!snapshot.hasData) {
       return Center(
         child: Text("No reviews available."),
       );
