@@ -19,7 +19,6 @@ class _SafetyCheckinState extends State<SafetyCheckin> {
     locationsFuture = fetchLocations();
   }
 
-  // Fetch location list from database
   Future<List<Map<String, dynamic>>> fetchLocations() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -37,7 +36,7 @@ class _SafetyCheckinState extends State<SafetyCheckin> {
       final locations = locationsSnapshot.docs.map((doc) {
         final data = doc.data();
 
-        // extract image and handle empty data
+  
         final images = data['images'];
         final imageUrl = (images is List && images.isNotEmpty)
             ? images[0]
@@ -48,7 +47,7 @@ class _SafetyCheckinState extends State<SafetyCheckin> {
           'imageUrl': imageUrl,
           'title': data['name'] ?? 'Untitled',
           'subtitle': data['description'] ?? 'No description',
-          'isChecked': false, // Default checked state
+          'isChecked': false, 
         };
       }).toList();
 

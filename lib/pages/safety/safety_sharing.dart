@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:odyssey/components/get_location.dart';
+import 'package:odyssey/components/locations/get_location.dart';
 import 'package:odyssey/model/contact.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';

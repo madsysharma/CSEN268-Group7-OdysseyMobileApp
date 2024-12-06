@@ -184,7 +184,7 @@ class _LocationRatingPageState extends State<LocationRatingPage> {
   // report security problems
   // add current location to reports collection
   void reportSecurityProblems(String city) async {
-    if (lat != null && lon != null && city != null) {
+    if (lat != null && lon != null) {
       await FirebaseFirestore.instance.collection('Rate').doc(city).collection('reports').add({
         'latitude': lat,
         'longitude': lon,

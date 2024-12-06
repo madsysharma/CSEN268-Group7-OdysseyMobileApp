@@ -12,15 +12,14 @@ class ManageMembership extends StatefulWidget {
 }
 
 class ManageMembershipState extends State<ManageMembership> {
-  String? currentMemberType; // Holds the current membership type of the user
+  String? currentMemberType;
 
   @override
   void initState() {
     super.initState();
-    _fetchCurrentMembership(); // Fetch current membership on page load
+    _fetchCurrentMembership();
   }
 
-  // Fetch the user's current membership type from Firestore
   Future<void> _fetchCurrentMembership() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -29,13 +28,13 @@ class ManageMembershipState extends State<ManageMembership> {
       }
 
       final userDoc = await FirebaseFirestore.instance
-          .collection('User') // Firestore collection
-          .doc(user.uid) // Document matching the logged-in user's UID
+          .collection('User')
+          .doc(user.uid)
           .get();
 
       if (userDoc.exists) {
         setState(() {
-          currentMemberType = userDoc.data()?['membertype'] ?? 'BASIC'; // Default to BASIC
+          currentMemberType = userDoc.data()?['membertype'] ?? 'BASIC';
         });
       } else {
         throw Exception("User document does not exist.");
@@ -47,7 +46,6 @@ class ManageMembershipState extends State<ManageMembership> {
     }
   }
 
-  // Update the user's membership type in Firestore
   Future<void> _updateMembership(String newMemberType) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -61,7 +59,7 @@ class ManageMembershipState extends State<ManageMembership> {
           .update({'membertype': newMemberType});
 
       setState(() {
-        currentMemberType = newMemberType; // Update local state
+        currentMemberType = newMemberType;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -81,57 +79,69 @@ class ManageMembershipState extends State<ManageMembership> {
     return Scaffold(
       appBar: MyAppBar(title: "Manage Membership"),
       body: currentMemberType == null
-          ? const Center(child: CircularProgressIndicator()) // Show loading spinner until membership is fetched
+          ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16.0),
-              child: PageView(
-                controller: PageController(viewportFraction: 0.8), // Slightly narrow cards for better UI
+              child: Column(
                 children: [
-                  // BASIC Plan
-                  SubscriptionCard(
-                    color: colorScheme.primary,
-                    subscriptionType: "BASIC",
-                    price: "0.00",
-                    perks: [
-                      "Access to travel content, safety tips, and basic planning tools.",
-                      "Limited forums, group chats, and virtual meetups.",
-                      "Save favorite locations and create wishlists.",
-                      "Access online maps for navigation."
-                    ],
-                    message: "BASIC PLAN",
-                    isSelected: currentMemberType == "BASIC", // Highlight if currently selected
-                    onTap: () => _updateMembership("BASIC"),
+                  Text(
+                    "Choose Your Plan",
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
                   ),
-                  // PREMIUM Plan
-                  SubscriptionCard(
-                    color: colorScheme.secondary,
-                    subscriptionType: "PREMIUM",
-                    price: "15.99/month",
-                    perks: [
-                      "All BASIC features.",
-                      "SOS alerts and live tracking for safety.",
-                      "Budget and expense tracking.",
-                      "Download and access offline maps.",
-                      "Exclusive deals, discounts, and personalized recommendations."
-                    ],
-                    message: "PREMIUM PLAN",
-                    isSelected: currentMemberType == "PREMIUM",
-                    onTap: () => _updateMembership("PREMIUM"),
-                  ),
-                  // ELITE Plan
-                  SubscriptionCard(
-                    color: colorScheme.tertiary,
-                    subscriptionType: "ELITE",
-                    price: "29.99/month",
-                    perks: [
-                      "All PREMIUM features.",
-                      "Concierge service and emergency travel support.",
-                      "Travel insurance and access to vetted companions.",
-                      "Exclusive high-end events and premium retreats."
-                    ],
-                    message: "ELITE PLAN",
-                    isSelected: currentMemberType == "ELITE",
-                    onTap: () => _updateMembership("ELITE"),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: PageView(
+                      controller: PageController(viewportFraction: 0.85),
+                      children: [
+                        SubscriptionCard(
+                          color: colorScheme.primary,
+                          subscriptionType: "BASIC",
+                          price: "0.00",
+                          perks: [
+                            "Access to travel content, safety tips, and basic planning tools.",
+                            "Limited forums, group chats, and virtual meetups.",
+                            "Save favorite locations and create wishlists.",
+                            "Access online maps for navigation."
+                          ],
+                          message: "BASIC PLAN",
+                          isSelected: currentMemberType == "BASIC",
+                          onTap: () => _updateMembership("BASIC"),
+                        ),
+                        SubscriptionCard(
+                          color: colorScheme.secondary,
+                          subscriptionType: "PREMIUM",
+                          price: "15.99",
+                          perks: [
+                            "All BASIC features.",
+                            "SOS alerts and live tracking for safety.",
+                            "Budget and expense tracking.",
+                            "Download and access offline maps.",
+                            "Exclusive deals, discounts, and personalized recommendations."
+                          ],
+                          message: "PREMIUM PLAN",
+                          isSelected: currentMemberType == "PREMIUM",
+                          onTap: () => _updateMembership("PREMIUM"),
+                        ),
+                        SubscriptionCard(
+                          color: colorScheme.tertiary,
+                          subscriptionType: "ELITE",
+                          price: "29.99",
+                          perks: [
+                            "All PREMIUM features.",
+                            "Concierge service and emergency travel support.",
+                            "Travel insurance and access to vetted companions.",
+                            "Exclusive high-end events and premium retreats."
+                          ],
+                          message: "ELITE PLAN",
+                          isSelected: currentMemberType == "ELITE",
+                          onTap: () => _updateMembership("ELITE"),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

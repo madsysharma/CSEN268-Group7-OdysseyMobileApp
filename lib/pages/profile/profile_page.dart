@@ -1,14 +1,12 @@
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:odyssey/bloc/auth/auth_bloc.dart';
 import 'package:odyssey/components/alerts/alert_dialog.dart';
 import 'package:odyssey/components/navigation/app_bar.dart';
 import 'package:odyssey/utils/paths.dart';
 import 'package:odyssey/utils/spaces.dart';
+import 'dart:io';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -18,21 +16,24 @@ class ProfilePage extends StatefulWidget {
 }
 
 class ProfilePageState extends State<ProfilePage> {
+  // ignore: unused_field
   File? _profileImage;
+  String? imageUrl;
+  String? name;
+  String? location;
 
   @override
   void initState() {
     super.initState();
-    _loadProfileImage();
+    _loadProfileInfo();
   }
 
-  String? imageUrl;
   String? getCurrentUserId() {
     final User? user = FirebaseAuth.instance.currentUser;
     return user?.uid;
   }
 
-  Future<void> _loadProfileImage() async {
+  Future<void> _loadProfileInfo() async {
     try {
       final userId = getCurrentUserId();
       if (userId == null) {
@@ -43,12 +44,19 @@ class ProfilePageState extends State<ProfilePage> {
           await FirebaseFirestore.instance.collection('User').doc(userId).get();
       if (docSnapshot.exists && docSnapshot.data() != null) {
         final data = docSnapshot.data()!;
-        imageUrl = data['imageUrl'] as String?;
-        setState(() {});
+
+        setState(() {
+          imageUrl = data['imageUrl'] as String? ?? '';
+          name =
+              "${data['firstname'] ?? 'No First Name'} ${data['lastname'] ?? 'No Last Name'}"; 
+          location = data['homelocation'] as String? ??
+              'Unknown Location'; 
+        });
       }
     } catch (e) {
-      print("Error loading profile image: $e");
-      // Optionally, show an error message to the user.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error loading profile data: $e")),
+      );
     }
   }
 
@@ -65,7 +73,7 @@ class ProfilePageState extends State<ProfilePage> {
             mediumVertical,
             ElevatedButton(
                 onPressed: () {
-                    GoRouter.of(context).go(Paths.mainPage);
+                  GoRouter.of(context).go(Paths.mainPage);
                 },
                 child: Text("Yes, Logout")),
             smallVertical,
@@ -83,7 +91,7 @@ class ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppBar(title: "Profile"),
+      appBar: MyAppBar(title: "Profile", showBackButton: false),
       body: Column(
         children: [
           Column(
@@ -104,10 +112,10 @@ class ProfilePageState extends State<ProfilePage> {
                       ),
               ),
               mediumVertical,
-              Text("Profile Name",
+              Text(name ?? 'Loading...',
                   style: Theme.of(context).textTheme.headlineLarge),
               extraSmallVertical,
-              Text("Profile Location",
+              Text(location ?? 'Loading...',
                   style: Theme.of(context).textTheme.headlineSmall)
             ],
           ),
@@ -126,7 +134,7 @@ class ProfilePageState extends State<ProfilePage> {
               Divider(),
               ListTile(
                 minVerticalPadding: 10,
-                title: Text('Saved locations'),
+                title: Text('Favorite locations'),
                 onTap: () {
                   GoRouter.of(context).go(Paths.savedLocations);
                 },

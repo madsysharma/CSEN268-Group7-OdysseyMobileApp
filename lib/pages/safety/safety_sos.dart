@@ -49,19 +49,23 @@ void showSosOverlay(BuildContext context) {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      overlayEntry.remove();
-                      _makeSOSCall();
-                    },
-                    child: Text("Yes"),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        overlayEntry.remove();
+                        _makeSOSCall();
+                      },
+                      child: Text("Yes"),
+                    ),
                   ),
                   SizedBox(width: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      overlayEntry.remove();
-                    },
-                    child: Text("No"),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        overlayEntry.remove();
+                      },
+                      child: Text("No"),
+                    ),
                   ),
                 ],
               ),

@@ -14,9 +14,9 @@ class SearchPlaces extends StatefulWidget {
 }
 
 class _SearchPlacesState extends State<SearchPlaces> {
-  final Debouncer _debouncer = Debouncer(milliseconds: 300); // 300 ms debounce
+  final Debouncer _debouncer = Debouncer(milliseconds: 300); 
   String selectedCategory = 'Any';
-  String selectedProximity = 'Any'; // Changed to String for "Any" selection
+  String selectedProximity = 'Any'; 
   String searchQuery = '';
 
   @override
@@ -28,7 +28,7 @@ class _SearchPlacesState extends State<SearchPlaces> {
           hintText: "Search for places",
           onChanged: (value) {
             searchQuery = value;
-            _triggerSearchEvent(); // Trigger event on search input
+            _triggerSearchEvent(); 
           },
         ),
         const SizedBox(height: 16),
@@ -48,7 +48,7 @@ class _SearchPlacesState extends State<SearchPlaces> {
                   setState(() {
                     selectedProximity = value;
                   });
-                  _triggerSearchEvent(); // Trigger event on proximity change
+                  _triggerSearchEvent(); 
                 }
               },
             ),
@@ -64,7 +64,7 @@ class _SearchPlacesState extends State<SearchPlaces> {
                   setState(() {
                     selectedCategory = value;
                   });
-                  _triggerSearchEvent(); // Trigger event on category change
+                  _triggerSearchEvent(); 
                 }
               },
             ),
@@ -79,7 +79,7 @@ class _SearchPlacesState extends State<SearchPlaces> {
         () => context.read<LocationsBloc>().add(
           FetchLocations(
             searchQuery: searchQuery,
-            proximity: selectedProximity == 'Any' ? null : int.parse(selectedProximity.split(' ')[0]), // Handle 'Any' as 0
+            proximity: selectedProximity == 'Any' ? null : int.parse(selectedProximity.split(' ')[0]),
             category: selectedCategory == 'Any' ? null : selectedCategory
           ),
         )

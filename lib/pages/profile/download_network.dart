@@ -12,7 +12,7 @@ class DownloadNetworkPage extends StatefulWidget {
 }
 
 class DownloadNetworkPageState extends State<DownloadNetworkPage> {
-  String? selectedOption = ''; // Default value
+  String? selectedOption = ''; 
 
   @override
   void initState() {
@@ -22,7 +22,7 @@ class DownloadNetworkPageState extends State<DownloadNetworkPage> {
 
   Future<String?> getCurrentUserId() async {
     final user = FirebaseAuth.instance.currentUser;
-    return user?.uid; // Returns the UID of the logged-in user
+    return user?.uid; 
   }
 
   Future<void> _fetchNetworkPreference() async {
@@ -50,7 +50,7 @@ class DownloadNetworkPageState extends State<DownloadNetworkPage> {
   Future<void> saveNetworkPreference() async {
     try {
       final userId = await getCurrentUserId();
-      debugPrint("User ID: $userId"); // Debugging step
+      debugPrint("User ID: $userId"); 
       if (userId == null) {
         throw Exception("User not logged in.");
       }
@@ -72,8 +72,6 @@ class DownloadNetworkPageState extends State<DownloadNetworkPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
       appBar: MyAppBar(title: "Maps Download Network"),
       body: SingleChildScrollView(
