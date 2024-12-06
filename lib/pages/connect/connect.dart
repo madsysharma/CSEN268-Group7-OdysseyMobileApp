@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:odyssey/components/alerts/snack_bar.dart';
 import 'package:odyssey/components/searchbars/connect_search_bar.dart';
 import 'package:odyssey/model/location.dart';
+import 'package:shimmer/shimmer.dart';
 import 'connect_local.dart';
 import 'connect_friends.dart';
 import 'connect_you.dart';
@@ -10,7 +11,6 @@ import 'package:odyssey/utils/paths.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:odyssey/api/get_locations.dart';
-import 'package:odyssey/components/shimmer_list.dart';
 import 'package:odyssey/components/cards/review_card.dart';
 import 'package:odyssey/api/review.dart';
 import 'package:odyssey/model/review.dart';
@@ -35,7 +35,6 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
   int _lastTabIndex = 0;
   late TabController _tabController;
   final List<String> _tabRoutes = ['local', 'friends', 'you'];
-  final List<Widget> _tabsContent = [Container(), Container(), Container()];
   FirebaseAuth auth = FirebaseAuth.instance;
   FirebaseFirestore firestore = FirebaseFirestore.instance;
   String? uid = "";
@@ -73,7 +72,6 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
     setLocations();
     final int initIndex = _tabRoutes.indexOf(widget.tab ?? 'local').clamp(0, _tabRoutes.length - 1);
     _tabController = TabController(vsync: this, length: _tabRoutes.length, initialIndex: initIndex);
-    fetchTabData(0);
     _tabController.addListener((){
       if(!_tabController.indexIsChanging && _tabController.index != _lastTabIndex){
         _lastTabIndex = _tabController.index;
@@ -118,29 +116,33 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
     }
   }
 
-  void clearFilters(){
-    print("clearFilters invoked");
-    setState(() {
-      this.selectedLocations = this.selectedLocations.map((i) {
-                                    i.updateAll((key, value) => false);
-                                    return i;
-                                  }).toList();
-                                  this.selectedFilters = this.selectedLocations.map((i) {
-                                    i.updateAll((key, value) => false);
-                                    return i;
-                                  }).toList();
-                                  this.selectedRatings = this.selectedRatings.map((i) {
-                                    i.updateAll((key, value) => false);
-                                    return i;
-                                  }).toList();
-                                  this.reviewSearchText = "";
-                                  this.labelsToSend?.clear();
-                                  this.locationsToSend?.clear();
-                                  this.ratingsToSend?.clear();
-                                  print("Filters cleared");
-                                  print("Selected filters are: ${this.reviewSearchText} ${this.locationsToSend} ${this.labelsToSend} ${this.ratingsToSend}");
-    });
-  }
+  void clearFilters() {
+  print("clearFilters invoked");
+  setState(() {
+    // Reset all filters
+    selectedLocations = selectedLocations.map((i) {
+      return i.map((key, _) => MapEntry(key, false));
+    }).toList();
+    selectedFilters = selectedFilters.map((i) {
+      return i.map((key, _) => MapEntry(key, false));
+    }).toList();
+    selectedRatings = selectedRatings.map((i) {
+      return i.map((key, _) => MapEntry(key, false));
+    }).toList();
+
+    // Clear search text and filter lists
+    reviewSearchText = "";
+    labelsToSend?.clear();
+    locationsToSend?.clear();
+    ratingsToSend?.clear();
+    _previousLabelsToSend = null;
+    _previousLocationsToSend = null;
+    _previousRatingsToSend = null;
+
+    print("Filters cleared");
+    print("Selected filters are: $reviewSearchText $locationsToSend $labelsToSend $ratingsToSend");
+  });
+}
 
   Future<List<ReviewCard>> fetchTabData(int idx) async{
     if(idx == 0){
@@ -326,266 +328,273 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
       enableDrag: true,
       showDragHandle: true,
       builder: (sheetContext){
-        return DraggableScrollableSheet(
-          expand: true,
-          initialChildSize: 0.5,
-          minChildSize: 0.25,
-          maxChildSize: 1.0,
-          snap: true,
-          builder: (_, controller){
-            return StatefulBuilder(
-              builder: (context, setSheetState){
-                return SingleChildScrollView(
-                controller: controller,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: DraggableScrollableSheet(
+            expand: true,
+            initialChildSize: 1.0,
+            snap: true,
+            builder: (_, controller){
+              return StatefulBuilder(
+                builder: (context, setSheetState){
+                  return SingleChildScrollView(
+                  controller: controller,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text("Filters: ", style: TextStyle(fontWeight: FontWeight.bold),),
+                              IconButton(
+                                onPressed: (){
+                                  Navigator.of(sheetContext).pop();
+                                },
+                                icon: Icon(Icons.close_outlined)
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                      Divider(),
+                      SizedBox(height: 20.0),
+                      Text("Search for text in location: ", style: TextStyle(fontWeight: FontWeight.bold),),
+                      SizedBox(height: 20.0),
+                      Flexible(
+                        child: SearchBar(
+                          hintText: "Eg: local cuisine",
+                          leading: Icon(Icons.search),
+                          trailing: [Icon(Icons.filter_list)],
+                          constraints: BoxConstraints(minHeight: 56.0, maxHeight: 56.0, maxWidth: 300.0, minWidth: 300.0),
+                          onChanged: (value){
+                            setSheetState((){
+                              setState(() {
+                                this.reviewSearchText = value;
+                                print("Review search text is now: ${this.reviewSearchText}");
+                              });
+                            });
+                          },
+                        ),
+                      ),
+                      SizedBox(height: 20.0),
+                      Text("Filters for review tags: ", style: TextStyle(fontWeight: FontWeight.bold),),
+                      SizedBox(height: 20.0),
+                      Wrap(
+                        spacing: 8.0,
+                        runSpacing: 4.0,
+                        alignment: WrapAlignment.start,
+                        runAlignment: WrapAlignment.center,
+                        children: filterNames.map((item) {
+                          return Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: FilterChip(
+                              padding: EdgeInsets.symmetric(vertical: 5.0),
+                              label: Text(
+                                item,
+                                style: Theme.of(context).textTheme.labelSmall,
+                                textAlign: TextAlign.center,
+                              ),
+                              avatar: this.selectedFilters
+                                    .firstWhere(
+                                      (filter) => filter.keys.contains(item),
+                                      orElse: () => {item: false},
+                                    )[item] == false ? Icon(Icons.add) : null,
+                              selected: this.selectedFilters
+                                        .firstWhere(
+                                          (filter) => filter.keys.contains(item),
+                                          orElse: () => {item: false},
+                                        )[item] ?? false,
+                              onSelected: (selected) {
+                                            setSheetState((){
+                                              final updatedFilter = selectedFilters.firstWhere((filter) => filter.keys.contains(item), orElse: () => {item: false},); 
+                                              updatedFilter[item] = selected;
+                                              print("Label selected? $selected");
+                                              setState(() {
+                                                if (selected) {
+                                                  labelsToSend?.add(item);
+                                                } else {
+                                                  labelsToSend?.remove(item);
+                                                }
+                                                print("Labels are now: ${this.labelsToSend}");
+                                              });
+                                            });
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                      ),
+                      SizedBox(height: 20.0),
+                      Text("Filters for location names: ", style: TextStyle(fontWeight: FontWeight.bold),),
+                      SizedBox(height: 20.0),
+                      Wrap(
+                        spacing: 8.0,
+                        runSpacing: 4.0,
+                        alignment: WrapAlignment.start,
+                        runAlignment: WrapAlignment.center,
+                        children: locationsCollected.map((item) {
+                          return Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: FilterChip(
+                            padding: EdgeInsets.symmetric(vertical: 5.0),
+                            label: Text(
+                              item.name,
+                              style: Theme.of(context).textTheme.labelSmall,
+                              textAlign: TextAlign.center,
+                            ),
+                            avatar: this.selectedLocations
+                                    .firstWhere(
+                                      (filter) => filter.keys.contains(item.name),
+                                      orElse: () => {item.name: false},
+                                    )[item.name] == false ? Icon(Icons.add) : null,
+                              selected: this.selectedLocations
+                                        .firstWhere(
+                                          (filter) => filter.keys.contains(item.name),
+                                          orElse: () => {item.name: false},
+                                        )[item.name] ?? false,
+                              onSelected: (selected) {
+                                            setSheetState((){
+                                              final updatedFilter = selectedLocations.firstWhere((filter) => filter.keys.contains(item.name), orElse: () => {item.name: false},); 
+                                              updatedFilter[item.name] = selected;
+                                              print("Location selected? $selected");
+                                              setState(() {
+                                                if (selected) {
+                                                  locationsToSend?.add(item.name);
+                                                } else {
+                                                  locationsToSend?.remove(item.name);
+                                                }
+                                                print("Locations are now: ${this.locationsToSend}");
+                                              });
+                                            });
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                      ),
+                      SizedBox(height: 20.0),
+                      Text("Filters for star ratings: ", style: TextStyle(fontWeight: FontWeight.bold),),
+                      SizedBox(height: 20.0),
+                      Wrap(
+                        spacing: 8.0,
+                        runSpacing: 4.0,
+                        alignment: WrapAlignment.start,
+                        runAlignment: WrapAlignment.center,
+                        children: starRatings.map((item) {
+                          return Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: FilterChip(
+                            padding: EdgeInsets.symmetric(vertical: 5.0),
+                            label: Text(
+                              item.toString(),
+                              style: Theme.of(context).textTheme.labelSmall,
+                              textAlign: TextAlign.center,
+                            ),
+                            avatar: this.selectedRatings
+                                    .firstWhere(
+                                      (filter) => filter.keys.contains(item),
+                                      orElse: () => {item: false},
+                                    )[item] == false ? Icon(Icons.add) : null,
+                              selected: this.selectedRatings
+                                        .firstWhere(
+                                          (filter) => filter.keys.contains(item),
+                                          orElse: () => {item: false},
+                                        )[item] ?? false,
+                              onSelected: (selected) {
+                                            setSheetState((){
+                                              final updatedFilter = selectedRatings.firstWhere((filter) => filter.keys.contains(item), orElse: () => {item: false},); 
+                                              updatedFilter[item] = selected;
+                                              print("Rating selected? $selected");
+                                              setState(() {
+                                                if (selected) {
+                                                  ratingsToSend?.add(item);
+                                                } else {
+                                                  ratingsToSend?.remove(item);
+                                                }
+                                                print("Ratings are now: ${this.ratingsToSend}");
+                                              });
+                                            });
+                                          },
+                                        ),
+                                      );
+                                    }).toList(),
+                      ),
+                      SizedBox(height: 20.0),
+                      Flexible(
+                        child: Wrap(
+                          spacing: 8.0, // Add spacing between buttons
+                          alignment: WrapAlignment.center,
+                          runAlignment: WrapAlignment.center, // Align buttons to the center
                           children: [
-                            Text("Filters: ", style: Theme.of(context).textTheme.bodyLarge,),
-                            IconButton(
-                              onPressed: (){
-                                Navigator.of(sheetContext).pop();
-                              },
-                              icon: Icon(Icons.close_outlined)
+                            SizedBox(
+                              width: 150.0,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFF006A68),
+                                  foregroundColor: Colors.white,
+                                  textStyle: Theme.of(context).textTheme.labelMedium,
+                                  side: BorderSide(
+                                    width: 0.3,
+                                  ),
+                                ),
+                                onPressed: (){
+                                  if(reviewSearchText!.isEmpty && locationsToSend!.isEmpty && labelsToSend!.isEmpty && ratingsToSend!.isEmpty){
+                                    showMessageSnackBar(sheetContext, "Select at least one filter!");
+                                  } else if (_previousLabelsToSend == labelsToSend || _previousLocationsToSend == locationsToSend || _previousRatingsToSend == ratingsToSend){
+                                    showMessageSnackBar(sheetContext, "Filters haven't changed! Not reloading");
+                                  } else{
+                                    print("Review filters changed");
+                                    setSheetState((){
+                                    setState(() {
+                                      _previousLabelsToSend = List.from(labelsToSend ?? []);
+                                      _previousLocationsToSend = List.from(locationsToSend ?? []);
+                                      _previousRatingsToSend = List.from(ratingsToSend ?? []);
+                                      fetchTabData(_tabController.index);
+                                    });// Force reload
+                                  });
+                                    Navigator.of(sheetContext).pop();
+                                    print("Selected filters are: ${this.reviewSearchText} ${this.locationsToSend} ${this.labelsToSend} ${this.ratingsToSend}");
+                                  }
+                                },
+                                child: Text("Apply filters", style: TextStyle(color: Colors.white))
+                              ),
+                            ),
+                            SizedBox(
+                              width: 150.0,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  fixedSize: Size(50.0, 40.0),
+                                  backgroundColor: Color(0xFF006A68),
+                                  foregroundColor: Colors.white,
+                                  textStyle: Theme.of(context).textTheme.labelMedium,
+                                  side: BorderSide(
+                                    width: 0.3,
+                                  ),
+                                ),
+                                onPressed: (){
+                                  clearFilters();
+                                  setSheetState((){
+                                    setState(() {
+                                      fetchTabData(_tabController.index);
+                                  });// Force reload
+                                  });
+                                  fetchTabData(_tabController.index);
+                                },
+                                child: Text("Clear filters", style: TextStyle(color: Colors.white))
+                              ),
                             )
                           ],
                         ),
                       ),
-                    ),
-                    Divider(),
-                    SizedBox(height: 20.0),
-                    Text("Search for text in location: ", style: Theme.of(context).textTheme.bodyMedium),
-                    SizedBox(height: 20.0),
-                    Flexible(
-                      child: SearchBar(
-                        hintText: "Search within the review. Eg: local cuisine",
-                        leading: Icon(Icons.search),
-                        trailing: [Icon(Icons.filter_list)],
-                        constraints: BoxConstraints(minHeight: 56.0, maxHeight: 56.0),
-                        onChanged: (value){
-                          setSheetState((){
-                            setState(() {
-                              this.reviewSearchText = value;
-                              print("Review search text is now: ${this.reviewSearchText}");
-                            });
-                          });
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 20.0),
-                    Text("Filters for review tags: ", style: Theme.of(context).textTheme.bodyMedium),
-                    SizedBox(height: 20.0),
-                    Wrap(
-                      spacing: 8.0,
-                      runSpacing: 4.0,
-                      alignment: WrapAlignment.start,
-                      runAlignment: WrapAlignment.center,
-                      children: filterNames.map((item) {
-                        return Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: FilterChip(
-                            padding: EdgeInsets.symmetric(vertical: 5.0),
-                            label: Text(
-                              item,
-                              style: Theme.of(context).textTheme.labelSmall,
-                              textAlign: TextAlign.center,
-                            ),
-                            avatar: this.selectedFilters
-                                  .firstWhere(
-                                    (filter) => filter.keys.contains(item),
-                                    orElse: () => {item: false},
-                                  )[item] == false ? Icon(Icons.add) : null,
-                            selected: this.selectedFilters
-                                      .firstWhere(
-                                        (filter) => filter.keys.contains(item),
-                                        orElse: () => {item: false},
-                                      )[item] ?? false,
-                            onSelected: (selected) {
-                                          setSheetState((){
-                                            final updatedFilter = selectedFilters.firstWhere((filter) => filter.keys.contains(item), orElse: () => {item: false},); 
-                                            updatedFilter[item] = selected;
-                                            print("Label selected? $selected");
-                                            setState(() {
-                                              if (selected) {
-                                                labelsToSend?.add(item);
-                                              } else {
-                                                labelsToSend?.remove(item);
-                                              }
-                                              print("Labels are now: ${this.labelsToSend}");
-                                            });
-                                          });
-                                        },
-                                      ),
-                                    );
-                                  }).toList(),
-                    ),
-                    SizedBox(height: 20.0),
-                    Text("Filters for location names: ", style: Theme.of(context).textTheme.bodyMedium),
-                    SizedBox(height: 20.0),
-                    Wrap(
-                      spacing: 8.0,
-                      runSpacing: 4.0,
-                      alignment: WrapAlignment.start,
-                      runAlignment: WrapAlignment.center,
-                      children: locationsCollected.map((item) {
-                        return Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: FilterChip(
-                          padding: EdgeInsets.symmetric(vertical: 5.0),
-                          label: Text(
-                            item.name,
-                            style: Theme.of(context).textTheme.labelSmall,
-                            textAlign: TextAlign.center,
-                          ),
-                          avatar: this.selectedLocations
-                                  .firstWhere(
-                                    (filter) => filter.keys.contains(item.name),
-                                    orElse: () => {item.name: false},
-                                  )[item.name] == false ? Icon(Icons.add) : null,
-                            selected: this.selectedLocations
-                                      .firstWhere(
-                                        (filter) => filter.keys.contains(item.name),
-                                        orElse: () => {item.name: false},
-                                      )[item.name] ?? false,
-                            onSelected: (selected) {
-                                          setSheetState((){
-                                            final updatedFilter = selectedLocations.firstWhere((filter) => filter.keys.contains(item.name), orElse: () => {item.name: false},); 
-                                            updatedFilter[item.name] = selected;
-                                            print("Location selected? $selected");
-                                            setState(() {
-                                              if (selected) {
-                                                locationsToSend?.add(item.name);
-                                              } else {
-                                                locationsToSend?.remove(item.name);
-                                              }
-                                              print("Locations are now: ${this.locationsToSend}");
-                                            });
-                                          });
-                                        },
-                                      ),
-                                    );
-                                  }).toList(),
-                    ),
-                    SizedBox(height: 20.0),
-                    Text("Filters for star ratings: ", style: Theme.of(context).textTheme.bodyMedium),
-                    SizedBox(height: 20.0),
-                    Wrap(
-                      spacing: 8.0,
-                      runSpacing: 4.0,
-                      alignment: WrapAlignment.start,
-                      runAlignment: WrapAlignment.center,
-                      children: starRatings.map((item) {
-                        return Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: FilterChip(
-                          padding: EdgeInsets.symmetric(vertical: 5.0),
-                          label: Text(
-                            item.toString(),
-                            style: Theme.of(context).textTheme.labelSmall,
-                            textAlign: TextAlign.center,
-                          ),
-                          avatar: this.selectedRatings
-                                  .firstWhere(
-                                    (filter) => filter.keys.contains(item),
-                                    orElse: () => {item: false},
-                                  )[item] == false ? Icon(Icons.add) : null,
-                            selected: this.selectedRatings
-                                      .firstWhere(
-                                        (filter) => filter.keys.contains(item),
-                                        orElse: () => {item: false},
-                                      )[item] ?? false,
-                            onSelected: (selected) {
-                                          setSheetState((){
-                                            final updatedFilter = selectedRatings.firstWhere((filter) => filter.keys.contains(item), orElse: () => {item: false},); 
-                                            updatedFilter[item] = selected;
-                                            print("Rating selected? $selected");
-                                            setState(() {
-                                              if (selected) {
-                                                ratingsToSend?.add(item);
-                                              } else {
-                                                ratingsToSend?.remove(item);
-                                              }
-                                              print("Ratings are now: ${this.ratingsToSend}");
-                                            });
-                                          });
-                                        },
-                                      ),
-                                    );
-                                  }).toList(),
-                    ),
-                    SizedBox(height: 20.0),
-                    Flexible(
-                      child: Wrap(
-                        spacing: 8.0, // Add spacing between buttons
-                        alignment: WrapAlignment.center,
-                        runAlignment: WrapAlignment.center, // Align buttons to the center
-                        children: [
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              fixedSize: Size.fromWidth(50.0),
-                              backgroundColor: Color(0xFF006A68),
-                              foregroundColor: Colors.white,
-                              textStyle: Theme.of(context).textTheme.labelMedium,
-                              side: BorderSide(
-                                width: 0.3,
-                              ),
-                            ),
-                            onPressed: (){
-                              if(reviewSearchText!.isEmpty && locationsToSend!.isEmpty && labelsToSend!.isEmpty && ratingsToSend!.isEmpty){
-                                showMessageSnackBar(sheetContext, "Select at least one filter!");
-                              } else if (_previousLabelsToSend == labelsToSend || _previousLocationsToSend == locationsToSend || _previousRatingsToSend == ratingsToSend){
-                                showMessageSnackBar(sheetContext, "Filters haven't changed! Not reloading");
-                              } else{
-                                print("Review filters changed");
-                                setSheetState((){
-                                setState(() {
-                                  _previousLabelsToSend = List.from(labelsToSend ?? []);
-                                  _previousLocationsToSend = List.from(locationsToSend ?? []);
-                                  _previousRatingsToSend = List.from(ratingsToSend ?? []);
-                                  fetchTabData(_tabController.index);
-                                });// Force reload
-                              });
-                                Navigator.of(sheetContext).pop();
-                                print("Selected filters are: ${this.reviewSearchText} ${this.locationsToSend} ${this.labelsToSend} ${this.ratingsToSend}");
-                              }
-                            },
-                            child: Text("Apply filters", style: TextStyle(color: Colors.white))
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              fixedSize: Size.fromWidth(50.0),
-                              backgroundColor: Color(0xFF006A68),
-                              foregroundColor: Colors.white,
-                              textStyle: Theme.of(context).textTheme.labelMedium,
-                              side: BorderSide(
-                                width: 0.3,
-                              ),
-                            ),
-                            onPressed: (){
-                              clearFilters();
-                              setSheetState((){
-                                setState(() {
-                                  fetchTabData(_tabController.index);
-                              });// Force reload
-                              });
-                              fetchTabData(_tabController.index);
-                            },
-                            child: Text("Clear filters", style: TextStyle(color: Colors.white))
-                          )
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 20.0),
-                  ],
-                ),
-              );
-          });
-          });
+                      SizedBox(height: 20.0),
+                    ],
+                  ),
+                );
+            });
+            }),
+        );
         });
   }
 
@@ -598,12 +607,12 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
           String dest = "";
           if(toScreen == 'Notifications'){
             dest = Paths.notifs;
-            await GoRouter.of(context).push('/connect/${_tabRoutes[_tabController.index]}'+dest,);
+            GoRouter.of(context).go('/connect/${_tabRoutes[_tabController.index]}'+dest,);
             collectUnreadNotifs(uid);
             fetchTabData(_tabController.index);
           } else if(toScreen == 'Friends'){
             dest = Paths.friendReq;
-            await GoRouter.of(context).push('/connect/${_tabRoutes[_tabController.index]}'+dest);
+            GoRouter.of(context).go('/connect/${_tabRoutes[_tabController.index]}'+dest);
             fetchTabData(_tabController.index);
           }
         },
@@ -627,7 +636,22 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
         future: fetchTabData(0),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return ShimmerList();
+            return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: ListView.builder(
+        itemCount: 5, // Adjust the count based on your needs
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Container(
+              height: 20,
+              width: 200,
+              color: Colors.white,
+            ),
+          );
+        },
+      ),
+    );
           } else if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
           } else {
@@ -639,7 +663,22 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
         future: fetchTabData(1),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return ShimmerList();
+            return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: ListView.builder(
+        itemCount: 5, // Adjust the count based on your needs
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Container(
+              height: 20,
+              width: 200,
+              color: Colors.white,
+            ),
+          );
+        },
+      ),
+    );
           } else if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
           } else {
@@ -651,7 +690,22 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
         future: fetchTabData(2),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return ShimmerList();
+            return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: ListView.builder(
+        itemCount: 5, // Adjust the count based on your needs
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Container(
+              height: 20,
+              width: 200,
+              color: Colors.white,
+            ),
+          );
+        },
+      ),
+    );
           } else if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
           } else {

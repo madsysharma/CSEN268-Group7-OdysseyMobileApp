@@ -119,8 +119,7 @@ class MyApp extends StatelessWidget {
                     ),
                     GoRoute(
                       path: Paths.notifs,
-                      builder: (context, state) =>
-                          Notifications(fromScreen: 'local'),
+                      builder: (context, state) => Notifications(fromScreen: 'local'),
                       routes: [
                         GoRoute(
                           path: Paths.acceptReq,
@@ -147,8 +146,7 @@ class MyApp extends StatelessWidget {
                     ),
                     GoRoute(
                       path: Paths.notifs,
-                      builder: (context, state) =>
-                          Notifications(fromScreen: 'friends'),
+                      builder: (context, state) => Notifications(fromScreen: 'friends'),
                     ),
                   ],
                 ),
@@ -162,8 +160,7 @@ class MyApp extends StatelessWidget {
                     ),
                     GoRoute(
                       path: Paths.notifs,
-                      builder: (context, state) =>
-                          Notifications(fromScreen: 'friends'),
+                      builder: (context, state) => Notifications(fromScreen: 'friends'),
                     ),
                     GoRoute(
                       path: Paths.post,

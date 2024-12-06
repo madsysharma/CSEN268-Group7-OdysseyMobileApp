@@ -25,7 +25,7 @@ class ConnectYou extends StatelessWidget{
                 SizedBox(height: 20.0,),
                 ElevatedButton(
                   onPressed: () async{
-                    await GoRouter.of(context).push('/connect/you'+Paths.post);
+                    GoRouter.of(context).go('/connect/you'+Paths.post);
                   },
                   child: Text("Create new post", style: Theme.of(context).textTheme.headlineSmall))
               ],
@@ -38,12 +38,15 @@ class ConnectYou extends StatelessWidget{
             children: [
               Flexible(
                 child: ListView.separated(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(15.0),
                   shrinkWrap: true,
                   itemBuilder: (context, index){
                     return cards?[index];
                   },
-                  separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
+                  separatorBuilder: (context, index) => Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
+                  ),
                   itemCount: cards!.length)
               ),
               SizedBox(height: 20.0,),
@@ -57,7 +60,7 @@ class ConnectYou extends StatelessWidget{
                     ),
                   ),
                   onPressed: () async{
-                    await GoRouter.of(context).push('/connect/you'+Paths.post);
+                    GoRouter.of(context).go('/connect/you'+Paths.post);
                   },
                   child: Text("Create new post", style: TextStyle(color: Colors.white),)
               ),

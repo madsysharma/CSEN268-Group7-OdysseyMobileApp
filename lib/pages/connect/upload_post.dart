@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:odyssey/api/get_locations.dart';
 import 'package:odyssey/api/review.dart';
 import 'package:odyssey/api/upload_file.dart';
-import 'package:odyssey/components/shimmer_list.dart';
 import 'package:odyssey/components/alerts/snack_bar.dart';
 import 'package:odyssey/model/review.dart';
 import 'package:odyssey/utils/image_picker_utils.dart';
@@ -15,6 +14,7 @@ import 'package:odyssey/utils/paths.dart';
 import 'dart:io';
 import 'package:odyssey/model/location.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -46,7 +46,22 @@ class UploadPostInitialState extends State<UploadPostInitial> with AutomaticKeep
       future: _locationsFuture,
       builder: (BuildContext context, AsyncSnapshot<List<LocationDetails>> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: ShimmerList());
+          return Center(child: Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: ListView.builder(
+        itemCount: 5, // Adjust the count based on your needs
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Container(
+              height: 20,
+              width: 200,
+              color: Colors.white,
+            ),
+          );
+        },
+      ),
+    ));
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         }

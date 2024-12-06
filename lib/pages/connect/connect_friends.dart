@@ -29,12 +29,15 @@ class ConnectFriends extends StatelessWidget{
             children: [
               Flexible(
                 child: ListView.separated(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(15.0),
                   shrinkWrap: true,
                   itemBuilder: (context, index){
                     return this.cards![index];
                   },
-                  separatorBuilder: (context, index) => Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
+                  separatorBuilder: (context, index) => Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Divider(indent: 16.0, endIndent: 16.0, thickness: 2.0,),
+                  ),
                   itemCount: this.cards!.length),
               ),
               SizedBox(height: 20.0,),
