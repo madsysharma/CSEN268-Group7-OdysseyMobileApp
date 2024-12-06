@@ -33,17 +33,17 @@ class _SavedLocationsState extends State<SavedLocations> {
           .collection('User')
           .doc(user.uid)
           .collection('savedLocations')
-          .orderBy('createdAt', descending: true) // Order by most recent
+          .orderBy('createdAt', descending: true) 
           .get();
 
       return savedLocationsSnapshot.docs.map((doc) {
         final data = doc.data();
-        final images = data['images'] as List<dynamic>?; // Array of image URLs
+        final images = data['images'] as List<dynamic>?; 
         final imageUrl = (images != null && images.isNotEmpty)
             ? images[0]
-            : ''; // Get the first URL or empty
+            : ''; 
         return {
-          'id': doc.id, // Document ID for deletion
+          'id': doc.id,
           'imageUrl': imageUrl,
           'title': data['name'] ?? 'Untitled',
           'subtitle': data['description'] ?? '',
@@ -54,7 +54,6 @@ class _SavedLocationsState extends State<SavedLocations> {
     }
   }
 
-  // Remove a location from Firestore
   Future<void> removeLocation(String locationId) async {
     try {
       final user = FirebaseAuth.instance.currentUser;

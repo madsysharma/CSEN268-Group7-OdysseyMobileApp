@@ -26,7 +26,7 @@ class SplashScreenState extends State<SplashScreen>
   late Animation<double> _fadeText2Animation;
   late Animation<Offset> _slideUpAnimation;
 
-  bool showButtons = false;
+  bool _animationComplete = false; 
 
   @override
   void initState() {
@@ -69,21 +69,14 @@ class SplashScreenState extends State<SplashScreen>
 
     _waveController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        _fadeContentController.forward().then((_) {
-          _fadeText1Controller.forward().then((_) {
-            _fadeText2Controller.forward().then((_) {
-              _slideUpController.forward().then((_) {
-                setState(() {
-                  showButtons = true;
-
-                  // Navigate after animations complete
-                  if (mounted) {
-                    context.read<AuthBloc>().add(CheckAuthEvent());
-                  }
-                });
-              });
-            });
+        _playAnimations().then((_) {
+          setState(() {
+            _animationComplete = true; 
           });
+
+          if (mounted) {
+            context.read<AuthBloc>().add(CheckAuthEvent());
+          }
         });
       }
     });
@@ -101,6 +94,13 @@ class SplashScreenState extends State<SplashScreen>
     );
   }
 
+  Future<void> _playAnimations() async {
+    await _fadeContentController.forward();
+    await _fadeText1Controller.forward();
+    await _fadeText2Controller.forward();
+    await _slideUpController.forward();
+  }
+
   @override
   void dispose() {
     _waveController.dispose();
@@ -113,114 +113,100 @@ class SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          AnimatedBuilder(
-            animation: _waveAnimation,
-            builder: (context, child) {
-              return WaveWidget(
-                config: CustomConfig(
-                  gradients: [
-                    [const Color(0xFF9CF1EE), const Color(0xFF4CACA9)],
-                    [const Color(0xFF4CACA9), const Color(0xFF0268B89)],
-                    [const Color(0xFF0268B89), const Color(0xFF006A68)],
-                    [const Color(0xFF006A68), const Color(0xFF006A68)],
-                  ],
-                  durations: [3500, 3000, 2500, 4000],
-                  heightPercentages: [
-                    _waveAnimation.value,
-                    _waveAnimation.value + 0.05,
-                    _waveAnimation.value + 0.1,
-                    _waveAnimation.value + 0.15,
-                  ],
-                  gradientBegin: Alignment.bottomCenter,
-                  gradientEnd: Alignment.topCenter,
-                ),
-                size: const Size(double.infinity, double.infinity),
-                waveAmplitude: 0,
-                backgroundColor: Colors.white,
-              );
-            },
-          ),
-          FadeTransition(
-            opacity: _fadeContentAnimation,
-            child: SlideTransition(
-              position: _slideUpAnimation,
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF9CF1EE),
-                      Color(0xFF006A68),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is LoggedIn) {
+          GoRouter.of(context).go(Paths.home);
+        } else if (state is LoggedOut && _animationComplete) {
+          GoRouter.of(context).go(Paths.mainPage);
+        }
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            AnimatedBuilder(
+              animation: _waveAnimation,
+              builder: (context, child) {
+                return WaveWidget(
+                  config: CustomConfig(
+                    gradients: [
+                      [const Color(0xFF9CF1EE), const Color(0xFF4CACA9)],
+                      [const Color(0xFF4CACA9), const Color(0xFF0268B89)],
+                      [const Color(0xFF0268B89), const Color(0xFF006A68)],
+                      [const Color(0xFF006A68), const Color(0xFF006A68)],
                     ],
+                    durations: [3500, 3000, 2500, 4000],
+                    heightPercentages: [
+                      _waveAnimation.value,
+                      _waveAnimation.value + 0.05,
+                      _waveAnimation.value + 0.1,
+                      _waveAnimation.value + 0.15,
+                    ],
+                    gradientBegin: Alignment.bottomCenter,
+                    gradientEnd: Alignment.topCenter,
                   ),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        'assets/bridge.png',
-                        height: 450,
-                        fit: BoxFit.contain,
-                      ),
-                      mediumVertical,
-                      FadeTransition(
-                        opacity: _fadeText1Animation,
-                        child: const Text(
-                          'Welcome to Odyssey',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                  size: const Size(double.infinity, double.infinity),
+                  waveAmplitude: 0,
+                  backgroundColor: Colors.white,
+                );
+              },
+            ),
+            FadeTransition(
+              opacity: _fadeContentAnimation,
+              child: SlideTransition(
+                position: _slideUpAnimation,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFF9CF1EE),
+                        Color(0xFF006A68),
+                      ],
+                    ),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/bridge.png',
+                          height: 450,
+                          fit: BoxFit.contain,
+                        ),
+                        mediumVertical,
+                        FadeTransition(
+                          opacity: _fadeText1Animation,
+                          child: const Text(
+                            'Welcome to Odyssey',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                      ),
-                      smallVertical,
-                      FadeTransition(
-                        opacity: _fadeText2Animation,
-                        child: const Text(
-                          'Enjoy the Bay, Your Way.',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w300,
-                            color: Colors.white,
+                        smallVertical,
+                        FadeTransition(
+                          opacity: _fadeText2Animation,
+                          child: const Text(
+                            'Enjoy the Bay, Your Way.',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w300,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          if (showButtons)
-            Positioned(
-              bottom: 40,
-              left: 0,
-              right: 0,
-              child: Column(
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      GoRouter.of(context).go(Paths.loginPage);
-                    },
-                    child: const Text('Sign In'),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      GoRouter.of(context).go(Paths.signupPage);
-                    },
-                    child: const Text('Sign Up'),
-                  ),
-                ],
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

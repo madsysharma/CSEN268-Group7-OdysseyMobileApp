@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 
 class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
-  const MyAppBar({super.key, required this.title});
+  final bool showBackButton; 
+
+  const MyAppBar({
+    super.key,
+    required this.title,
+    this.showBackButton = true, 
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -18,15 +24,17 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
           color: colorScheme.onPrimary,
         ),
       ),
-      leading: IconButton(
-        icon: Icon(
-          Icons.arrow_back,
-          color: colorScheme.onPrimary,
-        ),
-        onPressed: () {
-          Navigator.pop(context);
-        },
-      ),
+      leading: showBackButton
+          ? IconButton(
+              icon: Icon(
+                Icons.arrow_back,
+                color: colorScheme.onPrimary,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            )
+          : null, 
     );
   }
 

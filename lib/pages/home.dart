@@ -3,8 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:odyssey/bloc/locations/locations_bloc.dart';
-import 'package:odyssey/components/home_locations_list.dart';
-import 'package:odyssey/components/search_places.dart';
+import 'package:odyssey/components/locations/home_locations_list.dart';
+import 'package:odyssey/components/locations/search_places.dart';
 
 FirebaseAuth auth = FirebaseAuth.instance;
 FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -39,7 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final double topInset = MediaQuery.of(context).viewPadding.top;
-     //auth.currentUser?.displayName ?? auth.currentUser?.email;
     return Padding(
       padding: EdgeInsets.only(top: topInset + 16.0, left: 16, right:16 , bottom :16),
       child: Column(

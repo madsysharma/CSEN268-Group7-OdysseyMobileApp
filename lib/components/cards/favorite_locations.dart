@@ -56,17 +56,15 @@ class FavoriteLocations extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ), 
                   ),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                      fontSize: 14,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface,
+                        ), 
                   ),
                 ],
               ),

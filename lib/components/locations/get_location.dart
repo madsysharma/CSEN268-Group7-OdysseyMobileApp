@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:location/location.dart' as loc; // Add a prefix for the location package
-import 'package:geocoding/geocoding.dart'; // Import for reverse geocoding
+import 'package:location/location.dart' as loc; 
+import 'package:geocoding/geocoding.dart'; 
 
 class LocationWidget extends StatefulWidget {
   const LocationWidget({Key? key}) : super(key: key);
@@ -35,7 +35,7 @@ class LocationHelper {
 }
 
 class _LocationWidgetState extends State<LocationWidget> {
-  loc.Location location = loc.Location(); // Use the 'loc' prefix here
+  loc.Location location = loc.Location(); 
   String? _currentLocation;
   String? _currentAddress;
   bool _isFetching = false;
@@ -58,7 +58,7 @@ class _LocationWidgetState extends State<LocationWidget> {
         }
       }
 
-      loc.PermissionStatus permissionGranted = await location.hasPermission(); // Use 'loc.PermissionStatus'
+      loc.PermissionStatus permissionGranted = await location.hasPermission(); 
       if (permissionGranted == loc.PermissionStatus.denied) {
         permissionGranted = await location.requestPermission();
         if (permissionGranted != loc.PermissionStatus.granted) {
@@ -70,14 +70,12 @@ class _LocationWidgetState extends State<LocationWidget> {
         }
       }
 
-      // Get latitude and longitude
-      final locData = await location.getLocation(); // Use 'loc.Location' instance
+      final locData = await location.getLocation();
       setState(() {
         _currentLocation =
             "Latitude: ${locData.latitude}, Longitude: ${locData.longitude}";
       });
 
-      // geocoding to get the address
       List<Placemark> placemarks = await placemarkFromCoordinates(
         locData.latitude!,
         locData.longitude!,

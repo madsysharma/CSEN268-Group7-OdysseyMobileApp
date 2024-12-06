@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:odyssey/components/cards/review_card.dart';
-import 'package:odyssey/components/shimmer_list.dart';
+import 'package:odyssey/components/animations/shimmer_list.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:odyssey/utils/date_time_utils.dart';

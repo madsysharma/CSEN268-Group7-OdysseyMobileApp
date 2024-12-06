@@ -1,4 +1,3 @@
-import 'package:intl/intl.dart';
 
   DateTime parseDate(DateTime dt) {
     return dt.toUtc();
