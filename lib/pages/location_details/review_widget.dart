@@ -16,18 +16,16 @@ class ReviewsWidget extends StatefulWidget {
 }
 
 class _ReviewsWidgetState extends State<ReviewsWidget> {
-  late Future<List<LocationReview>> _reviewsFuture;
-
+  
   @override
   void initState() {
     super.initState();
-    _reviewsFuture = fetchReviews(locationId: widget.locationDetails.id!);
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-  future: _reviewsFuture, // Cached Future
+  future: fetchReviews(locationId: widget.locationDetails.id!),
   builder: (BuildContext context, AsyncSnapshot<List<LocationReview>> snapshot) {
     if (snapshot.connectionState == ConnectionState.waiting) {
       return Center(
