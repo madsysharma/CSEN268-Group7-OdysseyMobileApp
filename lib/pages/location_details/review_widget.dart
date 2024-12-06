@@ -16,18 +16,16 @@ class ReviewsWidget extends StatefulWidget {
 }
 
 class _ReviewsWidgetState extends State<ReviewsWidget> {
-  late Future<List<LocationReview>> _reviewsFuture;
-
+  
   @override
   void initState() {
     super.initState();
-    _reviewsFuture = fetchReviews(locationId: widget.locationDetails.id!);
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-  future: _reviewsFuture, // Cached Future
+  future: fetchReviews(locationId: widget.locationDetails.id!),
   builder: (BuildContext context, AsyncSnapshot<List<LocationReview>> snapshot) {
     if (snapshot.connectionState == ConnectionState.waiting) {
       return Center(
@@ -44,7 +42,7 @@ class _ReviewsWidgetState extends State<ReviewsWidget> {
       return Center(
         child: Text("Something went wrong. Please try again."),
       );
-    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+    } else if (!snapshot.hasData) {
       return Center(
         child: Text("No reviews available."),
       );
