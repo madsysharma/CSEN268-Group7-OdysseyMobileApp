@@ -194,19 +194,19 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
             return data['reviewText'].contains(searchText);
           }).toList();
         }
-        if(locations != null){
+        if(locations != null && locations.isNotEmpty){
           filteredDocs = filteredDocs.where((doc){
             final data = doc.data();
             return locations.contains(data['locationName']);
           }).toList();
         }
-        if(appliedFilters != null){
+        if(appliedFilters != null && appliedFilters.isNotEmpty){
           filteredDocs = filteredDocs.where((doc){
             final data = doc.data();
             return data['tags'].toSet().intersection(appliedFilters.toSet()).isNotEmpty;
           }).toList();
         }
-        if(numStars != null){
+        if(numStars != null && numStars.isNotEmpty){
           filteredDocs = filteredDocs.where((doc){
             final data = doc.data();
             return numStars.contains(data['rating'].toDouble());
@@ -240,28 +240,32 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
     print('Processed friend list: $friendlist');
     List<ReviewCard> reviews = [];
     for(String f in friendlist){
-      Query<Map<String, dynamic>> friendsQuery = await this.firestore.collection('Review').where('username',isEqualTo: f);
-      QuerySnapshot<Map<String, dynamic>> querySnap = await friendsQuery.get();
+      print("Friend: ${f.split(" ").first}");
+      final fetchQuery = await this.firestore.collection('User').where('firstname', isEqualTo: f.split(" ").first).get();
+      final friendId = fetchQuery.docs.first.id;
+      print("Friend ID: $friendId");
+      final querySnap = await this.firestore.collection('Review').where('userId', isEqualTo: friendId).get();
       var filteredDocs = querySnap.docs;
+      print("Filtered docs: $filteredDocs");
       if(searchText != null && searchText.isNotEmpty){
           filteredDocs = filteredDocs.where((doc){
             final data = doc.data();
             return data['reviewText'].contains(searchText);
           }).toList();
         }
-        if(locations != null){
+        if(locations != null && locations.isNotEmpty){
           filteredDocs = filteredDocs.where((doc){
             final data = doc.data();
             return locations.contains(data['locationName']);
           }).toList();
         }
-        if(appliedFilters != null){
+        if(appliedFilters != null && appliedFilters.isNotEmpty){
           filteredDocs = filteredDocs.where((doc){
             final data = doc.data();
             return data['tags'].toSet().intersection(appliedFilters.toSet()).isNotEmpty;
           }).toList();
         }
-        if(numStars != null){
+        if(numStars != null && numStars.isNotEmpty){
           filteredDocs = filteredDocs.where((doc){
             final data = doc.data();
             return numStars.contains(data['rating'].toDouble());
