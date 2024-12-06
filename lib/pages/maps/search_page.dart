@@ -50,7 +50,7 @@ class NearbyUser {
   }
 
   static double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const double earthRadius = 6371; // Radius of Earth in kilometers
+    const double earthRadius = 6371; 
     
     double dLat = _toRadians(lat2 - lat1);
     double dLon = _toRadians(lon2 - lon1);
@@ -102,6 +102,7 @@ class OfflineMap {
   final String endLocation;
   final List<DirectionStep> steps;
   final DateTime createdAt;
+  final List<LatLng> routePoints;
 
   OfflineMap({
     required this.id,
@@ -109,6 +110,7 @@ class OfflineMap {
     required this.endLocation,
     required this.steps,
     required this.createdAt,
+    required this.routePoints,
   });
 
   Map<String, dynamic> toMap() {
@@ -118,8 +120,13 @@ class OfflineMap {
       'endLocation': endLocation,
       'steps': steps.map((step) => step.toMap()).toList(),
       'createdAt': createdAt.toIso8601String(),
+      'routePoints': routePoints.map((point) => {
+        'latitude': point.latitude,
+        'longitude': point.longitude,
+      }).toList(),
     };
   }
+
 
   static OfflineMap fromMap(Map<String, dynamic> map) {
     return OfflineMap(
@@ -130,6 +137,9 @@ class OfflineMap {
           .map((step) => DirectionStep.fromMap(step as Map<String, dynamic>))
           .toList(),
       createdAt: DateTime.parse(map['createdAt']),
+      routePoints: (map['routePoints'] as List).map((point) => 
+        LatLng(point['latitude'] as double, point['longitude'] as double)
+      ).toList(),
     );
   }
 }
@@ -149,7 +159,12 @@ class MembershipHandler {
     final effectiveMemberType = memberType.toUpperCase();
     final limit = _mapLimits[effectiveMemberType] ?? _mapLimits['BASIC']!;
     
-    if (limit == -1) return true;
+    if (limit == -1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Download permitted - Elite membership')),
+      );
+      return true;
+    }
 
     if (currentMapCount >= limit) {
       final shouldUpgrade = await showDialog<bool>(
@@ -182,15 +197,32 @@ class MembershipHandler {
           ),
         );
       }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Save limit reached for $effectiveMemberType membership ($currentMapCount/$limit)'),
+        ),
+      );
       return false;
     }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Save permitted ($currentMapCount/$limit maps used)'),
+      ),
+    );
     return true;
   }
 
+  static int getMembershipLimit(String memberType) {
+    return _mapLimits[memberType.toUpperCase()] ?? _mapLimits['BASIC']!;
+  }
+
   static String formatLimitDisplay(String memberType, int currentCount) {
-    final limit = _mapLimits[memberType.toUpperCase()] ?? _mapLimits['BASIC']!;
+    final limit = getMembershipLimit(memberType);
     return '$currentCount/${limit == -1 ? '∞' : limit}';
   }
+
 }
 
 class SearchPage extends StatefulWidget {
@@ -407,7 +439,6 @@ void _setupAnimations() {
       paint,
     );
     
-    // Add wheels
     paint.color = Colors.black;
     canvas.drawCircle(Offset(size * 0.25, size * 0.6), size * 0.1, paint);
     canvas.drawCircle(Offset(size * 0.75, size * 0.6), size * 0.1, paint);
@@ -431,42 +462,35 @@ void _setupAnimations() {
     final pictureRecorder = ui.PictureRecorder();
     final canvas = Canvas(pictureRecorder);
     
-    // Draw circle background
     final bgPaint = Paint()..color = Colors.purple;
     canvas.drawCircle(
       Offset(size / 2, size / 2),
       size / 2,
       bgPaint,
     );
-    
-    // Draw user icon
+   
     final paint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
     
-    // Head
     canvas.drawCircle(
       Offset(size / 2, size * 0.3),
       size * 0.15,
       paint,
     );
     
-    // Body
     final bodyPath = Path()
       ..moveTo(size / 2, size * 0.45)
       ..lineTo(size / 2, size * 0.7);
     canvas.drawPath(bodyPath, paint);
     
-    // Arms
-    // Continuing from the _createUserMarkerIcon method...
     canvas.drawLine(
       Offset(size * 0.3, size * 0.55),
       Offset(size * 0.7, size * 0.55),
       paint,
     );
-    
-    // Legs
+  
     canvas.drawLine(
       Offset(size / 2, size * 0.7),
       Offset(size * 0.3, size * 0.85),
@@ -614,7 +638,7 @@ void _startNearbyUsersListener() {
     setState(() {
       _rippleEffects.clear();
       
-      // Add ripple effect for start location
+      // Adding ripple effect for start location
       if (_startLocation != null) {
         _rippleEffects.add(
           Circle(
@@ -628,7 +652,7 @@ void _startNearbyUsersListener() {
         );
       }
       
-      // Add ripple effect for end location
+      // Adding ripple effect for end location
       if (_endLocation != null) {
         _rippleEffects.add(
           Circle(
@@ -703,7 +727,7 @@ void _startNearbyUsersListener() {
   
   // Add start location marker if available
   if (_startLocation != null) {
-    // Ensure alpha value is clamped between 0.0 and 1.0
+    
     final alpha = _markerScaleAnimation.value.clamp(0.0, 1.0);
     
     markers.add(
@@ -719,7 +743,7 @@ void _startNearbyUsersListener() {
 
   // Add end location marker if available
   if (_endLocation != null) {
-    // Ensure alpha value is clamped between 0.0 and 1.0
+   
     final alpha = _markerScaleAnimation.value.clamp(0.0, 1.0);
     
 
@@ -735,7 +759,6 @@ void _startNearbyUsersListener() {
     );
   }
 
-  // Add car marker if available during navigation
   if (_carMarker != null) {
     markers.add(_carMarker!);
   }
@@ -752,7 +775,7 @@ void _startNearbyUsersListener() {
             title: user.name,
             snippet: 'Distance: ${user.distance.toStringAsFixed(1)} km',
           ),
-          alpha: 1.0,  // Explicitly set alpha to 1.0 for nearby user markers
+          alpha: 1.0,  
         ),
       );
     }
@@ -789,88 +812,132 @@ Future<void> _fetchMembershipDetails() async {
   }
 
   Future<void> _loadSavedMaps() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-      final savedMapsDoc = await FirebaseFirestore.instance
+    final savedMapsDoc = await FirebaseFirestore.instance
+        .collection('User')
+        .doc(user.uid)
+        .collection('offline_maps')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    if (!mounted) return;
+
+    final maps = savedMapsDoc.docs
+        .map((doc) => OfflineMap.fromMap(doc.data()))
+        .toList();
+
+    setState(() {
+      _offlineMaps = maps;
+      _offlineMapsCount = maps.length; 
+    });
+
+    // Update Firestore count to match actual number of maps
+    await FirebaseFirestore.instance
+        .collection('User')
+        .doc(user.uid)
+        .update({'offline_maps_count': maps.length});
+        
+  } catch (e) {
+    debugPrint('Error loading saved maps: $e');
+    if (mounted && _offlineMaps.isNotEmpty) {
+      setState(() {
+        _offlineMapsCount = _offlineMaps.length;
+      });
+    }
+  }
+}
+ Future<void> _saveMap() async {
+  if (_directions.isEmpty || _routePoints.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('No directions to save')),
+    );
+    return;
+  }
+
+  try {
+    final canDownload = await MembershipHandler.checkDownloadPermission(
+      memberType: _memberType ?? 'BASIC',
+      currentMapCount: _offlineMaps.length,
+      context: context,
+    );
+
+    if (!canDownload) return;
+
+    final steps = _directions.map((step) => DirectionStep(
+      instructions: _stripHtmlTags(step['html_instructions']),
+      distance: step['distance']['text'],
+      duration: step['duration']['text'],
+    )).toList();
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final mapId = DateTime.now().millisecondsSinceEpoch.toString();
+      final offlineMap = OfflineMap(
+        id: mapId,
+        startLocation: _startController.text,
+        endLocation: _endController.text,
+        steps: steps,
+        createdAt: DateTime.now(),
+        routePoints: _routePoints,
+      );
+
+      await _directionsListController.reverse();
+      
+      await FirebaseFirestore.instance
           .collection('User')
           .doc(user.uid)
           .collection('offline_maps')
-          .orderBy('createdAt', descending: true)
-          .get();
+          .doc(mapId)
+          .set(offlineMap.toMap());
+
+      setState(() {
+        _offlineMaps.add(offlineMap);
+        _offlineMapsCount = _offlineMaps.length;
+      });
+
+      await FirebaseFirestore.instance
+          .collection('User')
+          .doc(user.uid)
+          .update({'offline_maps_count': _offlineMaps.length});
+      
+      await _directionsListController.forward();
 
       if (!mounted) return;
 
-      setState(() {
-        _offlineMaps = savedMapsDoc.docs
-            .map((doc) => OfflineMap.fromMap(doc.data()))
-            .toList();
-      });
-    } catch (e) {
-      debugPrint('Error loading saved maps: $e');
-    }
-  }
-
-  Future<void> _saveMap() async {
-    if (_directions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No directions to save')),
-      );
-      return;
-    }
-
-    try {
-      final canDownload = await MembershipHandler.checkDownloadPermission(
-        memberType: _memberType ?? 'BASIC',
-        currentMapCount: _offlineMapsCount,
-        context: context,
-      );
-
-      if (!canDownload) return;
-
-      final steps = _directions.map((step) => DirectionStep(
-        instructions: _stripHtmlTags(step['html_instructions']),
-        distance: step['distance']['text'],
-        duration: step['duration']['text'],
-      )).toList();
-
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final mapId = DateTime.now().millisecondsSinceEpoch.toString();
-        final offlineMap = OfflineMap(
-          id: mapId,
-          startLocation: _startController.text,
-          endLocation: _endController.text,
-          steps: steps,
-          createdAt: DateTime.now(),
-        );
-
-        await FirebaseFirestore.instance
-            .collection('User')
-            .doc(user.uid)
-            .collection('offline_maps')
-            .doc(mapId)
-            .set(offlineMap.toMap());
-
-        setState(() => _offlineMapsCount++);
-        await _loadSavedMaps();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Map saved successfully')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving map: $e')),
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Map saved successfully'),
+              Text(
+                MembershipHandler.formatLimitDisplay(_memberType ?? 'BASIC', _offlineMaps.length),
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
+  } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error saving map: $e')),
+    );
   }
-
+}
   Future<void> _deleteMap(OfflineMap map) async {
   try {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
+
+    // Animate out
+    await _directionsListController.reverse();
 
     await FirebaseFirestore.instance
         .collection('User')
@@ -879,28 +946,28 @@ Future<void> _fetchMembershipDetails() async {
         .doc(map.id)
         .delete();
 
-    // Ensure count doesn't go below 0
-    final newCount = max(0, _offlineMapsCount - 1);
+    // Removed the map from local list first
+    setState(() {
+      _offlineMaps.removeWhere((m) => m.id == map.id);
+      _offlineMapsCount = _offlineMaps.length;
+    });
     
+    // Update Firestore with new count
     await FirebaseFirestore.instance
         .collection('User')
         .doc(user.uid)
-        .update({'offline_maps_count': newCount});
+        .update({'offline_maps_count': _offlineMaps.length});
 
-    setState(() => _offlineMapsCount = newCount);
-    await _loadSavedMaps();
+    // Animate back in
+    await _directionsListController.forward();
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Map deleted successfully')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Map deleted successfully')),
+    );
   } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting map: $e')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error deleting map: $e')),
+    );
   }
 }
 
@@ -984,7 +1051,7 @@ Future<void> _searchDirections() async {
     return;
   }
 
-  // Reset any existing animations
+  // Reseting any existing animations
   _stopCarAnimation();
   _pulseController.reset();
   _bounceController.reset();
@@ -1036,7 +1103,7 @@ Future<void> _searchDirections() async {
         _mapController.animateCamera(
           CameraUpdate.newLatLngBounds(
             _boundsFromLatLngList(_getRouteLatLngs(data['routes'][0]['legs'][0]['steps'])),
-            50, // padding
+            50, 
           ),
         );
       } else {
@@ -1203,7 +1270,7 @@ void _updateCarMarker() {
       icon: _carIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
       flat: true,
       anchor: const Offset(0.5, 0.5),
-      alpha: 1.0,  // Explicitly set alpha to 1.0 for car marker
+      alpha: 1.0,  
       zIndex: 2,
     );
   });
@@ -1349,7 +1416,6 @@ Future<void> _performSearch(String query, bool isStart) async {
     );
   }
 
-  // Add this to the AppBar actions in _buildAppBarActions method
 List<Widget> _buildAppBarActions() {
   return [
     if (!_isLoadingMembership)
@@ -1378,7 +1444,6 @@ List<Widget> _buildAppBarActions() {
       },
       tooltip: 'Toggle Nearby Users',
     ),
-    // Add this IconButton for saved maps
     IconButton(
       icon: const Icon(Icons.folder),
       onPressed: _showAnimatedBottomSheet,
@@ -1395,175 +1460,451 @@ void _showAnimatedBottomSheet() {
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => AnimatedPadding(
-      padding: MediaQuery.of(context).viewInsets,
-      duration: const Duration(milliseconds: 200),
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.teal,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.3),
-                    spreadRadius: 1,
-                    blurRadius: 5,
+    builder: (BuildContext context) {
+      OfflineMap? selectedMap;
+
+      return StatefulBuilder(
+        builder: (BuildContext context, StateSetter setModalState) {
+          Widget buildDirectionsView(OfflineMap map) {
+            return Column(
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.teal,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.3),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                      ),
+                    ],
                   ),
-                ],
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => setModalState(() => selectedMap = null),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Route Details',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${map.startLocation} → ${map.endLocation}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                // Map Preview
+                Builder(
+                  builder: (context) {
+                    final routePoints = map.routePoints;
+                    if (routePoints == null || routePoints.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return Container(
+                      height: 200,
+                      margin: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[300]!),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: routePoints.first,
+                            zoom: 12,
+                          ),
+                          markers: {
+                            Marker(
+                              markerId: const MarkerId('start'),
+                              position: routePoints.first,
+                              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                            ),
+                            Marker(
+                              markerId: const MarkerId('end'),
+                              position: routePoints.last,
+                              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                            ),
+                          },
+                          polylines: {
+                            Polyline(
+                              polylineId: const PolylineId('route'),
+                              points: routePoints,
+                              color: Colors.blue,
+                              width: 5,
+                            ),
+                          },
+                          zoomControlsEnabled: false,
+                          mapToolbarEnabled: false,
+                          myLocationButtonEnabled: false,
+                          scrollGesturesEnabled: false,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                 
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: map.steps.length,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemBuilder: (context, index) {
+                      final step = map.steps[index];
+                      return Card(
+                        elevation: 1,
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.teal,
+                            child: Text('${index + 1}'),
+                          ),
+                          title: Text(step.instructions),
+                          subtitle: Text('${step.distance} - ${step.duration}'),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return AnimatedPadding(
+            padding: MediaQuery.of(context).viewInsets,
+            duration: const Duration(milliseconds: 200),
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: selectedMap == null 
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.teal,
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.3),
+                              spreadRadius: 1,
+                              blurRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Saved Maps',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              '${min(_offlineMapsCount, limit)}/${limit == -1 ? '∞' : limit}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Maps List
+                      Expanded(
+                        child: _offlineMaps.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.map_outlined,
+                                    size: 64,
+                                    color: Colors.grey[400],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No saved maps yet',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Search for directions and tap save to add maps',
+                                    style: TextStyle(
+                                      color: Colors.grey[500],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: _offlineMaps.length,
+                              padding: const EdgeInsets.all(8),
+                              itemBuilder: (context, index) {
+                                final map = _offlineMaps[index];
+                                final isAccessible = index < limit || limit == -1;
+
+                                return Stack(
+                                  children: [
+                                    Card(
+                                      elevation: 2,
+                                      margin: const EdgeInsets.symmetric(
+                                        vertical: 4,
+                                        horizontal: 8,
+                                      ),
+                                      child: ListTile(
+                                        leading: CircleAvatar(
+                                          backgroundColor: isAccessible ? Colors.teal : Colors.grey,
+                                          child: const Icon(
+                                            Icons.map,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        title: Text(
+                                          '${map.startLocation} → ${map.endLocation}',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        subtitle: Text(
+                                          'Saved on ${DateFormat('MMM d, y').format(map.createdAt)}',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                        onTap: isAccessible 
+                                          ? () => setModalState(() => selectedMap = map)
+                                          : () => _showUpgradeDialog(),
+                                        trailing: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (isAccessible) ...[
+                                              IconButton(
+                                                icon: const Icon(Icons.directions),
+                                                color: Colors.teal,
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _startController.text = map.startLocation;
+                                                    _endController.text = map.endLocation;
+                                                  });
+                                                  Navigator.pop(context);
+                                                  _performSearch(map.startLocation, true);
+                                                  _performSearch(map.endLocation, false);
+                                                },
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete_outline),
+                                                color: Colors.red[400],
+                                                onPressed: () => _deleteMap(map),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    if (!isAccessible)
+                                      Positioned.fill(
+                                        child: GestureDetector(
+                                          onTap: () => _showUpgradeDialog(),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: BackdropFilter(
+                                              filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                                              child: Container(
+                                                color: Colors.white.withOpacity(0.6),
+                                                child: const Center(
+                                                  child: Text(
+                                                    'Upgrade membership to access',
+                                                    style: TextStyle(
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
+                      ),
+                    ],
+                  )
+                : buildDirectionsView(selectedMap!),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
+Widget _buildDirectionsView(BuildContext context, OfflineMap map, Function(OfflineMap?) onUpdateMap) {
+  return Column(
+    children: [
+      // Header
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.teal,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              spreadRadius: 1,
+              blurRadius: 5,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => onUpdateMap(null),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Saved Maps',
+                    'Route Details',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
+                  const SizedBox(height: 4),
                   Text(
-                    '${min(_offlineMapsCount, limit)}/${limit == -1 ? '∞' : limit}',
+                    '${map.startLocation} → ${map.endLocation}',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Colors.white70,
+                      fontSize: 12,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            // Maps List
-            Expanded(
-              child: _offlineMaps.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.map_outlined,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No saved maps yet',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Search for directions and tap save to add maps',
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: _offlineMaps.length,
-                    padding: const EdgeInsets.all(8),
-                    itemBuilder: (context, index) {
-                      final map = _offlineMaps[index];
-                      final isAccessible = index < limit || limit == -1;
-
-                      return Stack(
-                        children: [
-                          Card(
-                            elevation: 2,
-                            margin: const EdgeInsets.symmetric(
-                              vertical: 4,
-                              horizontal: 8,
-                            ),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: isAccessible ? Colors.teal : Colors.grey,
-                                child: const Icon(
-                                  Icons.map,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              title: Text(
-                                '${map.startLocation} → ${map.endLocation}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                'Saved on ${DateFormat('MMM d, y').format(map.createdAt)}',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (isAccessible) ...[
-                                    IconButton(
-                                      icon: const Icon(Icons.directions),
-                                      color: Colors.teal,
-                                      onPressed: () {
-                                        setState(() {
-                                          _startController.text = map.startLocation;
-                                          _endController.text = map.endLocation;
-                                        });
-                                        Navigator.pop(context);
-                                        _performSearch(map.startLocation, true);
-                                        _performSearch(map.endLocation, false);
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline),
-                                      color: Colors.red[400],
-                                      onPressed: () => _deleteMap(map),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (!isAccessible)
-                            Positioned.fill(
-                              child: GestureDetector(
-                                onTap: () => _showUpgradeDialog(),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: BackdropFilter(
-                                    filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                                    child: Container(
-                                      color: Colors.white.withOpacity(0.6),
-                                      child: const Center(
-                                        child: Text(
-                                          'Upgrade membership to access',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
             ),
           ],
         ),
       ),
-    ),
+      Builder(
+        builder: (context) {
+          final routePoints = map.routePoints;
+          if (routePoints == null || routePoints.isEmpty) {
+            return const SizedBox.shrink();
+          }
+
+          return Container(
+            height: 200,
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: routePoints.first,
+                  zoom: 12,
+                ),
+                markers: {
+                  Marker(
+                    markerId: const MarkerId('start'),
+                    position: routePoints.first,
+                    icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                  ),
+                  Marker(
+                    markerId: const MarkerId('end'),
+                    position: routePoints.last,
+                    icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                  ),
+                },
+                polylines: {
+                  Polyline(
+                    polylineId: const PolylineId('route'),
+                    points: routePoints,
+                    color: Colors.blue,
+                    width: 5,
+                  ),
+                },
+                zoomControlsEnabled: false,
+                mapToolbarEnabled: false,
+                myLocationButtonEnabled: false,
+                scrollGesturesEnabled: false,
+              ),
+            ),
+          );
+        },
+      ),
+     
+      Expanded(
+        child: ListView.builder(
+          itemCount: map.steps.length,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemBuilder: (context, index) {
+            final step = map.steps[index];
+            return Card(
+              elevation: 1,
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.teal,
+                  child: Text('${index + 1}'),
+                ),
+                title: Text(step.instructions),
+                subtitle: Text('${step.distance} - ${step.duration}'),
+              ),
+            );
+          },
+        ),
+      ),
+    ],
   );
 }
 void _showUpgradeDialog() {
@@ -1732,6 +2073,7 @@ void _showUpgradeDialog() {
               leading: CircleAvatar(
                 backgroundColor: Colors.teal,
                 child: Text('${index + 1}'),
+                
               ),
               title: Text(_stripHtmlTags(step['html_instructions'])),
               subtitle: Text(

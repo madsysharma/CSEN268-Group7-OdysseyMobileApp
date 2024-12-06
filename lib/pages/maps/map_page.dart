@@ -509,11 +509,11 @@ Future<void> _toggleSpeechToText() async {
   try {
     if (_isListening) {
       await _speech.stop();
-      if (mounted) {  // Add mounted check
+      if (mounted) { 
         setState(() => _isListening = false);
       }
     } else {
-      if (mounted) {  // Add mounted check
+      if (mounted) {  
         setState(() {
           _isListening = true;
           _searchController.text = '';
@@ -533,7 +533,7 @@ Future<void> _toggleSpeechToText() async {
       );
     }
   } catch (e) {
-    if (mounted) {  // Add mounted check
+    if (mounted) {  
       _showErrorSnackBar('Speech recognition error: $e');
       setState(() => _isListening = false);
     }
@@ -541,7 +541,7 @@ Future<void> _toggleSpeechToText() async {
 }
 
 void _handleSpeechResult(SpeechRecognitionResult result) {
-  if (!mounted) return;  // Add mounted check
+  if (!mounted) return; 
 
   setState(() {
     _searchQuery = result.recognizedWords;
@@ -552,7 +552,7 @@ void _handleSpeechResult(SpeechRecognitionResult result) {
   });
 
   if (result.finalResult) {
-    if (!mounted) return;  // Add mounted check
+    if (!mounted) return;  
     setState(() => _isListening = false);
     if (_searchQuery.isNotEmpty) {
       _searchLocation();
@@ -796,7 +796,7 @@ Future<void> _fetchMembershipDetails() async {
     );
   }
 
-  // UI Building Methods
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -825,7 +825,7 @@ PreferredSizeWidget _buildAppBar() {
           },
         ),
       ),
-      // Location icon with rotation animation
+      
       RotationTransition(
         turns: _rotateAnimation,
         child: IconButton(
@@ -839,7 +839,7 @@ PreferredSizeWidget _buildAppBar() {
           },
         ),
       ),
-      // Share icon with combined animation
+   
       AnimatedBuilder(
         animation: _pulseAnimation,
         builder: (context, child) {
@@ -991,7 +991,7 @@ Widget _buildMap() {
       });
 
       try {
-        // Get address for tapped location using Google Places API
+        
         final response = await http.get(
           Uri.parse(
             'https://maps.googleapis.com/maps/api/geocode/json?latlng=${latLng.latitude},${latLng.longitude}&key=${Config.googleApiKey}',
@@ -1003,17 +1003,17 @@ Widget _buildMap() {
           if (data['results'].isNotEmpty) {
             final address = data['results'][0]['formatted_address'];
 
-            // Add or update marker
+            
             await _animateMarkerAddition(
               latLng,
               'Selected Location',
               address,
             );
 
-            // Animate camera to new position
+            
             await _animateCameraToPosition(latLng);
 
-            // Show location details
+           
             _showLocationDetailsOverlay(address, latLng);
           }
         }
@@ -1172,7 +1172,7 @@ Future<void> _navigateToSearch(LatLng position) async {
 
  @override
 void dispose() {
-  // Cancel all timers and listeners
+  
   _locationUpdateTimer?.cancel();
   _fabAnimationController.dispose();
   _iconPulseController.dispose();
