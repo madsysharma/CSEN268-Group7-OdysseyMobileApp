@@ -423,6 +423,8 @@ void _setupAnimations() {
     }
   }
 
+  
+
   Future<void> _createUserMarkerIcon() async {
     const double size = 40;
     

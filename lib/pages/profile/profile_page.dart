@@ -134,7 +134,7 @@ class ProfilePageState extends State<ProfilePage> {
               Divider(),
               ListTile(
                 minVerticalPadding: 10,
-                title: Text('Saved locations'),
+                title: Text('Favorite locations'),
                 onTap: () {
                   GoRouter.of(context).go(Paths.savedLocations);
                 },
