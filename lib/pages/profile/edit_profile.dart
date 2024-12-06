@@ -196,29 +196,28 @@ class EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> createUserWithImage(String userId, String imageUrl) async {
-  final userRef = FirebaseFirestore.instance.collection('User').doc(userId);
+    final userRef = FirebaseFirestore.instance.collection('User').doc(userId);
 
-  await userRef.set({
-    'firstname': '', 
-    'lastname': '',
-    'email': '',
-    'phonenumber': '',
-    'homelocation': '',
-    'imageUrl': imageUrl, 
-    'interests': ['', '', ''], 
-    'membertype': '',
-    'password': '',
-  });
-}
+    await userRef.set({
+      'firstname': '',
+      'lastname': '',
+      'email': '',
+      'phonenumber': '',
+      'homelocation': '',
+      'imageUrl': imageUrl,
+      'interests': ['', '', ''],
+      'membertype': '',
+      'password': '',
+    });
+  }
 
-Future<void> updateImageUrl(String userId, String imageUrl) async {
-  final userRef = FirebaseFirestore.instance.collection('User').doc(userId);
+  Future<void> updateImageUrl(String userId, String imageUrl) async {
+    final userRef = FirebaseFirestore.instance.collection('User').doc(userId);
 
-  await userRef.update({
-    'imageUrl': imageUrl, 
-  });
-}
-
+    await userRef.update({
+      'imageUrl': imageUrl,
+    });
+  }
 
   String? validatePhoneNumber(String? value) {
     if (value == null || value.isEmpty) {
@@ -281,6 +280,7 @@ Future<void> updateImageUrl(String userId, String imageUrl) async {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: MyAppBar(title: "Profile"),
         body: SingleChildScrollView(
           padding: pagePadding,
@@ -370,7 +370,8 @@ Future<void> updateImageUrl(String userId, String imageUrl) async {
                             if (value == null || value.isEmpty) {
                               return 'Email is required';
                             }
-                            if (EmailValidator.validate(_emailController.text) ==
+                            if (EmailValidator.validate(
+                                    _emailController.text) ==
                                 false) {
                               return "Invalid email address";
                             }
@@ -403,7 +404,8 @@ Future<void> updateImageUrl(String userId, String imageUrl) async {
                                 fontSize: 16,
                               ),
                               enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: colorScheme.shadow),
+                                borderSide:
+                                    BorderSide(color: colorScheme.shadow),
                               ),
                               focusedBorder: UnderlineInputBorder(
                                 borderSide: BorderSide(
@@ -414,7 +416,8 @@ Future<void> updateImageUrl(String userId, String imageUrl) async {
                             ),
                             validator: validatePhoneNumber,
                             onFieldSubmitted: (_) {
-                              FocusScope.of(context).requestFocus(locationFocus);
+                              FocusScope.of(context)
+                                  .requestFocus(locationFocus);
                             },
                           ),
                         ),
