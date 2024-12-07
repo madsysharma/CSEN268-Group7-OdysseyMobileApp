@@ -1,4 +1,4 @@
-# Odyssey
+# Odyssey: Mobile App for Solo Travelers
 Problem solved:
 Solo travel used to be viewed as unsafe or strange: but now it’s a major trend among travelers of all ages, who value freedom, flexibility, cultural immersion and personal growth. It has certain needs that general travel apps tend to sideline, which include enhanced safety features for individuals, connecting with like-minded travelers, flexible itineraries, and recommendations that emphasize authentic cultural immersion and hidden gems rather than the popular, cliched fare. A mobile app designed from a solo traveler’s point of view would bridge these gaps and prove valuable to the growing community of such travelers. This is where Odyssey comes into the picture: to provide resources that make the journey safe, meaningful and enjoyable.
 
