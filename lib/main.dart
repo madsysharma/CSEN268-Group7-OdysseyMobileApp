@@ -124,8 +124,9 @@ class MyApp extends StatelessWidget {
                         GoRoute(
                           path: Paths.acceptReq,
                           builder: (context, state) {
-                            final query = state.uri.queryParameters['q'];
-                            return AcceptRequest(requesterName: query);
+                            final reqName = state.uri.queryParameters['sentBy'];
+                            final sent = state.uri.queryParameters['sentAt'];
+                            return AcceptRequest(requesterName: reqName, sentAt: sent,);
                           },
                         ),
                         GoRoute(
@@ -147,6 +148,20 @@ class MyApp extends StatelessWidget {
                     GoRoute(
                       path: Paths.notifs,
                       builder: (context, state) => Notifications(fromScreen: 'friends'),
+                      routes: [
+                        GoRoute(
+                          path: Paths.acceptReq,
+                          builder: (context, state) {
+                            final reqName = state.uri.queryParameters['sentBy'];
+                            final sent = state.uri.queryParameters['sentAt'];
+                            return AcceptRequest(requesterName: reqName, sentAt: sent,);
+                          },
+                        ),
+                        GoRoute(
+                          path: Paths.expiredReq,
+                          builder: (context, state) => ExpiredRequest(),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -160,7 +175,21 @@ class MyApp extends StatelessWidget {
                     ),
                     GoRoute(
                       path: Paths.notifs,
-                      builder: (context, state) => Notifications(fromScreen: 'friends'),
+                      builder: (context, state) => Notifications(fromScreen: 'you'),
+                      routes: [
+                        GoRoute(
+                          path: Paths.acceptReq,
+                          builder: (context, state) {
+                            final reqName = state.uri.queryParameters['sentBy'];
+                            final sent = state.uri.queryParameters['sentAt'];
+                            return AcceptRequest(requesterName: reqName, sentAt: sent,);
+                          },
+                        ),
+                        GoRoute(
+                          path: Paths.expiredReq,
+                          builder: (context, state) => ExpiredRequest(),
+                        ),
+                      ],
                     ),
                     GoRoute(
                       path: Paths.post,

@@ -8,10 +8,14 @@ class ReviewCard extends StatelessWidget{
   final String locationName;
   final int dayDiff;
   final String reviewText;
-  const ReviewCard({super.key, required this.pageName, required this.imgUrls, required this.posterName, required this.locationName, required this.dayDiff, required this.reviewText});
+  final double rating;
+  final List<String> tags;
+  const ReviewCard({super.key, required this.pageName, required this.imgUrls, required this.posterName, required this.locationName, required this.dayDiff, required this.reviewText, required this.rating, required this.tags});
 
   @override
   Widget build(BuildContext context) {
+    String result = this.tags.sublist(0, this.tags.length - 1).join(', ');
+    result = this.tags.length > 1 ? '$result, ${this.tags.last}' : this.tags.first;
     String cardTitle= this.posterName;
     return Container(
       padding: EdgeInsets.only(left:20.0,right:20.0,top:10.0,bottom:10.0),
@@ -48,11 +52,11 @@ class ReviewCard extends StatelessWidget{
                   children: [
                     Text(
                       cardTitle,
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       "${this.dayDiff} days ago",
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -66,22 +70,25 @@ class ReviewCard extends StatelessWidget{
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemBuilder: (context, index){
-                  var newImage = Image.network(
-                  this.imgUrls[index],
-                  loadingBuilder: (context, child, loadingProgress){
-                    if(loadingProgress==null){
-                      return child;
-                    } else {
-                      return Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded/loadingProgress.expectedTotalBytes! : null,
-                        ),
-                      );
-                    }
-                  },
-                  errorBuilder: (context, error, stackTrace){
-                    return Text("Failed to load image");
-                  },);
+                  var newImage = Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Image.network(
+                    this.imgUrls[index],
+                    loadingBuilder: (context, child, loadingProgress){
+                      if(loadingProgress==null){
+                        return child;
+                      } else {
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded/loadingProgress.expectedTotalBytes! : null,
+                          ),
+                        );
+                      }
+                    },
+                    errorBuilder: (context, error, stackTrace){
+                      return Text("Failed to load image");
+                    },),
+                  );
                   return newImage;
                 },
                 itemCount: this.imgUrls.length,
@@ -98,10 +105,21 @@ class ReviewCard extends StatelessWidget{
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              this.reviewText,
+              "Tags: $result",
+              style: Theme.of(context).textTheme.bodyMedium
+            )
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              "Review: ${this.reviewText}",
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text("Rating: ${this.rating}", style: Theme.of(context).textTheme.bodyMedium)
+          )
         ],
       ),
     );

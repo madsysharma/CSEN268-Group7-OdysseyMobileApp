@@ -8,7 +8,8 @@ import 'package:odyssey/utils/spaces.dart';
 
 class AcceptRequest extends StatelessWidget{
   final String? requesterName;
-  AcceptRequest({super.key, required this.requesterName});
+  final String? sentAt;
+  AcceptRequest({super.key, required this.requesterName, required this.sentAt});
   
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -44,10 +45,11 @@ class AcceptRequest extends StatelessWidget{
                         final snap = await this.firestore.collection('User').where('firstname', isEqualTo: firstName).get();
                         final userDoc = snap.docs.first;
                         email = userDoc.data()['email'];
+                        String recipient = userDoc.data()['firstname']+" "+userDoc.data()['lastname'];
                         final notifCollection = await this.firestore.collection('User').doc(userDoc.id).collection('Notifications');
                         await notifCollection.add(
                           {
-                            'recipient': userDoc.data()['firstname']+" "+userDoc.data()['lastname'],
+                            'recipient': recipient,
                             'notificationText': "$username accepted your friend request.",
                             'type': 'acceptedRequest',
                             'sentAt': FieldValue.serverTimestamp(),
@@ -56,6 +58,17 @@ class AcceptRequest extends StatelessWidget{
                             'accepted': "Yes",
                           }
                         );
+                        //Update notification status for the sender as well
+                        final senderNotif = await this.firestore.collection('User').doc(this.auth.currentUser?.uid).collection('Notifications').where('notificationText', isEqualTo: '$recipient wants to connect with you on Odyssey. Make a new friend today!').get();
+                        var filteredDocuments = senderNotif.docs;
+                        if(this.sentAt == null && this.sentAt!.isNotEmpty){
+                          filteredDocuments = filteredDocuments.where((d){
+                            final sentTime = d.data()['sentAt'];
+                            return sentTime.toDate().toString() == this.sentAt.toString();
+                          }).toList();
+                        }
+                        var retrievedDoc = filteredDocuments.first;
+                        await retrievedDoc.reference.update({'accepted':"Yes"});
                         final senderDocRef = this.firestore.collection('User').doc(this.auth.currentUser?.uid);
                         final recvDocRef = this.firestore.collection('User').doc(userDoc.id);
                         final sendData = await senderDocRef.get();
@@ -96,8 +109,22 @@ class AcceptRequest extends StatelessWidget{
                 smallHorizontal,
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: (){
-                      print("Friend request denied");
+                    onPressed: () async{
+                      String? firstName = this.requesterName?.split(" ").first;
+                      final snap = await this.firestore.collection('User').where('firstname', isEqualTo: firstName).get();
+                      final userDoc = snap.docs.first;
+                      String recipient = userDoc.data()['firstname']+" "+userDoc.data()['lastname'];
+                      final senderNotif = await this.firestore.collection('User').doc(this.auth.currentUser?.uid).collection('Notifications').where('notificationText', isEqualTo: '$recipient wants to connect with you on Odyssey. Make a new friend today!').get();
+                      var filteredDocuments = senderNotif.docs;
+                      if(this.sentAt == null && this.sentAt!.isNotEmpty){
+                        filteredDocuments = filteredDocuments.where((d){
+                          final sentTime = d.data()['sentAt'];
+                          return sentTime.toDate().toString() == this.sentAt.toString();
+                        }).toList();
+                      }
+                      var retrievedDoc = filteredDocuments.first;
+                      await retrievedDoc.reference.update({'accepted':"No"});
+                      showMessageSnackBar(context, "You have not accepted $requesterName\'s friend request.");
                       GoRouter.of(context).pop();
                     },
                     child: Text("No")

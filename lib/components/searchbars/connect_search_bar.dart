@@ -30,6 +30,7 @@ class ConnectSearchBarState extends State<ConnectSearchBar> with AutomaticKeepAl
   @override
   void didUpdateWidget(covariant ConnectSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
+    print("Old numUnread: ${oldWidget.numUnread}, New numUnread: ${widget.numUnread}");
     if (widget.numUnread != oldWidget.numUnread) {
       setState(() {
         unreadChanging = widget.numUnread;

@@ -22,11 +22,11 @@ class Connect extends StatefulWidget{
 
   Connect({Key? key, this.tab}) : super(key : key);
   @override
-  State<Connect> createState() => _ConnectState();
+  State<Connect> createState() => ConnectState();
 }
 
 
-class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin{
+class ConnectState extends State<Connect> with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin{
   static const List<Tab> connectTabs = <Tab>[
     Tab(text: 'Local'),
     Tab(text: 'Friends'),
@@ -62,6 +62,9 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
   List<String>? _previousLabelsToSend;
   List<String>? _previousLocationsToSend;
   List<double>? _previousRatingsToSend;
+  bool isLoadingNotifs = false;
+  bool isNavigatingToAnotherScreen = false;
+  bool isLoadingTab = false;
 
 
   @override
@@ -87,22 +90,28 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
   }
 
   Future<void> collectUnreadNotifs(String? uid) async{
-    final CollectionReference<Map<String, dynamic>> ref = await this.firestore.collection('User').doc(uid).collection('Notifications');
-    final QuerySnapshot<Map<String, dynamic>> snap = await ref.get();
-    int notifCount = 0;
-    for(var doc in snap.docs){
-      print(doc.data());
-      if(doc.data()['unread']==true){
-        notifCount = notifCount + 1;
-      }
+    if(isLoadingNotifs){
+      return;
     }
-    print("Notification count: $notifCount");
-    if(mounted){
+    setState(() {
+      isLoadingNotifs = true;
+    });
+    try {
+    final CollectionReference<Map<String, dynamic>> ref = firestore.collection('User').doc(uid).collection('Notifications');
+    final QuerySnapshot<Map<String, dynamic>> snap = await ref.get();
+    int notifCount = snap.docs.where((doc) => doc.data()['unread'] == true).length;
+    if (mounted) {
       setState(() {
-        print("Notification count set!");
-        this.unreadNotifsNum = notifCount;
+        unreadNotifsNum = notifCount;
       });
     }
+  } catch (e) {
+    print("Error fetching notifications: $e");
+  } finally {
+    setState(() {
+      isLoadingNotifs = false;
+    });
+  }
   }
 
   Future<void> setLocations() async{
@@ -155,7 +164,7 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
       return loadYourReviews(this.auth.currentUser?.email, locations: this.locationsToSend, appliedFilters: this.labelsToSend, numStars: this.ratingsToSend, searchText: this.reviewSearchText);
     } else {
       return [];
-    }
+    } 
   }
 
   Future<List<ReviewCard>> loadLocalUserReviews(String? uid, {List<String>? locations, List<String>? appliedFilters, List<double>? numStars, String? searchText}) async{
@@ -217,7 +226,9 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
           final postedDate = doc.data()['postedOn'] ?? "";
           final dayDifference = postedDate != null ? getDayDifference(postedDate.toDate()) : 0;
           final revText = doc.data()['reviewtext'] ?? "";
-          reviews.add(ReviewCard(pageName: "ConnectLocal", imgUrls: images, posterName: n.split(" ").first, locationName: doc.data()['locationname'], dayDiff: dayDifference, reviewText: revText,));
+          final ratingGiven = doc.data()['rating'].toDouble() ?? 1.0;
+          final tags = List<String>.from(doc.data()['tags']) ?? [];
+          reviews.add(ReviewCard(pageName: "ConnectLocal", imgUrls: images, posterName: n.split(" ").first, locationName: doc.data()['locationname'], dayDiff: dayDifference, reviewText: revText, rating: ratingGiven, tags: tags));
         }
       }
       print('Loaded reviews: ${reviews.length}');
@@ -244,7 +255,7 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
       final fetchQuery = await this.firestore.collection('User').where('firstname', isEqualTo: f.split(" ").first).get();
       final friendId = fetchQuery.docs.first.id;
       print("Friend ID: $friendId");
-      final querySnap = await this.firestore.collection('Review').where('userId', isEqualTo: friendId).get();
+      final querySnap = await this.firestore.collection('Review').where('userId', isEqualTo: friendId).orderBy('postedOn', descending: true).get();
       var filteredDocs = querySnap.docs;
       print("Filtered docs: $filteredDocs");
       if(searchText != null && searchText.isNotEmpty){
@@ -275,8 +286,10 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
         final postedDate = doc.data()['postedOn'] ?? "";
         final dayDifference = getDayDifference(postedDate.toDate());
         final revText = doc.data()['reviewText'] ?? "";
+        final ratingGiven = doc.data()['rating'].toDouble() ?? 1.0;
+        final tags = List<String>.from(doc.data()['tags']) ?? [];
         print("Posted date: $postedDate, day difference: $dayDifference, review text: $revText");
-        reviews.add(ReviewCard(pageName: "ConnectFriends",imgUrls: List<String>.from(doc.data()['images']), posterName: f, locationName: doc.data()['locationName'], dayDiff: dayDifference, reviewText: revText,));
+        reviews.add(ReviewCard(pageName: "ConnectFriends",imgUrls: List<String>.from(doc.data()['images']), posterName: f, locationName: doc.data()['locationName'], dayDiff: dayDifference, reviewText: revText, rating: ratingGiven, tags: tags));
       }
     }
     print("Reviews: $reviews");
@@ -319,7 +332,7 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
     }
     print("Reviews is finally: $reviews");
     return reviews
-        .map((review) => ReviewCard(pageName: "ConnectYou", imgUrls: review.images ?? [], posterName: "You", locationName: review.locationName ?? "", dayDiff: getDayDifference(review.postedOn!), reviewText: review.reviewText!,))
+        .map((review) => ReviewCard(pageName: "ConnectYou", imgUrls: review.images ?? [], posterName: "You", locationName: review.locationName ?? "", dayDiff: getDayDifference(review.postedOn!), reviewText: review.reviewText!, rating: review.rating!.toDouble(), tags: review.tags??[]))
         .toList();
   }
 
@@ -608,17 +621,26 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
     return Scaffold(
       appBar: ConnectSearchBar(
         onNavigate: (toScreen) async{
+          setState(() {
+            isNavigatingToAnotherScreen = true;
+          });
           String dest = "";
           if(toScreen == 'Notifications'){
             dest = Paths.notifs;
             GoRouter.of(context).go('/connect/${_tabRoutes[_tabController.index]}'+dest,);
             collectUnreadNotifs(uid);
-            fetchTabData(_tabController.index);
+            //fetchTabData(_tabController.index);
           } else if(toScreen == 'Friends'){
             dest = Paths.friendReq;
             GoRouter.of(context).go('/connect/${_tabRoutes[_tabController.index]}'+dest);
-            fetchTabData(_tabController.index);
+            collectUnreadNotifs(uid);
+            //fetchTabData(_tabController.index);
           }
+        Future.delayed(Duration(milliseconds: 100), () {
+          setState(() {
+            isNavigatingToAnotherScreen = false;
+          });
+        });
         },
         setFilters: (){
           displayBottomSheetFilters();
@@ -639,6 +661,9 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
       FutureBuilder<List<ReviewCard>>(
         future: fetchTabData(0),
         builder: (context, snapshot) {
+          if(isNavigatingToAnotherScreen){
+            return Container();
+          }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Shimmer.fromColors(
       baseColor: Colors.grey[300]!,
@@ -666,6 +691,9 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
       FutureBuilder<List<ReviewCard>>(
         future: fetchTabData(1),
         builder: (context, snapshot) {
+          if(isNavigatingToAnotherScreen){
+            return Container();
+          }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Shimmer.fromColors(
       baseColor: Colors.grey[300]!,
@@ -693,6 +721,9 @@ class _ConnectState extends State<Connect> with SingleTickerProviderStateMixin, 
       FutureBuilder<List<ReviewCard>>(
         future: fetchTabData(2),
         builder: (context, snapshot) {
+          if(isNavigatingToAnotherScreen){
+            return Container();
+          }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Shimmer.fromColors(
       baseColor: Colors.grey[300]!,

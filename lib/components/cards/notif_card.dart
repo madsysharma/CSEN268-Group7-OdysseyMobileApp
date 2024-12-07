@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:odyssey/pages/connect/connect.dart';
 
 class NotifCard extends StatefulWidget{
   final String text;
@@ -33,6 +34,7 @@ class NotifCardState extends State<NotifCard> with AutomaticKeepAliveClientMixin
     print("Is it unread? ${widget.unread}");
     print("Sent by: ${widget.sentBy}");
     print("Sent at: ${widget.sentAt}");
+    print("Accept status: ${widget.acceptStatus}");
   }
 
   @override
@@ -49,11 +51,14 @@ class NotifCardState extends State<NotifCard> with AutomaticKeepAliveClientMixin
         try{
           await snap.docs.first.reference.update({'unread':false});
           print("Notification updated");
+          if (widget.fromScreen == 'Notifications') {
+            context.findAncestorStateOfType<ConnectState>()?.collectUnreadNotifs(this.auth.currentUser?.uid);
+          }
         } catch(e) {
           print("Exception in updating notification: $e");
         }
         if(widget.type == 'friendRequest' && widget.acceptStatus == 'Not yet'){
-          GoRouter.of(context).go('/connect/${widget.fromScreen}'+'/notifications/acceptreq?q=${widget.sentBy}');
+          GoRouter.of(context).go('/connect/${widget.fromScreen}'+'/notifications/acceptreq?sentBy=${widget.sentBy}&sentAt=${widget.sentAt.toString()}');
         }
         else if(widget.type == 'friendRequest' && (widget.acceptStatus == 'Yes' || widget.acceptStatus == 'No')){
           GoRouter.of(context).go('/connect/${widget.fromScreen}'+'/notifications/expiredreq');
